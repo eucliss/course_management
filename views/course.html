@@ -1,0 +1,331 @@
+{{ block "course" . }}
+<div class="course-detail">
+    <div class="header-section">
+        <div class="title-and-line">
+            <h1>{{ .Name }}</h1>
+            <div class="line-section">
+                <span class="line-description">{{ .Description }}</span>
+            </div>
+        </div>
+        <div class="tier-box">
+            <div class="rating-value">{{ .OverallRating }}</div>
+            <div class="tier-label">TIER</div>
+        </div>
+    </div>
+    <div class="course-content">
+        <div class="course-table">
+            <table>
+                <tr>
+                    <th style="background-color: #000000;">Category</th>
+                    <th style="background-color: #000000;">Rating</th>
+                </tr>
+                <tr>
+                    <td>Price</td>
+                    <td class="price-{{ len .Ranks.Price }}">{{ .Ranks.Price }}</td>
+                </tr>
+                <tr>
+                    <td>Handicap Difficulty</td>
+                    <td class="handicap-{{ .Ranks.HandicapDifficulty }}">{{ .Ranks.HandicapDifficulty }} handicap</td>
+                </tr>
+                <tr>
+                    <td>Hazard Difficulty</td>
+                    <td class="hazard-{{ .Ranks.HazardDifficulty }}">{{ .Ranks.HazardDifficulty }} Sleeve{{ if gt .Ranks.HazardDifficulty 1 }}s{{ end }}</td>
+                </tr>
+                <tr>
+                    <td>Merch</td>
+                    <td class="rating-{{ .Ranks.Merch }}">{{ .Ranks.Merch }}</td>
+                </tr>
+                <tr>
+                    <td>Condition</td>
+                    <td class="rating-{{ .Ranks.Condition }}">{{ .Ranks.Condition }}</td>
+                </tr>
+                <tr>
+                    <td>Enjoyment Rating</td>
+                    <td class="rating-{{ .Ranks.EnjoymentRating }}">{{ .Ranks.EnjoymentRating }}</td>
+                </tr>
+                <tr>
+                    <td>Vibe</td>
+                    <td class="rating-{{ .Ranks.Vibe }}">{{ .Ranks.Vibe }}</td>
+                </tr>
+                <tr>
+                    <td>Range</td>
+                    <td class="rating-{{ .Ranks.Range }}">{{ .Ranks.Range }}</td>
+                </tr>
+                <tr>
+                    <td>Amenities</td>
+                    <td class="rating-{{ .Ranks.Amenities }}">{{ .Ranks.Amenities }}</td>
+                </tr>
+                <tr>
+                    <td>Turn Dog</td>
+                    <td class="rating-{{ .Ranks.Glizzies }}">{{ .Ranks.Glizzies }}</td>
+                </tr>
+            </table>
+            <br/>
+            <br/>
+            {{ template "scoring-table" . }}
+        </div>
+        
+        <div class="course-info">
+            <h2>Course Review</h2>
+            <p>{{ .Review }}</p>
+            <br style="clear: both; margin-bottom: 20px;"/>
+            {{ template "hole-by-hole" . }}
+        </div>
+    </div>
+</div>
+
+<style>
+    .course-detail {
+        padding: 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .header-section {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 30px;
+        margin-bottom: 40px;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .title-and-line {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        margin-right: 20px;
+    }
+
+    .course-detail h1 {
+        text-align: center;
+        color: #204606;
+        font-size: 3.5em;
+        font-weight: bold;
+        margin: 0;
+    }
+
+    .course-content {
+        display: flex;
+        gap: 40px;
+    }
+
+    .course-table {
+        flex: 0 0 400px;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .course-info {
+        flex: 1;
+        padding: 20px;
+        background-color: #B5D844;
+        border-radius: 8px;
+        border: 1px solid #E5E7EB;
+    }
+
+    .overall-rating {
+        text-align: center;
+        margin-bottom: 30px;
+        display: flex;
+        justify-content: center;
+    }
+
+    .tier-box {
+        background-color: #204606;
+        color: white;
+        padding: 15px 30px;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        flex-shrink: 0;
+    }
+
+    .rating-value {
+        font-size: 3em;
+        font-weight: bold;
+        line-height: 1;
+    }
+
+    .tier-label {
+        font-size: 0.8em;
+        font-weight: 500;
+        letter-spacing: 1px;
+
+    }
+
+    .line-section {
+        text-align: center;
+        font-size: 1.3em;
+        line-height: 1.6;
+        margin: 0;
+    }
+
+    .line-description {
+        color: #204606;
+        font-style: italic;
+    }
+
+    .course-info h3 {
+        color: #204606;
+        margin-top: 0;
+        margin-bottom: 16px;
+        font-size: 1.5em;
+    }
+
+    .course-info p {
+        color: #204606;
+        line-height: 1.6;
+        margin: 0;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        padding: 15px;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+    }
+
+    th {
+        font-weight: 600;
+        color: white;
+    }
+
+    th:first-child, td:first-child {
+        background-color: #204606;
+        width: 40%;
+        color: white;
+    }
+
+    th:last-child, td:last-child {
+        background-color: #BABEBC;
+        /* color: #204606; */
+    }
+
+    tr:last-child td {
+        border-bottom: none;
+    }
+
+    tr:hover td:first-child {
+        background-color: #000000;
+    }
+
+    tr:hover td:last-child {
+        background-color: #B5D844;
+    }
+
+    .rating-S { background-color: #73FF73 !important; }
+    .rating-A { background-color: #B7FF73 !important; }
+    .rating-B { background-color: #FFFF73 !important; }
+    .rating-C { background-color: #FFDA74 !important; }
+    .rating-D { background-color: #FFB774 !important; }
+    .rating-F { background-color: #FF7474 !important; }
+
+    .hazard-1 { background-color: #73FF73 !important; }
+    .hazard-2 { background-color: #B7FF73 !important; }
+    .hazard-3 { background-color: #FFFF73 !important; }
+    .hazard-4 { background-color: #FFDA74 !important; }
+    .hazard-5 { background-color: #FFB774 !important; }
+
+    .price-1 { background-color: #73FF73 !important; }
+    .price-2 { background-color: #B7FF73 !important; }
+    .price-3 { background-color: #FFFF73 !important; }
+    .price-4 { background-color: #FFDA74 !important; }
+    .price-5 { background-color: #FF7474 !important; }
+
+    .handicap-1 { background-color: #FF7474 !important; }
+    .handicap-2 { background-color: #FF7474 !important; }
+    .handicap-3 { background-color: #FF7474 !important; }
+    .handicap-4 { background-color: #FFB774 !important; }
+    .handicap-5 { background-color: #FFB774 !important; }
+    .handicap-6 { background-color: #FFB774 !important; }
+    .handicap-7 { background-color: #FFDA74 !important; }
+    .handicap-8 { background-color: #FFDA74 !important; }
+    .handicap-9 { background-color: #FFDA74 !important; }
+    .handicap-10 { background-color: #FFFF73 !important; }
+    .handicap-11 { background-color: #FFFF73 !important; }
+    .handicap-12 { background-color: #FFFF73 !important; }
+    .handicap-13 { background-color: #B7FF73 !important; }
+    .handicap-14 { background-color: #B7FF73 !important; }
+    .handicap-15 { background-color: #B7FF73 !important; }
+    .handicap-16 { background-color: #73FF73 !important; }
+    .handicap-17 { background-color: #73FF73 !important; }
+    .handicap-18 { background-color: #73FF73 !important; }
+
+    .scoring-table {
+        width: 100%;
+        border-collapse: collapse;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-top: 30px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .scoring-table th {
+        padding: 12px 20px;
+        text-align: center;
+        font-weight: 600;
+        color: white;
+    }
+
+    .scoring-table td {
+        padding: 12px 20px;
+        text-align: center;
+        background-color: #F5F7F9;
+        color: #204606;
+        font-weight: 500;
+        border-bottom: 1px solid rgba(32, 70, 6, 0.1);
+    }
+
+    .scoring-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .scoring-table tr:hover td {
+        background-color: #E8F0E8;
+    }
+</style>
+{{ end }}
+
+{{ block "hole-by-hole" . }}
+    {{ if gt (len .Holes) 0 }}
+        <h2>Hole by Hole</h2>
+        <div class="hole-by-hole">
+            {{ range .Holes }}
+            <h4>#{{ .Number }} - Par {{ .Par }} - {{ .Yardage }}yds</h4>
+            <p>{{ .Description }}</p>
+        {{ end }}
+    </div>
+    {{ else }}
+        <br/>
+    {{ end }}
+{{ end }}
+
+{{ block "scoring-table" . }}
+{{ if gt (len .Scores) 0 }}
+    <table class="scoring-table">
+        <tr>
+            <th style="background-color: #000000;">Score</th>
+            <th style="background-color: #000000;">Handicap Index</th>
+        </tr>
+        {{ range .Scores }}
+        <tr>
+            <td>{{ .Score }}</td>
+            <td>{{ .Handicap }}</td>
+        </tr>
+        {{ end }}
+    </table>
+{{ else }}
+    <br/>
+{{ end }}
+{{ end }}

@@ -1,0 +1,68 @@
+{{ block "introduction" . }}
+<div class="introduction">
+    <h1 style="text-align: center;">Welcome to Course Management</h1>
+    <p style="text-align: center;">Getting the reads on courses to play is a pain in the ass. We'll give you The Line.</p>
+    <p style="text-align: center; font-style: italic;">Select a course from the sidebar to get started.</p>
+
+    <h2>How rankings work</h2>
+    <ul>
+        <li>
+            <strong>Price</strong> - The price of the course. Pricing ranges from $ to $$$$$.
+        </li>
+        <li>
+            <strong>Handicap Difficulty</strong> - The general difficulty of the course. 1-18 with 18 being the easiest.
+        </li>
+        <li>
+            <strong>Hazard Difficulty</strong> - How many sleeves of balls you will need to get through this one. 1-5.
+        </li>
+    </ul>
+    <h3>The rest of the rankings follow the S -> A -> B -> C -> D -> F tiering scale. With S being the best and F being the worst.</h3>
+    <div class="tier-display">
+        <div class="tier-box" style="background-color: #73FF73;">S</div>
+        <div class="tier-box" style="background-color: #B7FF73;">A</div>
+        <div class="tier-box" style="background-color: #FFFF73;">B</div>
+        <div class="tier-box" style="background-color: #FFDA74;">C</div>
+        <div class="tier-box" style="background-color: #FFB774;">D</div>
+        <div class="tier-box" style="background-color: #FF7474;">F</div>
+    </div>
+    <ul>
+        <li>
+            <strong>Merch</strong> - How good is the merch in the pro shop?
+        </li>
+        <li>
+            <strong>Condition</strong> - What shape was the course in?
+        </li>
+        <li>
+            <strong>Enjoyment Rating</strong> - How enjoyable is this course?
+        </li>
+        <li>
+            <strong>Vibe</strong> - How is the vibe at this course?
+        </li>
+        <li>
+            <strong>Range</strong> - How good is the range at this course?
+        </li>
+        <li>
+            <strong>Amenities</strong> - How good are the amenities at this course?
+        </li>
+        <li>
+            <strong>Turn Dog</strong> - What kind of glizzy are we working with here?
+        </li>
+    </ul>
+</div>
+
+<style>
+    .tier-display {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin: 20px 0;
+    }
+    .tier-box {
+        color: #204606;
+        padding: 15px 25px;
+        border-radius: 8px;
+        font-size: 1.5em;
+        font-weight: bold;
+    }
+</style>
+{{ end }}
