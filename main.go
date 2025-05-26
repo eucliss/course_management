@@ -5,7 +5,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 
 	"github.com/joho/godotenv"
@@ -92,7 +91,6 @@ func init() {
 
 func main() {
 	// Get port from environment variable, default to 42069 if not set
-	env := os.Getenv("ENV")
 
 	courses := []Course{
 		{
