@@ -1,0 +1,152 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Golf Course",
+    "description": "A schema for golf course data including rankings, holes, and scores",
+    "type": "object",
+    "required": ["name", "description", "overallRating", "ranks"],
+    "properties": {
+      "id": {
+        "type": "integer",
+        "description": "The unique identifier for the course"
+      },
+      "name": {
+        "type": "string",
+        "description": "The name of the golf course"
+      },
+      "description": {
+        "type": "string",
+        "description": "A brief description of the course"
+      },
+      "overallRating": {
+        "type": "string",
+        "enum": ["S", "A", "B", "C", "D", "F"],
+        "description": "The overall rating of the course"
+      },
+      "ranks": {
+        "type": "object",
+        "required": [
+          "price",
+          "handicapDifficulty",
+          "hazardDifficulty",
+          "condition",
+          "merch",
+          "enjoymentRating",
+          "vibe",
+          "range",
+          "amenities",
+          "glizzies"
+        ],
+        "properties": {
+          "price": {
+            "type": "string",
+            "pattern": "^\\${1,4}$",
+            "description": "Price rating using $ symbols ($ to $$$$)"
+          },
+          "handicapDifficulty": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20,
+            "description": "Handicap difficulty rating (0-20)"
+          },
+          "hazardDifficulty": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5,
+            "description": "Hazard difficulty rating (0-5)"
+          },
+          "condition": {
+            "type": "string",
+            "enum": ["S", "A", "B", "C", "D", "F"],
+            "description": "Course condition rating"
+          },
+          "merch": {
+            "type": "string",
+            "enum": ["S", "A", "B", "C", "D", "F"],
+            "description": "Merchandise quality rating"
+          },
+          "enjoymentRating": {
+            "type": "string",
+            "enum": ["S", "A", "B", "C", "D", "F"],
+            "description": "Overall enjoyment rating"
+          },
+          "vibe": {
+            "type": "string",
+            "enum": ["S", "A", "B", "C", "D", "F"],
+            "description": "Course atmosphere rating"
+          },
+          "range": {
+            "type": "string",
+            "enum": ["S", "A", "B", "C", "D", "F"],
+            "description": "Driving range quality rating"
+          },
+          "amenities": {
+            "type": "string",
+            "enum": ["S", "A", "B", "C", "D", "F"],
+            "description": "Course amenities rating"
+          },
+          "glizzies": {
+            "type": "string",
+            "enum": ["S", "A", "B", "C", "D", "F"],
+            "description": "Hot dog quality rating"
+          }
+        }
+      },
+      "review": {
+        "type": "string",
+        "description": "Detailed review of the course"
+      },
+      "holes": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["number", "par", "yardage"],
+          "properties": {
+            "number": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 18,
+              "description": "Hole number"
+            },
+            "par": {
+              "type": "integer",
+              "minimum": 3,
+              "maximum": 6,
+              "description": "Par for the hole"
+            },
+            "yardage": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Length of the hole in yards"
+            },
+            "description": {
+              "type": "string",
+              "description": "Description of the hole"
+            }
+          }
+        },
+        "maxItems": 18,
+        "description": "Array of holes on the course"
+      },
+      "scores": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["score", "handicap"],
+          "properties": {
+            "score": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Total score for the round"
+            },
+            "handicap": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 54,
+              "description": "Player's handicap for the round"
+            }
+          }
+        },
+        "description": "Array of recorded scores on the course"
+      }
+    }
+  } 

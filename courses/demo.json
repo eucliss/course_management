@@ -1,0 +1,143 @@
+{
+  "id": 1,
+  "name": "Augusta National Golf Club",
+  "description": "Home of The Masters and one of the most prestigious golf clubs in the world.",
+  "overallRating": "S",
+  "ranks": {
+    "price": "$$$$",
+    "handicapDifficulty": 18,
+    "hazardDifficulty": 5,
+    "condition": "S",
+    "merch": "S",
+    "enjoymentRating": "S",
+    "vibe": "S",
+    "range": "S",
+    "amenities": "S",
+    "glizzies": "S"
+  },
+  "review": "Augusta National is the pinnacle of golf course excellence. The pristine fairways and lightning-fast greens are maintained to perfection. Amen Corner (holes 11-13) offers one of the most challenging and beautiful stretches in golf. The azaleas in bloom during The Masters create an unmatched aesthetic. The famous pimento cheese sandwiches and immaculate facilities add to the mystique. Walking these hallowed grounds, you can feel the history of the game - from Tiger's chip-in on 16 to Jack's charge in '86. The course demands precision, strategy, and nerves of steel, especially around the treacherous greens.",
+  "holes": [
+    {
+      "number": 1,
+      "par": 4,
+      "yardage": 445,
+      "description": "Tea Olive - A challenging opener with a deep bunker guarding the right side of the fairway and a severely sloped green."
+    },
+    {
+      "number": 2,
+      "par": 5,
+      "yardage": 575,
+      "description": "Pink Dogwood - A downhill par 5 with bunkers protecting the green, offering a risk-reward second shot."
+    },
+    {
+      "number": 3,
+      "par": 4,
+      "yardage": 350,
+      "description": "Flowering Peach - A short par 4 with a severely elevated green surrounded by deep bunkers."
+    },
+    {
+      "number": 4,
+      "par": 3,
+      "yardage": 240,
+      "description": "Flowering Crab Apple - A lengthy par 3 with a deep green and bunkers front and back."
+    },
+    {
+      "number": 5,
+      "par": 4,
+      "yardage": 495,
+      "description": "Magnolia - A long par 4 with fairway bunkers and a green that slopes from back to front."
+    },
+    {
+      "number": 6,
+      "par": 3,
+      "yardage": 180,
+      "description": "Juniper - A downhill par 3 to an undulating green with severe slopes."
+    },
+    {
+      "number": 7,
+      "par": 4,
+      "yardage": 450,
+      "description": "Pampas - A tight par 4 with trees lining both sides and a elevated, well-bunkered green."
+    },
+    {
+      "number": 8,
+      "par": 5,
+      "yardage": 570,
+      "description": "Yellow Jasmine - An uphill par 5 with a fairway that slopes right to left."
+    },
+    {
+      "number": 9,
+      "par": 4,
+      "yardage": 460,
+      "description": "Carolina Cherry - A downhill par 4 with a green that slopes severely from back to front."
+    },
+    {
+      "number": 10,
+      "par": 4,
+      "yardage": 495,
+      "description": "Camellia - A dramatic downhill par 4 with a fairway that doglegs left."
+    },
+    {
+      "number": 11,
+      "par": 4,
+      "yardage": 505,
+      "description": "White Dogwood - The start of Amen Corner, with a pond guarding the left side of the green."
+    },
+    {
+      "number": 12,
+      "par": 3,
+      "yardage": 155,
+      "description": "Golden Bell - The famous par 3 over Rae's Creek with the Sunday pin position behind the right bunker."
+    },
+    {
+      "number": 13,
+      "par": 5,
+      "yardage": 510,
+      "description": "Azalea - A sweeping par 5 that doglegs left around Rae's Creek."
+    },
+    {
+      "number": 14,
+      "par": 4,
+      "yardage": 440,
+      "description": "Chinese Fir - A straight par 4 with one of the most severely contoured greens on the course."
+    },
+    {
+      "number": 15,
+      "par": 5,
+      "yardage": 530,
+      "description": "Firethorn - A reachable par 5 with a pond in front of the green."
+    },
+    {
+      "number": 16,
+      "par": 3,
+      "yardage": 170,
+      "description": "Redbud - A beautiful par 3 over water to a large green with significant contours."
+    },
+    {
+      "number": 17,
+      "par": 4,
+      "yardage": 440,
+      "description": "Nandina - A uphill par 4 with the famous Eisenhower Tree (now removed) once guarding the left side."
+    },
+    {
+      "number": 18,
+      "par": 4,
+      "yardage": 465,
+      "description": "Holly - An uphill finishing hole with bunkers guarding both sides of the fairway."
+    }
+  ],
+  "scores": [
+    {
+      "score": 75,
+      "handicap": 2.1
+    },
+    {
+      "score": 73,
+      "handicap": 2.1
+    },
+    {
+      "score": 77,
+      "handicap": 2.1
+    }
+  ]
+} 
