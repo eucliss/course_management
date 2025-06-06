@@ -189,7 +189,7 @@ Vibe feels local, but slightly elevated. Its best to look nice here and have you
 		return c.Render(http.StatusOK, "course", courses[idInt])
 	})
 
-	e.Logger.Fatal(e.Start(":" + "80"))
+	e.Logger.Fatal(e.Start(":" + "8080"))
 }
 
 // e.GET("/blocks", func(c echo.Context) error {

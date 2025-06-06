@@ -1,0 +1,135 @@
+{
+  "id": 2,
+  "name": "Lakeside Country Club",
+  "description": "A beautiful hillside course in the finger lakes with a great views and a local vibe.",
+  "overallRating": "B",
+  "ranks": {
+    "price": "$$",
+    "handicapDifficulty": 12,
+    "hazardDifficulty": 2,
+    "condition": "A",
+    "merch": "C",
+    "enjoymentRating": "B",
+    "vibe": "B",
+    "range": "B",
+    "amenities": "B",
+    "glizzies": "B"
+  },
+  "review": "Lakeside country club is a great course to play if you're in the finger lakes area. The course is right off of Keuka Lake is a short drive to the local town of Penn Yan. The course is on the hillside so a decent amount of the holes are moving up or down the hill, and the others are up on top of the hill near the vineyards. The course has some grape vines up on the back nine which they use to create some wines for their members each year which is awesome. This course is not my favorite in the area, but its definitely the nicest on Keuka Lake. There is a creek on the course on the back nine and a little pond on the left side of number 12, but other than that there is no water. There is plenty of other opportunities to lose a ball though if you cant keep it in play, some holes are a little tight with trees and woods on the edges. Overall this isnt the hardest course, but the hills can make it more difficult if you struggle going up them.",
+  "holes": [
+    {
+      "number": 1,
+      "par": 5,
+      "yardage": 490,
+      "description": "The opener at Lakeside is straight up the hill to a flat round green sitting on top of a ridge at the end of the fairway. All down the left and right side of this hole are trees meaning if you cant keep your shots in the middle you will have to hit one back towards the fairway if you dont have an angle. This is a pretty tough starting hole and sets the stage for going up and down the hill throughout the rest of the course."
+    },
+    {
+      "number": 2,
+      "par": 4,
+      "yardage": 387,
+      "description": "The second hole starts overlooking the top of the creek that runs down the hillside. The tee box on this hole gives the illusion of a really tight track, but it opens up pretty significantly after the initial window of the trees. Going too far left off the tee means you could be on the wrong green, too far right means you're in the farmland. The green lays downhill from the tee box and is elongated making a long entry shot easier. Going right means you could be in the bunker or have a chip up onto the elevated green. A bad tee shot can be recovered, but a bad approach shot may mean you rack up a few too manny strokes trying to get to the putting surface."
+    },
+    {
+      "number": 3,
+      "par": 4,
+      "yardage": 399,
+      "description": "The third tee box at lakeside looks straight back down towards the lake. From the tees, you cant see anything besides the tops of trees on the right and left - almost any tee shot will keep you in play as it opens up significantly as you move down the hole. The green is similar to hole 2 where it is a flat large circular green that the fairway rolls right onto. Going left or right means chipping up to the putting surface which can add some strokes."
+    },
+    {
+      "number": 4,
+      "par": 4,
+      "yardage": 345,
+      "description": "As you would expect at lakeside, hole 4 goes directly back up the hole. Its significantly shorter than the first hole and leads up to a flat green with some small hills on the back to act as a backboard. A short drive here means you may be looking at 2 more shots into the green."
+    },
+    {
+      "number": 5,
+      "par": 3,
+      "yardage": 144,
+      "description": "The first par 3 at lakeside is a short flat hole with a slightly crowned green and a defending bunker on the left side. The green on this hole is quite large but I always find myself on the right meaning a slightly up hill putt as everything rolls towards the lake. Plenty of room left and right on this hole to spray, going over means landing in the small hill backboard."
+    },
+    {
+      "number": 6,
+      "par": 5,
+      "yardage": 439,
+      "description": "The sixth hole at lakeside is one of the harder holes on the track mainly due to its tee shot. The tee box sits at the top of the hillside and looks directly at a tree down below. The hole itself is a dogleg right where you need to hit the ball directly into the corner of the dog leg on the left towards the first hole. Going too far right means you're in the creek 20 feet below the hole, and going too far left means you're on the first holes fairway. Its a tricky shot, but once you find the fairway its straight down into a large green - putting the ball on the back means it will probably roll off towards the lake."
+    },
+    {
+      "number": 7,
+      "par": 4,
+      "yardage": 275,
+      "description": "Number 7 is right back up the hill towards Hole 6 tee box. The hole itself is a short par 4 so its very possible to hit your driver right up to the green. The putting surface is up about 15 feet off the fairway so a chip is definitely necessary. Make sure to get the ball well on the green cause it all slopes back towards the lake."
+    },
+    {
+      "number": 8,
+      "par": 4,
+      "yardage": 378,
+      "description": "The tee box for hole number 8 is way below the putting surface of 7. This hole has a similar tee box feel to hole 2 where you need to thread the needle back towards the lake. Once you get the ball out there the whole opens up significantly and the putting surface is a large circular green down towards the lake."
+    },
+    {
+      "number": 9,
+      "par": 3,
+      "yardage": 177,
+      "description": "The last hole on the front nine is a longer par 4 that looks down towards the lake. The green and surroudning area is pretty open unless you go too far right. Nothing too crazy about this one but great to close out the front nine with a par 3."
+    },
+    {
+      "number": 10,
+      "par": 4,
+      "yardage": 327,
+      "description": "The start of the back nine heads right back up the hill again. This hole is a slight dogleg right with a good tee shot giving you a chance at the elevated green. A tee shot too far right and there will be trees blocking your entrance. Ensuring you make it up to the green is the most important aspect of this hole as there are mean defending bunkers short of the green and behind it is a small hill backboard."
+    },
+    {
+      "number": 11,
+      "par": 4,
+      "yardage": 346,
+      "description": "The par 4 number 11 is also a dogleg right but longer and flatter. The tee shot is straight forward slightly uphill while the green sits flat at the end of the hole. Not much here, but starting off right means a lost ball or a terrible angle around trees into the green."
+    },
+    {
+      "number": 12,
+      "par": 5,
+      "yardage": 482,
+      "description": "This is one of my favorite holes at lakeside. The tee box sits below the fairway which is uphill and crested right to left. Once you're up there the rest of the hole bends right to left with the green sitting slightly behind a small pond. A good tee shot might make it in 2, otherwise you will need to lay up short of the green."
+    },
+    {
+      "number": 13,
+      "par": 5,
+      "yardage": 486,
+      "description": "Back-to-back par 5s here with this one being a straight shot up until the lat 100 yards where it curves slightly to the right. Some defending bunkers means the opening to the green is quite small and a tree on the right side of the fairway means its best to stay left."
+    },
+    {
+      "number": 14,
+      "par": 3,
+      "yardage": 158,
+      "description": "The hardest par 3 on the course - the green is a crowned green which runs entirely back to front. Anywhere off the green means a chip up onto the slanted putting surface and going past the pin means you're putting down the hill."
+    },
+    {
+      "number": 15,
+      "par": 4,
+      "yardage": 393,
+      "description": "The 15th hole is another signature hole on the course weaving through vineyards towards the green. Its a dogleg left with some trees sitting on the inside of the dogleg. Best shot is right of the trees which will give you a long shot into the green which has defending bunkers on the front left. The putting surface is oval shaped running sideways so a lay up here would not be terrible."
+    },
+    {
+      "number": 16,
+      "par": 4,
+      "yardage": 441,
+      "description": "The 16th at Lakeside is the hardest hole on the course. This is a tight dogleg right with the midway point being a huge gulley that stretches from the left side of the fairway to the bottom of the green. Landing in this gulley towards the green means a very difficult up and down. The second shot on this hole is also very long into a small green so its easily the hardest hole on the course."
+    },
+    {
+      "number": 17,
+      "par": 3,
+      "yardage": 137,
+      "description": "This short par 3 goes directly across the gulley that we saw in the last hole. This is just a classic, great hole, open green with no room on the right. Perfect start to the last 2 holes after a disaster on 16."
+    },
+    {
+      "number": 18,
+      "par": 4,
+      "yardage": 385,
+      "description": "One of my favortie ending holes in golf. The tee box to 18 is on top of the hillside that we've been climbing up and down all day. Looking back towards the clubhouse with a green super far down. You can hit this thing as hard as possible and nuke one down to 100 yards in, its extremely satisfying and always feels good being on in 2. The green itself slopes back towards the fairway and away from the lake, so once you're on, its not easy getting to the pin."
+    }
+  ],
+  "scores": [
+    {
+      "score": 93,
+      "handicap": 16
+    }
+  ]
+} 
