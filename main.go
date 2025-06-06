@@ -1,11 +1,16 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"html/template"
 	"io"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
@@ -89,79 +94,62 @@ func init() {
 	}
 }
 
+func loadCourses() ([]Course, error) {
+	var courses []Course
+
+	// Read all files from courses directory
+	files, err := os.ReadDir("courses")
+	if err != nil {
+		return nil, fmt.Errorf("failed to read courses directory: %v", err)
+	}
+
+	courseID := 0
+	// Load each JSON file
+	for _, file := range files {
+		if !strings.HasSuffix(file.Name(), ".json") {
+			continue
+		}
+
+		// Skip schema files
+		if strings.Contains(file.Name(), "schema") {
+			continue
+		}
+
+		data, err := os.ReadFile(filepath.Join("courses", file.Name()))
+		if err != nil {
+			log.Printf("Warning: failed to read course file %s: %v", file.Name(), err)
+			continue
+		}
+
+		var course Course
+		if err := json.Unmarshal(data, &course); err != nil {
+			log.Printf("Warning: failed to parse course file %s: %v", file.Name(), err)
+			continue
+		}
+
+		// Assign unique ID
+		course.ID = courseID
+		courseID++
+
+		courses = append(courses, course)
+	}
+
+	if len(courses) == 0 {
+		return nil, fmt.Errorf("no course files found in courses directory")
+	}
+
+	return courses, nil
+}
+
 func main() {
-	// Get port from environment variable, default to 42069 if not set
+	// Get port from environment variable, default to 8080 if not set
 
-	courses := []Course{
-		{
-			Name:          "Bath Country Club",
-			ID:            0,
-			Description:   "I'm parring Bath this year I can feel it.",
-			OverallRating: "S",
-			Ranks: Ranking{
-				Price:              "$",
-				HandicapDifficulty: 15,
-				HazardDifficulty:   2,
-				Condition:          "B",
-				Merch:              "B",
-				EnjoymentRating:    "A",
-				Vibe:               "S",
-				Range:              "C",
-				Amenities:          "B",
-				Glizzies:           "F",
-			},
-			Review: `The 1779 location of the Battle of Stono ferry - you'll probably have a couple fallen soldiers (balls) as well while you're playing around the river and all the ponds on the grounds. Pretty standard front nine through the neighborhoods and around the horse stable opens up to the signature back nine where the cannon and the river sit waiting. Having a few bad shots around the river and you may be looking at a 3 sleeve round - dont get too close to the ponds while looking for balls, the alligators might be lurking. Putting surface is pretty standard shapes with bermudagrass - one more slap in the face on 18 with the newer island green, hopefully you have a few more balls left to lose in this one last water feature. Sand beaches were nice and fluffy after the morning moisture burned off, some are weirdly shaped depending on the hole which adds a little spice to the mix.
-Generally a really pleasant experience and the course is well maintained. 
-
-Vibe feels local, but slightly elevated. Its best to look nice here and have your manners ready - Stono Ferry feels like a respectable club and they're definitely trying. Its semi-private though so the last group I was with didnt hesitate to rip 100 balls into the water and crack a few beers on hole 3 at 8:30 in the morning on a Thursday.`,
-			Holes: []Hole{
-				{Number: 1, Par: 4, Yardage: 350, Description: "This is a great hole."},
-				{Number: 2, Par: 3, Yardage: 150, Description: "This is a great hole."},
-				{Number: 3, Par: 5, Yardage: 450, Description: "This is a great hole."},
-			},
-			Scores: []Score{
-				{Score: 72, Handicap: 6.4},
-				{Score: 73, Handicap: 6.4},
-			},
-		},
-		{
-			Name:          "Kiawah Island Ocean Course",
-			ID:            1,
-			Description:   "That wind is no joke.",
-			OverallRating: "A",
-			Ranks: Ranking{
-				Price:              "$$$$",
-				HandicapDifficulty: 18,
-				HazardDifficulty:   5,
-				Condition:          "A",
-				Merch:              "S",
-				EnjoymentRating:    "S",
-				Vibe:               "S",
-				Range:              "S",
-				Amenities:          "S",
-				Glizzies:           "A",
-			},
-			Review: `The wind is no joke here.`,
-		},
-		{
-			Name:          "Pinehurst No. 2",
-			ID:            2,
-			Description:   "Rolled off again.",
-			OverallRating: "A",
-			Ranks: Ranking{
-				Price:              "$$$",
-				Condition:          "A",
-				HandicapDifficulty: 17,
-				HazardDifficulty:   5,
-				Merch:              "S",
-				EnjoymentRating:    "S",
-				Vibe:               "S",
-				Range:              "S",
-				Amenities:          "S",
-				Glizzies:           "S",
-			},
-			Review: `The wind is no joke here.`,
-		},
+	// Load courses from files
+	courses, err := loadCourses()
+	if err != nil {
+		log.Printf("Warning: failed to load courses: %v", err)
+		// Initialize with empty courses array if loading fails
+		courses = []Course{}
 	}
 
 	e := echo.New()
