@@ -1,0 +1,823 @@
+{{ block "create-course" . }}
+<div class="course-detail">
+    <div class="header-section">
+        <div class="title-and-line">
+            <h1 contenteditable="true" id="course-name" data-placeholder="Enter Course Name">New Golf Course</h1>
+            <div class="line-section">
+                <span class="line-description" contenteditable="true" id="course-description" data-placeholder="Enter course description">Click to add description</span>
+            </div>
+        </div>
+        <div class="tier-box">
+            <select id="overall-rating" class="rating-value-select">
+                <option value="">?</option>
+                <option value="S">S</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+                <option value="F">F</option>
+            </select>
+            <div class="tier-label">TIER</div>
+        </div>
+    </div>
+    
+    <div class="course-content">
+        <div class="course-table">
+            <table>
+                <tr>
+                    <th style="background-color: #000000;">Category</th>
+                    <th style="background-color: #000000;">Rating</th>
+                </tr>
+                <tr>
+                    <td>Price</td>
+                    <td class="editable-cell">
+                        <select id="price" class="rating-select">
+                            <option value="">Select</option>
+                            <option value="$">$</option>
+                            <option value="$$">$$</option>
+                            <option value="$$$">$$$</option>
+                            <option value="$$$$">$$$$</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Handicap Difficulty</td>
+                    <td class="editable-cell">
+                        <input type="number" id="handicap-difficulty" min="0" max="20" placeholder="0-20" class="number-input">
+                        <span class="unit-text">handicap</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Hazard Difficulty</td>
+                    <td class="editable-cell">
+                        <input type="number" id="hazard-difficulty" min="0" max="5" placeholder="0-5" class="number-input">
+                        <span class="unit-text">Sleeve(s)</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Merch</td>
+                    <td class="editable-cell">
+                        <select id="merch" class="rating-select">
+                            <option value="">Select</option>
+                            <option value="S">S</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                            <option value="F">F</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Condition</td>
+                    <td class="editable-cell">
+                        <select id="condition" class="rating-select">
+                            <option value="">Select</option>
+                            <option value="S">S</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                            <option value="F">F</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Enjoyment Rating</td>
+                    <td class="editable-cell">
+                        <select id="enjoyment-rating" class="rating-select">
+                            <option value="">Select</option>
+                            <option value="S">S</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                            <option value="F">F</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Vibe</td>
+                    <td class="editable-cell">
+                        <select id="vibe" class="rating-select">
+                            <option value="">Select</option>
+                            <option value="S">S</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                            <option value="F">F</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Range</td>
+                    <td class="editable-cell">
+                        <select id="range" class="rating-select">
+                            <option value="">Select</option>
+                            <option value="S">S</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                            <option value="F">F</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Amenities</td>
+                    <td class="editable-cell">
+                        <select id="amenities" class="rating-select">
+                            <option value="">Select</option>
+                            <option value="S">S</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                            <option value="F">F</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Turn Dog</td>
+                    <td class="editable-cell">
+                        <select id="glizzies" class="rating-select">
+                            <option value="">Select</option>
+                            <option value="S">S</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                            <option value="F">F</option>
+                        </select>
+                    </td>
+                </tr>
+            </table>
+            
+            <div class="scoring-section">
+                <h3>Scores (Optional)</h3>
+                <div id="scores-container">
+                    <!-- Scores will be added dynamically -->
+                </div>
+                <button type="button" class="add-score-btn" onclick="addScore()">+ Add Score</button>
+            </div>
+        </div>
+        
+        <div class="course-info">
+            <h2>Course Review</h2>
+            <div class="review-section">
+                <textarea id="course-review" placeholder="Write a detailed review of the course including highlights, challenges, and overall experience" class="review-textarea"></textarea>
+            </div>
+            
+            <br style="clear: both; margin-bottom: 20px;"/>
+            
+            <div class="hole-by-hole-section">
+                <h2>Hole by Hole</h2>
+                <div id="holes-container">
+                    <!-- Holes will be added dynamically -->
+                </div>
+                <button type="button" class="add-hole-btn" onclick="addHole()">+ Add Hole</button>
+            </div>
+            
+            <div class="save-section">
+                <button type="button" class="save-course-btn" onclick="saveCourse()">Save Course</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .course-detail {
+        padding: 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .header-section {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 30px;
+        margin-bottom: 40px;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .title-and-line {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        margin-right: 20px;
+    }
+
+    .course-detail h1 {
+        text-align: center;
+        color: #204606;
+        font-size: 3.5em;
+        font-weight: bold;
+        margin: 0;
+        border: 2px dashed transparent;
+        padding: 10px;
+        border-radius: 8px;
+        min-height: 1.2em;
+        outline: none;
+        cursor: text;
+    }
+
+    .course-detail h1:hover, .course-detail h1:focus {
+        border-color: #204606;
+        background-color: rgba(32, 70, 6, 0.05);
+    }
+
+    .course-detail h1:empty:before {
+        content: attr(data-placeholder);
+        color: #999;
+        font-style: italic;
+    }
+
+    .course-content {
+        display: flex;
+        gap: 40px;
+    }
+
+    .course-table {
+        flex: 0 0 400px;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .course-info {
+        flex: 1;
+        padding: 20px;
+        background-color: #B5D844;
+        border-radius: 8px;
+        border: 1px solid #E5E7EB;
+    }
+
+    .tier-box {
+        background-color: #204606;
+        color: white;
+        padding: 15px 30px;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        flex-shrink: 0;
+    }
+
+    .rating-value-select {
+        font-size: 3em;
+        font-weight: bold;
+        line-height: 1;
+        background: transparent;
+        border: none;
+        color: white;
+        text-align: center;
+        outline: none;
+        cursor: pointer;
+        width: 80px;
+    }
+
+    .rating-value-select option {
+        background-color: #204606;
+        color: white;
+    }
+
+    .tier-label {
+        font-size: 0.8em;
+        font-weight: 500;
+        letter-spacing: 1px;
+    }
+
+    .line-section {
+        text-align: center;
+        font-size: 1.3em;
+        line-height: 1.6;
+        margin: 0;
+    }
+
+    .line-description {
+        color: #204606;
+        font-style: italic;
+        border: 2px dashed transparent;
+        padding: 8px;
+        border-radius: 4px;
+        outline: none;
+        cursor: text;
+        display: inline-block;
+        min-width: 200px;
+        min-height: 1.2em;
+    }
+
+    .line-description:hover, .line-description:focus {
+        border-color: #204606;
+        background-color: rgba(32, 70, 6, 0.05);
+    }
+
+    .line-description:empty:before {
+        content: attr(data-placeholder);
+        color: #999;
+        font-style: italic;
+    }
+
+    .course-info h2 {
+        color: #204606;
+        margin-top: 0;
+        margin-bottom: 16px;
+        font-size: 1.5em;
+    }
+
+    .course-info h3 {
+        color: #204606;
+        margin-top: 20px;
+        margin-bottom: 16px;
+        font-size: 1.3em;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        padding: 15px;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+    }
+
+    th {
+        font-weight: 600;
+        color: white;
+    }
+
+    th:first-child, td:first-child {
+        background-color: #204606;
+        width: 40%;
+        color: white;
+    }
+
+    th:last-child, td:last-child {
+        background-color: #BABEBC;
+    }
+
+    tr:last-child td {
+        border-bottom: none;
+    }
+
+    tr:hover td:first-child {
+        background-color: #000000;
+    }
+
+    tr:hover td:last-child {
+        background-color: #B5D844;
+    }
+
+    .editable-cell {
+        position: relative;
+    }
+
+    .rating-select, .number-input {
+        background: transparent;
+        border: 1px solid transparent;
+        outline: none;
+        font-size: 14px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        width: 80px;
+    }
+
+    .rating-select:hover, .rating-select:focus,
+    .number-input:hover, .number-input:focus {
+        border-color: #204606;
+        background-color: rgba(255, 255, 255, 0.9);
+    }
+
+    .unit-text {
+        margin-left: 8px;
+        font-size: 14px;
+        color: #666;
+    }
+
+    .review-textarea {
+        width: 100%;
+        min-height: 120px;
+        padding: 15px;
+        border: 2px dashed #204606;
+        border-radius: 8px;
+        background-color: rgba(255, 255, 255, 0.7);
+        color: #204606;
+        font-size: 14px;
+        line-height: 1.6;
+        resize: vertical;
+        outline: none;
+        font-family: inherit;
+        box-sizing: border-box;
+    }
+
+    .review-textarea:focus {
+        border-style: solid;
+        background-color: rgba(255, 255, 255, 0.9);
+    }
+
+    .hole-by-hole-section {
+        margin-top: 30px;
+    }
+
+    .hole-item {
+        background-color: rgba(255, 255, 255, 0.7);
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        border: 1px solid rgba(32, 70, 6, 0.2);
+    }
+
+    .hole-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+    }
+
+    .hole-header h4 {
+        color: #204606;
+        margin: 0;
+        font-size: 1.2em;
+        min-width: 80px;
+    }
+
+    .hole-input {
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 6px 10px;
+        font-size: 14px;
+        outline: none;
+    }
+
+    .hole-input:focus {
+        border-color: #204606;
+    }
+
+    .hole-description {
+        width: 100%;
+        min-height: 60px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        resize: vertical;
+        outline: none;
+        font-family: inherit;
+        box-sizing: border-box;
+    }
+
+    .hole-description:focus {
+        border-color: #204606;
+    }
+
+    .add-hole-btn, .add-score-btn, .save-course-btn {
+        background-color: #204606;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: background-color 0.2s;
+        margin-top: 10px;
+    }
+
+    .add-hole-btn:hover, .add-score-btn:hover {
+        background-color: #153505;
+    }
+
+    .save-course-btn {
+        background-color: #28a745;
+        font-size: 18px;
+        padding: 15px 30px;
+        margin-top: 30px;
+        width: 100%;
+    }
+
+    .save-course-btn:hover {
+        background-color: #218838;
+    }
+
+    .remove-btn {
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        padding: 4px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        margin-left: auto;
+    }
+
+    .remove-btn:hover {
+        background-color: #c82333;
+    }
+
+    .scoring-section {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 2px solid #204606;
+    }
+
+    .score-item {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        padding: 10px;
+        background-color: #F5F7F9;
+        border-radius: 4px;
+        margin-bottom: 10px;
+    }
+
+    .score-input {
+        width: 80px;
+        padding: 6px 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        outline: none;
+    }
+
+    .score-input:focus {
+        border-color: #204606;
+    }
+
+    .save-section {
+        margin-top: 40px;
+        padding-top: 20px;
+        border-top: 2px solid #204606;
+    }
+
+    /* Color classes for dynamic updates */
+    .rating-S { background-color: #73FF73 !important; }
+    .rating-A { background-color: #B7FF73 !important; }
+    .rating-B { background-color: #FFFF73 !important; }
+    .rating-C { background-color: #FFDA74 !important; }
+    .rating-D { background-color: #FFB774 !important; }
+    .rating-F { background-color: #FF7474 !important; }
+
+    .hazard-1 { background-color: #73FF73 !important; }
+    .hazard-2 { background-color: #B7FF73 !important; }
+    .hazard-3 { background-color: #FFFF73 !important; }
+    .hazard-4 { background-color: #FFDA74 !important; }
+    .hazard-5 { background-color: #FFB774 !important; }
+
+    .price-1 { background-color: #73FF73 !important; }
+    .price-2 { background-color: #B7FF73 !important; }
+    .price-3 { background-color: #FFFF73 !important; }
+    .price-4 { background-color: #FFDA74 !important; }
+
+    .handicap-1, .handicap-2, .handicap-3 { background-color: #FF7474 !important; }
+    .handicap-4, .handicap-5, .handicap-6 { background-color: #FFB774 !important; }
+    .handicap-7, .handicap-8, .handicap-9 { background-color: #FFDA74 !important; }
+    .handicap-10, .handicap-11, .handicap-12 { background-color: #FFFF73 !important; }
+    .handicap-13, .handicap-14, .handicap-15 { background-color: #B7FF73 !important; }
+    .handicap-16, .handicap-17, .handicap-18, .handicap-19, .handicap-20 { background-color: #73FF73 !important; }
+</style>
+
+<script>
+    let holeCount = 0;
+    let scoreCount = 0;
+
+    // Update cell colors based on values
+    function updateCellColor(selectElement) {
+        const value = selectElement.value;
+        const cell = selectElement.closest('td');
+        
+        // Remove existing color classes
+        cell.className = cell.className.replace(/rating-[SABCDF]|price-[1-4]|hazard-[1-5]|handicap-[0-20]/g, '');
+        
+        if (value) {
+            if (selectElement.id === 'price') {
+                cell.classList.add('price-' + value.length);
+            } else {
+                cell.classList.add('rating-' + value);
+            }
+        }
+    }
+
+    function updateHandicapColor() {
+        const input = document.getElementById('handicap-difficulty');
+        const cell = input.closest('td');
+        const value = parseInt(input.value);
+        
+        // Remove existing handicap classes
+        cell.className = cell.className.replace(/handicap-[0-20]/g, '');
+        
+        if (value >= 0 && value <= 20) {
+            cell.classList.add('handicap-' + value);
+        }
+    }
+
+    function updateHazardColor() {
+        const input = document.getElementById('hazard-difficulty');
+        const cell = input.closest('td');
+        const value = parseInt(input.value);
+        
+        // Remove existing hazard classes
+        cell.className = cell.className.replace(/hazard-[1-5]/g, '');
+        
+        if (value >= 1 && value <= 5) {
+            cell.classList.add('hazard-' + value);
+        }
+    }
+
+    function addHole() {
+        if (holeCount >= 18) {
+            alert('Maximum of 18 holes allowed');
+            return;
+        }
+        
+        holeCount++;
+        const holesContainer = document.getElementById('holes-container');
+        const holeDiv = document.createElement('div');
+        holeDiv.className = 'hole-item';
+        holeDiv.innerHTML = `
+            <div class="hole-header">
+                <h4>#${holeCount}</h4>
+                <label>Par: <select class="hole-input" data-hole-index="${holeCount-1}" data-field="par" required>
+                    <option value="">Select</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                </select></label>
+                <label>Yardage: <input type="number" class="hole-input" data-hole-index="${holeCount-1}" data-field="yardage" placeholder="Yardage" min="0" required></label>
+                <button type="button" class="remove-btn" onclick="removeHole(this)">Remove</button>
+            </div>
+            <textarea class="hole-description" data-hole-index="${holeCount-1}" data-field="description" placeholder="Description of the hole layout, hazards, and strategy"></textarea>
+        `;
+        holesContainer.appendChild(holeDiv);
+    }
+
+    function removeHole(button) {
+        const holeItem = button.closest('.hole-item');
+        holeItem.remove();
+        renumberHoles();
+    }
+
+    function renumberHoles() {
+        const holes = document.querySelectorAll('.hole-item');
+        holes.forEach((hole, index) => {
+            const holeNumber = index + 1;
+            hole.querySelector('h4').textContent = `#${holeNumber}`;
+            
+            // Update data attributes
+            const inputs = hole.querySelectorAll('[data-hole-index]');
+            inputs.forEach(input => {
+                input.setAttribute('data-hole-index', index);
+            });
+        });
+        holeCount = holes.length;
+    }
+
+    function addScore() {
+        scoreCount++;
+        const scoresContainer = document.getElementById('scores-container');
+        const scoreDiv = document.createElement('div');
+        scoreDiv.className = 'score-item';
+        scoreDiv.innerHTML = `
+            <label>Score: <input type="number" class="score-input" data-score-index="${scoreCount-1}" data-field="score" placeholder="Score" min="0" required></label>
+            <label>Handicap: <input type="number" class="score-input" data-score-index="${scoreCount-1}" data-field="handicap" placeholder="0.0" min="0" max="54" step="0.1" required></label>
+            <button type="button" class="remove-btn" onclick="removeScore(this)">Remove</button>
+        `;
+        scoresContainer.appendChild(scoreDiv);
+    }
+
+    function removeScore(button) {
+        const scoreItem = button.closest('.score-item');
+        scoreItem.remove();
+        renumberScores();
+    }
+
+    function renumberScores() {
+        const scores = document.querySelectorAll('.score-item');
+        scores.forEach((score, index) => {
+            const inputs = score.querySelectorAll('[data-score-index]');
+            inputs.forEach(input => {
+                input.setAttribute('data-score-index', index);
+            });
+        });
+        scoreCount = scores.length;
+    }
+
+    function saveCourse() {
+        // Collect all form data
+        const courseData = {
+            name: document.getElementById('course-name').textContent.trim() || 'New Golf Course',
+            description: document.getElementById('course-description').textContent.trim() || '',
+            overallRating: document.getElementById('overall-rating').value,
+            price: document.getElementById('price').value,
+            handicapDifficulty: parseInt(document.getElementById('handicap-difficulty').value) || 0,
+            hazardDifficulty: parseInt(document.getElementById('hazard-difficulty').value) || 0,
+            condition: document.getElementById('condition').value,
+            merch: document.getElementById('merch').value,
+            enjoymentRating: document.getElementById('enjoyment-rating').value,
+            vibe: document.getElementById('vibe').value,
+            range: document.getElementById('range').value,
+            amenities: document.getElementById('amenities').value,
+            glizzies: document.getElementById('glizzies').value,
+            review: document.getElementById('course-review').value
+        };
+
+        // Validate required fields
+        if (!courseData.name || courseData.name === 'New Golf Course') {
+            alert('Please enter a course name');
+            document.getElementById('course-name').focus();
+            return;
+        }
+
+        if (!courseData.description) {
+            alert('Please enter a course description');
+            document.getElementById('course-description').focus();
+            return;
+        }
+
+        if (!courseData.overallRating) {
+            alert('Please select an overall rating');
+            return;
+        }
+
+        // Create form data object that matches backend expectations
+        const formData = {};
+        Object.keys(courseData).forEach(key => {
+            formData[key] = courseData[key];
+        });
+
+        // Collect holes data in the correct format
+        const holes = document.querySelectorAll('.hole-item');
+        holes.forEach((hole, index) => {
+            const parSelect = hole.querySelector('[data-field="par"]');
+            const yardageInput = hole.querySelector('[data-field="yardage"]');
+            const descriptionTextarea = hole.querySelector('[data-field="description"]');
+            
+            const par = parSelect ? parSelect.value : '';
+            const yardage = yardageInput ? yardageInput.value : '';
+            const description = descriptionTextarea ? descriptionTextarea.value : '';
+            
+            if (par && yardage) {
+                formData[`holes[${index}].number`] = index + 1;
+                formData[`holes[${index}].par`] = par;
+                formData[`holes[${index}].yardage`] = yardage;
+                formData[`holes[${index}].description`] = description;
+            }
+        });
+
+        // Collect scores data in the correct format
+        const scores = document.querySelectorAll('.score-item');
+        scores.forEach((score, index) => {
+            const scoreInput = score.querySelector('[data-field="score"]');
+            const handicapInput = score.querySelector('[data-field="handicap"]');
+            
+            const scoreValue = scoreInput ? scoreInput.value : '';
+            const handicap = handicapInput ? handicapInput.value : '';
+            
+            if (scoreValue && handicap) {
+                formData[`scores[${index}].score`] = scoreValue;
+                formData[`scores[${index}].handicap`] = handicap;
+            }
+        });
+
+        console.log('Form data being sent:', formData); // Debug log
+
+        // Submit via HTMX
+        htmx.ajax('POST', '/create-course', {
+            values: formData,
+            target: '#main-content'
+        });
+    }
+
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add event listeners for color updates
+        document.querySelectorAll('.rating-select').forEach(select => {
+            select.addEventListener('change', function() {
+                updateCellColor(this);
+            });
+        });
+
+        document.getElementById('handicap-difficulty').addEventListener('input', updateHandicapColor);
+        document.getElementById('hazard-difficulty').addEventListener('input', updateHazardColor);
+
+        // Initialize with one hole
+        addHole();
+    });
+</script>
+{{ end }}
+
+{{ block "courses-map" . }}
+{{ range . }}
+<div class="course-item" hx-get="/course/{{ .ID }}" hx-target="#main-content">
+    <h4>{{ .Name }}</h4>
+</div>
+{{ end }}
+{{ end }}
