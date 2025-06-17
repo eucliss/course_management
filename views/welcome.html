@@ -127,6 +127,29 @@
                 height: 100%;
                 border-radius: 8px;
             }
+            .custom-marker {
+                transition: transform 0.2s ease;
+                will-change: transform;
+            }
+            
+            .custom-marker:hover {
+                transform: translate(-50%, -50%) scale(1.2);
+            }
+
+            .marker-popup {
+                padding: 8px;
+            }
+
+            .marker-popup h3 {
+                margin: 0;
+                color: #204606;
+                font-size: 14px;
+            }
+
+            .mapboxgl-popup-content {
+                border-radius: 4px;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            }
         </style>
     </head>
     <body>
@@ -160,7 +183,44 @@
                             center: [-98.5795, 39.8283],
                             zoom: 4.5,
                             minZoom: 3,
-                            maxZoom: 15
+                            maxZoom: 15,
+                            renderWorldCopies: false,
+                            antialias: false,
+                            preserveDrawingBuffer: false
+                        });
+
+                        window.addPinFromAddress = function(address, color = '#FF0000') {
+                            fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${mapboxToken}`)
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.features && data.features.length > 0) {
+                                        const [lng, lat] = data.features[0].center;
+                                        
+                                        const marker = new mapboxgl.Marker({
+                                            color: color,
+                                            scale: 1.2
+                                        })
+                                        .setLngLat([lng, lat])
+                                        .setPopup(
+                                            new mapboxgl.Popup({ offset: 25 })
+                                                .setHTML(`
+                                                    <div class="marker-popup">
+                                                        <h3>${address}</h3>
+                                                    </div>
+                                                `)
+                                        )
+                                        .addTo(map);
+                                    }
+                                })
+                                .catch(error => console.error('Error:', error));
+                        };
+
+                        map.on('load', () => {
+                            addPinFromAddress('1600 Pennsylvania Avenue, Washington, DC', '#FF0000');
+                            addPinFromAddress('350 5th Ave, New York, NY', '#0000FF');
+                            addPinFromAddress('1 Apple Park Way, Cupertino, CA', '#00FF00');
+                            addPinFromAddress('1 E 161st St, Bronx, NY', '#FFA500');
+                            addPinFromAddress('1060 W Addison St, Chicago, IL', '#800080');
                         });
                     };
                 };
