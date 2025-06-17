@@ -108,6 +108,18 @@
                 background-color: #204606;
                 color: #FFFCE7;
             }
+            .map-btn {
+                background-color: #204606;
+                color: #FFFCE7;
+            }
+            .map-btn:hover {
+                background-color: #2d6509;
+                color: #FFFCE7;
+            }
+            #map {
+                height: calc(100vh - 60px);
+                width: 100%;
+            }
         </style>
     </head>
     <body>
@@ -118,6 +130,7 @@
                     <div class="nav-item">
                         <button id="home-button" hx-get="/introduction" hx-target="#main-content">Home</button>
                         <button class="create-course-btn" hx-get="/create-course" hx-target="#main-content">Add Course</button>
+                        <button class="map-btn" hx-get="/map" hx-target="#main-content">View Map</button>
                     </div>
                 </div>
                 {{ template "courses-map" .Courses }}

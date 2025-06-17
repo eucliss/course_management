@@ -29,6 +29,8 @@ type Course struct {
 	Review        string
 	Holes         []Hole
 	Scores        []Score
+	Latitude      float64
+	Longitude     float64
 }
 
 type Score struct {
