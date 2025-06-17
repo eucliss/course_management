@@ -23,19 +23,8 @@
   <body>
     <div id="map"></div>
     <script>
-      if (!document.querySelector('script[src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"]')) {
-        const script = document.createElement('script');
-        script.src = 'https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js';
-        script.onload = function() {
-          mapboxgl.accessToken = '{{ .MapboxToken }}';
-          const map = new mapboxgl.Map({
-            container: 'map',
-            style: 'mapbox://styles/mapbox/streets-v12',
-            center: [-87.661557, 41.893748],
-            zoom: 10.7
-          });
-        };
-        document.head.appendChild(script);
+      if (typeof window.initMap === 'function') {
+        window.initMap('{{ .MapboxToken }}');
       }
     </script>
   </body>
