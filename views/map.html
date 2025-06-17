@@ -21,7 +21,9 @@
     </style>
   </head>
   <body>
-    <div id="map"></div>
+    <div class="map-container">
+      <div id="map"></div>
+    </div>
     <script>
       if (typeof window.initMap === 'function') {
         window.initMap('{{ .MapboxToken }}');
