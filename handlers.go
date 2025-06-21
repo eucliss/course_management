@@ -67,7 +67,7 @@ func (h *Handlers) CreateCourse(c echo.Context) error {
 	amenities := c.FormValue("amenities")
 	glizzies := c.FormValue("glizzies")
 	review := c.FormValue("review")
-
+	address := c.FormValue("address")
 	// Validate required fields
 	if name == "" || description == "" || overallRating == "" {
 		return c.String(http.StatusBadRequest, "Missing required fields")
@@ -79,6 +79,7 @@ func (h *Handlers) CreateCourse(c echo.Context) error {
 		Description:   description,
 		OverallRating: overallRating,
 		Review:        review,
+		Address:       address,
 		Ranks: Ranking{
 			Price:              price,
 			HandicapDifficulty: handicapDifficulty,

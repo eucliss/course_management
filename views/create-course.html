@@ -164,6 +164,13 @@
         </div>
         
         <div class="course-info">
+            <h2>Course Details</h2>
+            <div class="detail-item">
+                <label for="course-address">Address:</label>
+                <input type="text" id="course-address" class="address-input" 
+                       placeholder="Enter the full address of the course">
+            </div>
+            
             <h2>Course Review</h2>
             <div class="review-section">
                 <textarea id="course-review" placeholder="Write a detailed review of the course including highlights, challenges, and overall experience" class="review-textarea"></textarea>
@@ -582,236 +589,181 @@
     .handicap-10, .handicap-11, .handicap-12 { background-color: #FFFF73 !important; }
     .handicap-13, .handicap-14, .handicap-15 { background-color: #B7FF73 !important; }
     .handicap-16, .handicap-17, .handicap-18, .handicap-19, .handicap-20 { background-color: #73FF73 !important; }
+
+    .course-details-section {
+        margin-bottom: 30px;
+        background-color: rgba(255, 255, 255, 0.7);
+        border-radius: 8px;
+        padding: 20px;
+        border: 1px solid rgba(32, 70, 6, 0.2);
+    }
+
+    .detail-item {
+        margin-bottom: 15px;
+    }
+
+    .detail-item label {
+        display: block;
+        color: #204606;
+        font-size: 1.1em;
+        font-weight: 500;
+        margin-bottom: 8px;
+    }
+
+    .address-input {
+        width: 100%;
+        padding: 12px;
+        border: 2px dashed #204606;
+        border-radius: 8px;
+        font-size: 1em;
+        color: #204606;
+        background-color: rgba(255, 255, 255, 0.7);
+        transition: all 0.2s ease;
+    }
+
+    .address-input:focus {
+        outline: none;
+        border-style: solid;
+        background-color: rgba(255, 255, 255, 0.9);
+    }
+
+    .address-input::placeholder {
+        color: #999;
+        font-style: italic;
+    }
 </style>
 
 <script>
+    // Global variables for counters
     let holeCount = 0;
     let scoreCount = 0;
 
-    // Update cell colors based on values
-    function updateCellColor(selectElement) {
-        const value = selectElement.value;
-        const cell = selectElement.closest('td');
-        
-        // Remove existing color classes
-        cell.className = cell.className.replace(/rating-[SABCDF]|price-[1-4]|hazard-[1-5]|handicap-[0-20]/g, '');
-        
-        if (value) {
-            if (selectElement.id === 'price') {
-                cell.classList.add('price-' + value.length);
-            } else {
-                cell.classList.add('rating-' + value);
-            }
-        }
-    }
-
-    function updateHandicapColor() {
-        const input = document.getElementById('handicap-difficulty');
-        const cell = input.closest('td');
-        const value = parseInt(input.value);
-        
-        // Remove existing handicap classes
-        cell.className = cell.className.replace(/handicap-[0-20]/g, '');
-        
-        if (value >= 0 && value <= 20) {
-            cell.classList.add('handicap-' + value);
-        }
-    }
-
-    function updateHazardColor() {
-        const input = document.getElementById('hazard-difficulty');
-        const cell = input.closest('td');
-        const value = parseInt(input.value);
-        
-        // Remove existing hazard classes
-        cell.className = cell.className.replace(/hazard-[1-5]/g, '');
-        
-        if (value >= 1 && value <= 5) {
-            cell.classList.add('hazard-' + value);
-        }
-    }
-
+    // Function to add a new hole
     function addHole() {
-        if (holeCount >= 18) {
-            alert('Maximum of 18 holes allowed');
-            return;
-        }
-        
-        holeCount++;
-        const holesContainer = document.getElementById('holes-container');
+        const container = document.getElementById('holes-container');
         const holeDiv = document.createElement('div');
-        holeDiv.className = 'hole-item';
+        holeDiv.className = 'hole-entry';
         holeDiv.innerHTML = `
-            <div class="hole-header">
-                <h4>#${holeCount}</h4>
-                <label>Par: <select class="hole-input" data-hole-index="${holeCount-1}" data-field="par" required>
-                    <option value="">Select</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                    <option value="6">6</option>
-                </select></label>
-                <label>Yardage: <input type="number" class="hole-input" data-hole-index="${holeCount-1}" data-field="yardage" placeholder="Yardage" min="0" required></label>
-                <button type="button" class="remove-btn" onclick="removeHole(this)">Remove</button>
+            <h3>Hole ${holeCount + 1}</h3>
+            <div class="hole-inputs">
+                <input type="number" name="holes[${holeCount}].number" value="${holeCount + 1}" readonly>
+                <input type="number" name="holes[${holeCount}].par" placeholder="Par" min="3" max="6">
+                <input type="number" name="holes[${holeCount}].yardage" placeholder="Yardage">
+                <textarea name="holes[${holeCount}].description" placeholder="Hole description"></textarea>
             </div>
-            <textarea class="hole-description" data-hole-index="${holeCount-1}" data-field="description" placeholder="Description of the hole layout, hazards, and strategy"></textarea>
         `;
-        holesContainer.appendChild(holeDiv);
+        container.appendChild(holeDiv);
+        holeCount++;
     }
 
-    function removeHole(button) {
-        const holeItem = button.closest('.hole-item');
-        holeItem.remove();
-        renumberHoles();
-    }
-
-    function renumberHoles() {
-        const holes = document.querySelectorAll('.hole-item');
-        holes.forEach((hole, index) => {
-            const holeNumber = index + 1;
-            hole.querySelector('h4').textContent = `#${holeNumber}`;
-            
-            // Update data attributes
-            const inputs = hole.querySelectorAll('[data-hole-index]');
-            inputs.forEach(input => {
-                input.setAttribute('data-hole-index', index);
-            });
-        });
-        holeCount = holes.length;
-    }
-
+    // Function to add a new score
     function addScore() {
-        scoreCount++;
-        const scoresContainer = document.getElementById('scores-container');
+        const container = document.getElementById('scores-container');
         const scoreDiv = document.createElement('div');
-        scoreDiv.className = 'score-item';
+        scoreDiv.className = 'score-entry';
         scoreDiv.innerHTML = `
-            <label>Score: <input type="number" class="score-input" data-score-index="${scoreCount-1}" data-field="score" placeholder="Score" min="0" required></label>
-            <label>Handicap: <input type="number" class="score-input" data-score-index="${scoreCount-1}" data-field="handicap" placeholder="0.0" min="0" max="54" step="0.1" required></label>
-            <button type="button" class="remove-btn" onclick="removeScore(this)">Remove</button>
+            <div class="score-inputs">
+                <input type="number" name="scores[${scoreCount}].score" placeholder="Score">
+                <input type="number" name="scores[${scoreCount}].handicap" placeholder="Handicap" step="0.1">
+            </div>
         `;
-        scoresContainer.appendChild(scoreDiv);
+        container.appendChild(scoreDiv);
+        scoreCount++;
     }
 
-    function removeScore(button) {
-        const scoreItem = button.closest('.score-item');
-        scoreItem.remove();
-        renumberScores();
-    }
-
-    function renumberScores() {
-        const scores = document.querySelectorAll('.score-item');
-        scores.forEach((score, index) => {
-            const inputs = score.querySelectorAll('[data-score-index]');
-            inputs.forEach(input => {
-                input.setAttribute('data-score-index', index);
-            });
-        });
-        scoreCount = scores.length;
-    }
-
+    // Function to save the course
     function saveCourse() {
-        // Collect all form data
-        const courseData = {
-            name: document.getElementById('course-name').textContent.trim() || 'New Golf Course',
-            description: document.getElementById('course-description').textContent.trim() || '',
-            overallRating: document.getElementById('overall-rating').value,
-            price: document.getElementById('price').value,
-            handicapDifficulty: parseInt(document.getElementById('handicap-difficulty').value) || 0,
-            hazardDifficulty: parseInt(document.getElementById('hazard-difficulty').value) || 0,
-            condition: document.getElementById('condition').value,
-            merch: document.getElementById('merch').value,
-            enjoymentRating: document.getElementById('enjoyment-rating').value,
-            vibe: document.getElementById('vibe').value,
-            range: document.getElementById('range').value,
-            amenities: document.getElementById('amenities').value,
-            glizzies: document.getElementById('glizzies').value,
-            review: document.getElementById('course-review').value,
-            latitude: document.getElementById('latitude').value,
-            longitude: document.getElementById('longitude').value
-        };
-
-        // Validate required fields
-        if (!courseData.name || courseData.name === 'New Golf Course') {
-            alert('Please enter a course name');
-            document.getElementById('course-name').focus();
-            return;
-        }
-
-        if (!courseData.description) {
-            alert('Please enter a course description');
-            document.getElementById('course-description').focus();
-            return;
-        }
-
-        if (!courseData.overallRating) {
-            alert('Please select an overall rating');
-            return;
-        }
-
-        // Create form data object that matches backend expectations
-        const formData = {};
-        Object.keys(courseData).forEach(key => {
-            formData[key] = courseData[key];
-        });
-
-        // Collect holes data in the correct format
-        const holes = document.querySelectorAll('.hole-item');
-        holes.forEach((hole, index) => {
-            const parSelect = hole.querySelector('[data-field="par"]');
-            const yardageInput = hole.querySelector('[data-field="yardage"]');
-            const descriptionTextarea = hole.querySelector('[data-field="description"]');
+        try {
+            // Get form values
+            const formData = new FormData();
             
-            const par = parSelect ? parSelect.value : '';
-            const yardage = yardageInput ? yardageInput.value : '';
-            const description = descriptionTextarea ? descriptionTextarea.value : '';
-            
-            if (par && yardage) {
-                formData[`holes[${index}].number`] = index + 1;
-                formData[`holes[${index}].par`] = par;
-                formData[`holes[${index}].yardage`] = yardage;
-                formData[`holes[${index}].description`] = description;
+            // Basic course information - Fix for contenteditable elements
+            const name = document.getElementById('course-name').innerText.trim();
+            const description = document.getElementById('course-description').innerText.trim();
+            const overallRating = document.getElementById('overall-rating').value;
+            const address = document.getElementById('course-address').value;
+            const review = document.getElementById('course-review').value;
+
+            // Debug log the raw values
+            console.log('Raw form values:', {
+                name,
+                description,
+                overallRating,
+                address,
+                review
+            });
+
+            // Add basic information to form data
+            formData.append('name', name);
+            formData.append('description', description);
+            formData.append('overallRating', overallRating);
+            formData.append('address', address);
+            formData.append('review', review);
+
+            // Add rankings
+            formData.append('price', document.getElementById('price').value);
+            formData.append('handicapDifficulty', document.getElementById('handicap-difficulty').value);
+            formData.append('hazardDifficulty', document.getElementById('hazard-difficulty').value);
+            formData.append('merch', document.getElementById('merch').value);
+            formData.append('condition', document.getElementById('condition').value);
+            formData.append('enjoymentRating', document.getElementById('enjoyment-rating').value);
+            formData.append('vibe', document.getElementById('vibe').value);
+            formData.append('range', document.getElementById('range').value);
+            formData.append('amenities', document.getElementById('amenities').value);
+            formData.append('glizzies', document.getElementById('glizzies').value);
+
+            // Add holes
+            const holeElements = document.querySelectorAll('.hole-entry');
+            holeElements.forEach((holeElement, index) => {
+                const inputs = holeElement.querySelectorAll('input, textarea');
+                inputs.forEach(input => {
+                    formData.append(`holes[${index}].${input.name.split('.').pop()}`, input.value);
+                });
+            });
+
+            // Add scores
+            const scoreElements = document.querySelectorAll('.score-entry');
+            scoreElements.forEach((scoreElement, index) => {
+                const inputs = scoreElement.querySelectorAll('input');
+                inputs.forEach(input => {
+                    formData.append(`scores[${index}].${input.name.split('.').pop()}`, input.value);
+                });
+            });
+
+            // Debug log the FormData object
+            console.log('FormData contents:');
+            for (let pair of formData.entries()) {
+                console.log(pair[0] + ': ' + pair[1]);
             }
-        });
-
-        // Collect scores data in the correct format
-        const scores = document.querySelectorAll('.score-item');
-        scores.forEach((score, index) => {
-            const scoreInput = score.querySelector('[data-field="score"]');
-            const handicapInput = score.querySelector('[data-field="handicap"]');
-            
-            const scoreValue = scoreInput ? scoreInput.value : '';
-            const handicap = handicapInput ? handicapInput.value : '';
-            
-            if (scoreValue && handicap) {
-                formData[`scores[${index}].score`] = scoreValue;
-                formData[`scores[${index}].handicap`] = handicap;
-            }
-        });
-
-        console.log('Form data being sent:', formData); // Debug log
 
         // Submit via HTMX
         htmx.ajax('POST', '/create-course', {
             values: formData,
             target: '#main-content'
         });
+        } catch (error) {
+            console.error('Error in saveCourse:', error);
+            alert('An error occurred while saving the course: ' + error.message);
+        }
     }
 
-    // Event listeners
+    // Initialize when DOM is loaded
     document.addEventListener('DOMContentLoaded', function() {
-        // Add event listeners for color updates
-        document.querySelectorAll('.rating-select').forEach(select => {
-            select.addEventListener('change', function() {
-                updateCellColor(this);
-            });
-        });
-
-        document.getElementById('handicap-difficulty').addEventListener('input', updateHandicapColor);
-        document.getElementById('hazard-difficulty').addEventListener('input', updateHazardColor);
-
-        // Initialize with one hole
+        // Add initial hole and score
         addHole();
+        addScore();
+
+        // Add event listeners
+        document.querySelector('.add-score-btn').addEventListener('click', addScore);
+        document.querySelector('.add-hole-btn').addEventListener('click', addHole);
+        document.querySelector('.save-course-btn').addEventListener('click', saveCourse);
+
+        console.log('Course name element:', document.getElementById('course-name'));
+        console.log('Course name value:', document.getElementById('course-name').innerText);
+        console.log('Description element:', document.getElementById('course-description'));
+        console.log('Description value:', document.getElementById('course-description').innerText);
+        console.log('Overall rating element:', document.getElementById('overall-rating'));
+        console.log('Overall rating value:', document.getElementById('overall-rating').value);
     });
 </script>
 {{ end }}
