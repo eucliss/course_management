@@ -138,12 +138,21 @@
 
             .marker-popup {
                 padding: 8px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                min-width: 200px;
             }
 
-            .marker-popup h3 {
+            .popup-content {
+                flex: 1;
+            }
+
+            .popup-header h3 {
                 margin: 0;
                 color: #204606;
-                font-size: 14px;
+                font-size: 16px;
+                font-weight: 600;
             }
 
             .marker-popup p {
@@ -152,9 +161,17 @@
                 font-size: 12px;
             }
 
-            .mapboxgl-popup-content {
+            .rating-plaque {
+                background-color: #204606;
+                color: white;
+                padding: 8px 12px;
                 border-radius: 4px;
-                box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+                font-size: 16px;
+                font-weight: bold;
+                min-width: 32px;
+                text-align: center;
+                flex-shrink: 0;
+                align-self: center;
             }
         </style>
     </head>
@@ -195,7 +212,7 @@
                             preserveDrawingBuffer: false
                         });
 
-                        window.addPinFromAddress = function(address, courseName, color = '#204606') {
+                        window.addPinFromAddress = function(address, courseName, rating, color = '#204606') {
                             if (!address || address.trim() === '') {
                                 console.log('No address provided for course:', courseName);
                                 return;
@@ -216,8 +233,12 @@
                                             new mapboxgl.Popup({ offset: 25 })
                                                 .setHTML(`
                                                     <div class="marker-popup">
-                                                        <h3>${courseName}</h3>
-                                                        <p>${address}</p>
+                                                        <div class="popup-content">
+                                                            <div class="popup-header">
+                                                                <h3>${courseName}</h3>
+                                                            </div>
+                                                        </div>
+                                                        <div class="rating-plaque">${rating}</div>
                                                     </div>
                                                 `)
                                         )
@@ -236,7 +257,7 @@
                             if (courses && courses.length > 0) {
                                 courses.forEach(course => {
                                     if (course.Address && course.Address.trim() !== '') {
-                                        addPinFromAddress(course.Address, course.Name, '#204606');
+                                        addPinFromAddress(course.Address, course.Name, course.OverallRating, '#204606');
                                     }
                                 });
                             }
