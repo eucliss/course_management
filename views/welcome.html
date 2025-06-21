@@ -146,6 +146,12 @@
                 font-size: 14px;
             }
 
+            .marker-popup p {
+                margin: 5px 0 0 0;
+                color: #666;
+                font-size: 12px;
+            }
+
             .mapboxgl-popup-content {
                 border-radius: 4px;
                 box-shadow: 0 1px 2px rgba(0,0,0,0.1);
@@ -175,7 +181,7 @@
                 const script = document.createElement('script');
                 script.src = 'https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js';
                 script.onload = function() {
-                    window.initMap = function(mapboxToken) {
+                    window.initMap = function(mapboxToken, courses) {
                         mapboxgl.accessToken = mapboxToken;
                         const map = new mapboxgl.Map({
                             container: 'map',
@@ -189,7 +195,12 @@
                             preserveDrawingBuffer: false
                         });
 
-                        window.addPinFromAddress = function(address, color = '#FF0000') {
+                        window.addPinFromAddress = function(address, courseName, color = '#204606') {
+                            if (!address || address.trim() === '') {
+                                console.log('No address provided for course:', courseName);
+                                return;
+                            }
+                            
                             fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${mapboxToken}`)
                                 .then(response => response.json())
                                 .then(data => {
@@ -205,22 +216,30 @@
                                             new mapboxgl.Popup({ offset: 25 })
                                                 .setHTML(`
                                                     <div class="marker-popup">
-                                                        <h3>${address}</h3>
+                                                        <h3>${courseName}</h3>
+                                                        <p>${address}</p>
                                                     </div>
                                                 `)
                                         )
                                         .addTo(map);
+                                    } else {
+                                        console.log('Could not geocode address:', address, 'for course:', courseName);
                                     }
                                 })
-                                .catch(error => console.error('Error:', error));
+                                .catch(error => {
+                                    console.error('Error geocoding address:', address, 'for course:', courseName, error);
+                                });
                         };
 
                         map.on('load', () => {
-                            addPinFromAddress('1600 Pennsylvania Avenue, Washington, DC', '#FF0000');
-                            addPinFromAddress('350 5th Ave, New York, NY', '#0000FF');
-                            addPinFromAddress('1 Apple Park Way, Cupertino, CA', '#00FF00');
-                            addPinFromAddress('1 E 161st St, Bronx, NY', '#FFA500');
-                            addPinFromAddress('1060 W Addison St, Chicago, IL', '#800080');
+                            // Add pins for each course with an address
+                            if (courses && courses.length > 0) {
+                                courses.forEach(course => {
+                                    if (course.Address && course.Address.trim() !== '') {
+                                        addPinFromAddress(course.Address, course.Name, '#204606');
+                                    }
+                                });
+                            }
                         });
                     };
                 };

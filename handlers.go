@@ -20,9 +20,15 @@ func NewHandlers(courses *[]Course) *Handlers {
 }
 
 func (h *Handlers) Home(c echo.Context) error {
-	return c.Render(http.StatusOK, "welcome", PageData{
-		Courses: *h.courses,
-	})
+	data := struct {
+		Courses     []Course
+		MapboxToken string
+	}{
+		Courses:     *h.courses,
+		MapboxToken: os.Getenv("MAPBOX_ACCESS_TOKEN"),
+	}
+
+	return c.Render(http.StatusOK, "welcome", data)
 }
 
 func (h *Handlers) Introduction(c echo.Context) error {
@@ -155,9 +161,19 @@ func (h *Handlers) Welcome(c echo.Context) error {
 }
 
 func (h *Handlers) Map(c echo.Context) error {
+	// Convert courses to JSON for the template
+	coursesJSON, err := json.Marshal(*h.courses)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to marshal courses to JSON: "+err.Error())
+	}
+
 	data := struct {
+		Courses     []Course
+		CoursesJSON template.JS
 		MapboxToken string
 	}{
+		Courses:     *h.courses,
+		CoursesJSON: template.JS(coursesJSON),
 		MapboxToken: os.Getenv("MAPBOX_ACCESS_TOKEN"),
 	}
 
