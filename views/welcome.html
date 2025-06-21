@@ -153,6 +153,17 @@
                 color: #204606;
                 font-size: 16px;
                 font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                padding: 2px 4px;
+                border-radius: 3px;
+            }
+
+            .popup-header h3:hover {
+                color: #2d6509;
+                background-color: rgba(32, 70, 6, 0.1);
+                transform: translateY(-1px);
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             }
 
             .marker-popup p {
@@ -212,7 +223,7 @@
                             preserveDrawingBuffer: false
                         });
 
-                        window.addPinFromAddress = function(address, courseName, rating, color = '#204606') {
+                        window.addPinFromAddress = function(address, courseName, rating, courseId, color = '#204606') {
                             if (!address || address.trim() === '') {
                                 console.log('No address provided for course:', courseName);
                                 return;
@@ -235,7 +246,7 @@
                                                     <div class="marker-popup">
                                                         <div class="popup-content">
                                                             <div class="popup-header">
-                                                                <h3>${courseName}</h3>
+                                                                <h3 class="course-title" data-course-id="${courseId}">${courseName}</h3>
                                                             </div>
                                                         </div>
                                                         <div class="rating-plaque">${rating}</div>
@@ -243,6 +254,19 @@
                                                 `)
                                         )
                                         .addTo(map);
+
+                                        // Add click event listener after popup is created
+                                        marker.getPopup().on('open', () => {
+                                            const titleElement = document.querySelector('.course-title');
+                                            if (titleElement) {
+                                                titleElement.addEventListener('click', function() {
+                                                    const courseId = this.getAttribute('data-course-id');
+                                                    htmx.ajax('GET', `/course/${courseId}`, {
+                                                        target: '#main-content'
+                                                    });
+                                                });
+                                            }
+                                        });
                                     } else {
                                         console.log('Could not geocode address:', address, 'for course:', courseName);
                                     }
@@ -257,7 +281,7 @@
                             if (courses && courses.length > 0) {
                                 courses.forEach(course => {
                                     if (course.Address && course.Address.trim() !== '') {
-                                        addPinFromAddress(course.Address, course.Name, course.OverallRating, '#204606');
+                                        addPinFromAddress(course.Address, course.Name, course.OverallRating, course.ID, '#204606');
                                     }
                                 });
                             }

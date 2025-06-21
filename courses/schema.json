@@ -3,7 +3,7 @@
     "title": "Golf Course",
     "description": "A schema for golf course data including rankings, holes, and scores",
     "type": "object",
-    "required": ["name", "description", "overallRating", "ranks"],
+    "required": ["name", "description", "overallRating", "ranks", "address"],
     "properties": {
       "id": {
         "type": "integer",
@@ -16,6 +16,10 @@
       "description": {
         "type": "string",
         "description": "A brief description of the course"
+      },
+      "address": {
+        "type": "string",
+        "description": "The address of the golf course"
       },
       "overallRating": {
         "type": "string",
