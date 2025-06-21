@@ -1,8 +1,11 @@
 package main
 
 import (
+	"encoding/json"
+	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
@@ -17,9 +20,15 @@ func NewHandlers(courses *[]Course) *Handlers {
 }
 
 func (h *Handlers) Home(c echo.Context) error {
-	return c.Render(http.StatusOK, "welcome", PageData{
-		Courses: *h.courses,
-	})
+	data := struct {
+		Courses     []Course
+		MapboxToken string
+	}{
+		Courses:     *h.courses,
+		MapboxToken: os.Getenv("MAPBOX_ACCESS_TOKEN"),
+	}
+
+	return c.Render(http.StatusOK, "welcome", data)
 }
 
 func (h *Handlers) Introduction(c echo.Context) error {
@@ -64,7 +73,7 @@ func (h *Handlers) CreateCourse(c echo.Context) error {
 	amenities := c.FormValue("amenities")
 	glizzies := c.FormValue("glizzies")
 	review := c.FormValue("review")
-
+	address := c.FormValue("address")
 	// Validate required fields
 	if name == "" || description == "" || overallRating == "" {
 		return c.String(http.StatusBadRequest, "Missing required fields")
@@ -76,6 +85,7 @@ func (h *Handlers) CreateCourse(c echo.Context) error {
 		Description:   description,
 		OverallRating: overallRating,
 		Review:        review,
+		Address:       address,
 		Ranks: Ranking{
 			Price:              price,
 			HandicapDifficulty: handicapDifficulty,
@@ -123,4 +133,49 @@ func (h *Handlers) CreateCourse(c echo.Context) error {
 			<button hx-get="/introduction" hx-target="#main-content" style="background-color: #204606; color: #FFFCE7; padding: 15px 30px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">Return to Home</button>
 		</div>
 	`)
+}
+
+func (h *Handlers) Welcome(c echo.Context) error {
+	courses, err := loadCourses()
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to load courses: "+err.Error())
+	}
+
+	// Convert courses to JSON
+	coursesJSON, err := json.Marshal(courses)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to marshal courses to JSON: "+err.Error())
+	}
+
+	data := struct {
+		Courses     []Course
+		MapboxToken string
+		CoursesJSON template.JS
+	}{
+		Courses:     courses,
+		MapboxToken: os.Getenv("MAPBOX_ACCESS_TOKEN"),
+		CoursesJSON: template.JS(coursesJSON),
+	}
+
+	return c.Render(http.StatusOK, "welcome", data)
+}
+
+func (h *Handlers) Map(c echo.Context) error {
+	// Convert courses to JSON for the template
+	coursesJSON, err := json.Marshal(*h.courses)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to marshal courses to JSON: "+err.Error())
+	}
+
+	data := struct {
+		Courses     []Course
+		CoursesJSON template.JS
+		MapboxToken string
+	}{
+		Courses:     *h.courses,
+		CoursesJSON: template.JS(coursesJSON),
+		MapboxToken: os.Getenv("MAPBOX_ACCESS_TOKEN"),
+	}
+
+	return c.Render(http.StatusOK, "map", data)
 }

@@ -29,6 +29,7 @@ type Course struct {
 	Review        string
 	Holes         []Hole
 	Scores        []Score
+	Address       string
 }
 
 type Score struct {

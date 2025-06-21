@@ -2,6 +2,7 @@
   "Name": "Bath Country Club",
   "ID": 0,
   "Description": "I'm going to par Bath this year.",
+  "Address": "330 May St, Bath, NY 14810",
   "Ranks": {
     "Price": "$",
     "HandicapDifficulty": 14,

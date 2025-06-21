@@ -2,6 +2,7 @@
   "name": "Lakeside Country Club",
   "description": "A beautiful hillside course in the finger lakes with a great views and a local vibe.",
   "overallRating": "B",
+  "address": "145 Rt 54 E Lake Road, Penn Yan, NY 14527",
   "ranks": {
     "price": "$$",
     "handicapDifficulty": 12,

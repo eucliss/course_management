@@ -1,0 +1,145 @@
+{{ define "map" }}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Course Map</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet" />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      #map {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 100%;
+      }
+
+      .marker-popup {
+        padding: 8px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 200px;
+      }
+
+      .popup-content {
+        flex: 1;
+      }
+
+      .popup-header h3 {
+        margin: 0;
+        color: #204606;
+        font-size: 16px;
+        font-weight: 600;
+      }
+
+      .marker-popup p {
+        margin: 5px 0 0 0;
+        color: #666;
+        font-size: 12px;
+      }
+
+      .rating-plaque {
+        background-color: #204606;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 16px;
+        font-weight: bold;
+        min-width: 32px;
+        text-align: center;
+        flex-shrink: 0;
+        align-self: center;
+      }
+
+      .mapboxgl-popup-content {
+        border-radius: 4px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="map-container">
+      <div id="map"></div>
+    </div>
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+    <script>
+      mapboxgl.accessToken = '{{ .MapboxToken }}';
+      const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: [-98.5795, 39.8283],
+        zoom: 4.5,
+        minZoom: 3,
+        maxZoom: 15,
+        renderWorldCopies: false,
+        antialias: false,
+        preserveDrawingBuffer: false
+      });
+
+      function addPinFromAddress(address, courseName, rating, color = '#204606') {
+        if (!address || address.trim() === '') {
+          console.log('No address provided for course:', courseName);
+          return;
+        }
+        
+        fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token={{ .MapboxToken }}`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.features && data.features.length > 0) {
+              const [lng, lat] = data.features[0].center;
+              
+              const marker = new mapboxgl.Marker({
+                color: color,
+                scale: 1.2
+              })
+              .setLngLat([lng, lat])
+              .setPopup(
+                new mapboxgl.Popup({ offset: 25 })
+                  .setHTML(`
+                    <div class="marker-popup">
+                      <div class="popup-content">
+                        <div class="popup-header">
+                          <h3>${courseName}</h3>
+                        </div>
+                      </div>
+                      <div class="rating-plaque">${rating}</div>
+                    </div>
+                  `)
+              )
+              .addTo(map);
+            } else {
+              console.log('Could not geocode address:', address, 'for course:', courseName);
+            }
+          })
+          .catch(error => {
+            console.error('Error geocoding address:', address, 'for course:', courseName, error);
+          });
+      }
+
+      map.on('load', () => {
+        const courses = JSON.parse('{{ .CoursesJSON }}');
+        console.log('Map loaded, courses:', courses);
+        
+        if (courses && courses.length > 0) {
+          courses.forEach(course => {
+            console.log('Processing course:', course.Name, 'Address:', course.Address, 'Rating:', course.OverallRating);
+            if (course.Address && course.Address.trim() !== '') {
+              addPinFromAddress(course.Address, course.Name, course.OverallRating, '#204606');
+            } else {
+              console.log('Skipping course without address:', course.Name);
+            }
+          });
+        } else {
+          console.log('No courses found or courses array is empty');
+        }
+      });
+    </script>
+  </body>
+</html>
+{{ end }}

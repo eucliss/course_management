@@ -32,6 +32,7 @@ func NewTemplates() *Templates {
 			"views/course.html",
 			"views/introduction.html",
 			"views/create-course.html",
+			"views/map.html",
 		)),
 	}
 }
@@ -130,6 +131,11 @@ func main() {
 	e.Renderer = NewTemplates()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete},
+		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
+	}))
 
 	// Routes
 	e.GET("/", handlers.Home)
@@ -137,6 +143,8 @@ func main() {
 	e.GET("/course/:id", handlers.GetCourse)
 	e.GET("/create-course", handlers.CreateCourseForm)
 	e.POST("/create-course", handlers.CreateCourse)
+	e.GET("/map", handlers.Map)
+	e.Static("/favicon.ico", "static/favicon.ico")
 
 	log.Printf("Server starting on port %s", config.Port)
 	e.Logger.Fatal(e.Start(":" + config.Port))

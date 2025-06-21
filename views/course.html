@@ -66,6 +66,13 @@
         </div>
         
         <div class="course-info">
+            <h2>Course Details</h2>
+            <div class="detail-item">
+                <strong>Address:</strong>
+                <p>{{ .Address }}</p>
+            </div>
+            <br style="clear: both; margin-bottom: 20px;"/>
+            
             <h2>Course Review</h2>
             <p>{{ .Review }}</p>
             <br style="clear: both; margin-bottom: 20px;"/>
@@ -128,6 +135,31 @@
         border: 1px solid #E5E7EB;
     }
 
+    .course-details-content {
+        margin-bottom: 20px;
+        background-color: rgba(255, 255, 255, 0.7);
+        border-radius: 8px;
+        padding: 20px;
+        border: 1px solid rgba(32, 70, 6, 0.2);
+    }
+
+    .detail-item {
+        margin-bottom: 15px;
+    }
+
+    .detail-item strong {
+        color: #204606;
+        font-size: 1.1em;
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    .detail-item p {
+        margin: 0;
+        color: #204606;
+        line-height: 1.6;
+    }
+
     .overall-rating {
         text-align: center;
         margin-bottom: 30px;
@@ -170,6 +202,13 @@
     .line-description {
         color: #204606;
         font-style: italic;
+    }
+
+    .course-info h2 {
+        color: #204606;
+        margin-top: 0;
+        margin-bottom: 16px;
+        font-size: 1.5em;
     }
 
     .course-info h3 {
