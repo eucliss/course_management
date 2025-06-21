@@ -58,7 +58,7 @@
 
       .rating-plaque {
         background-color: #204606;
-        color: white;
+        color: black;
         padding: 8px 12px;
         border-radius: 4px;
         font-size: 16px;
@@ -109,6 +109,19 @@
           return;
         }
         
+        // Define rating colors based on the course.html color scheme
+        const ratingColors = {
+          'S': '#73FF73',
+          'A': '#B7FF73', 
+          'B': '#FFFF73',
+          'C': '#FFDA74',
+          'D': '#FFB774',
+          'F': '#FF7474'
+        };
+        
+        // Get the color for this rating, default to the original color if not found
+        const markerColor = ratingColors[rating] || color;
+        
         fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token={{ .MapboxToken }}`)
           .then(response => response.json())
           .then(data => {
@@ -116,7 +129,7 @@
               const [lng, lat] = data.features[0].center;
               
               let marker = new mapboxgl.Marker({
-                color: color,
+                color: markerColor, // Use the rating-based color
                 scale: 1.2
               })
               .setLngLat([lng, lat])
@@ -129,7 +142,7 @@
                           <h3 class="course-title" data-course-id="${courseId}">${courseName}</h3>
                         </div>
                       </div>
-                      <div class="rating-plaque">${rating}</div>
+                      <div class="rating-plaque" style="background-color: ${markerColor};">${rating}</div>
                     </div>
                   `)
               )
