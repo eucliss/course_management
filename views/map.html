@@ -38,7 +38,6 @@
         font-size: 16px;
         font-weight: 600;
         cursor: pointer;
-        text-decoration: underline;
         transition: all 0.2s ease;
         padding: 2px 4px;
         border-radius: 3px;
@@ -82,20 +81,29 @@
     </div>
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
     <script>
+      
       mapboxgl.accessToken = '{{ .MapboxToken }}';
-      const map = new mapboxgl.Map({
-        container: 'map',
-        style: 'mapbox://styles/mapbox/streets-v12',
-        center: [-98.5795, 39.8283],
-        zoom: 4.5,
-        minZoom: 3,
-        maxZoom: 15,
-        renderWorldCopies: false,
-        antialias: false,
-        preserveDrawingBuffer: false
-      });
 
-      function addPinFromAddress(address, courseName, rating, courseId, color = '#204606') {
+      // Use a unique variable name to avoid redeclaration
+      try {
+        let courseMap = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v12',
+            center: [-98.5795, 39.8283],
+            zoom: 4.5,
+            minZoom: 3,
+            maxZoom: 15,
+            renderWorldCopies: false,
+            antialias: false,
+            preserveDrawingBuffer: false
+        });
+        loadCourses(courseMap);
+      } catch (error) {
+        console.error('Map already exists', error);
+        loadCourses(courseMap);
+      }
+
+      function addPinFromAddress(courseMap, address, courseName, rating, courseId, color = '#204606') {
         if (!address || address.trim() === '') {
           console.log('No address provided for course:', courseName);
           return;
@@ -107,7 +115,7 @@
             if (data.features && data.features.length > 0) {
               const [lng, lat] = data.features[0].center;
               
-              const marker = new mapboxgl.Marker({
+              let marker = new mapboxgl.Marker({
                 color: color,
                 scale: 1.2
               })
@@ -125,14 +133,14 @@
                     </div>
                   `)
               )
-              .addTo(map);
+              .addTo(courseMap);
 
               // Add click event listener after popup is created
               marker.getPopup().on('open', () => {
-                const titleElement = document.querySelector('.course-title');
+                let titleElement = document.querySelector('.course-title');
                 if (titleElement) {
                   titleElement.addEventListener('click', function() {
-                    const courseId = this.getAttribute('data-course-id');
+                    let courseId = this.getAttribute('data-course-id');
                     htmx.ajax('GET', `/course/${courseId}`, {
                       target: '#main-content'
                     });
@@ -148,15 +156,15 @@
           });
       }
 
-      map.on('load', () => {
-        const courses = JSON.parse('{{ .CoursesJSON }}');
+      function loadCourses(courseMap) {
+        let courses = JSON.parse('{{ .CoursesJSON }}');
         console.log('Map loaded, courses:', courses);
         
         if (courses && courses.length > 0) {
           courses.forEach(course => {
             console.log('Processing course:', course.Name, 'Address:', course.Address, 'Rating:', course.OverallRating);
             if (course.Address && course.Address.trim() !== '') {
-              addPinFromAddress(course.Address, course.Name, course.OverallRating, course.ID, '#204606');
+              addPinFromAddress(courseMap, course.Address, course.Name, course.OverallRating, course.ID, '#204606');
             } else {
               console.log('Skipping course without address:', course.Name);
             }
@@ -164,7 +172,7 @@
         } else {
           console.log('No courses found or courses array is empty');
         }
-      });
+      }
     </script>
   </body>
 </html>

@@ -210,8 +210,15 @@
                 script.src = 'https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js';
                 script.onload = function() {
                     window.initMap = function(mapboxToken, courses) {
+                        // Check if map already exists and destroy it
+                        if (window.existingMap) {
+                            window.existingMap.remove();
+                        }
+                        
                         mapboxgl.accessToken = mapboxToken;
-                        const map = new mapboxgl.Map({
+                        
+                        // Use a unique variable name to avoid redeclaration
+                        let courseMap = new mapboxgl.Map({
                             container: 'map',
                             style: 'mapbox://styles/mapbox/streets-v12',
                             center: [-98.5795, 39.8283],
@@ -222,6 +229,9 @@
                             antialias: false,
                             preserveDrawingBuffer: false
                         });
+
+                        // Store the map reference globally
+                        window.existingMap = courseMap;
 
                         window.addPinFromAddress = function(address, courseName, rating, courseId, color = '#204606') {
                             if (!address || address.trim() === '') {
@@ -235,7 +245,7 @@
                                     if (data.features && data.features.length > 0) {
                                         const [lng, lat] = data.features[0].center;
                                         
-                                        const marker = new mapboxgl.Marker({
+                                        let marker = new mapboxgl.Marker({
                                             color: color,
                                             scale: 1.2
                                         })
@@ -253,14 +263,14 @@
                                                     </div>
                                                 `)
                                         )
-                                        .addTo(map);
+                                        .addTo(courseMap);
 
                                         // Add click event listener after popup is created
                                         marker.getPopup().on('open', () => {
-                                            const titleElement = document.querySelector('.course-title');
+                                            let titleElement = document.querySelector('.course-title');
                                             if (titleElement) {
                                                 titleElement.addEventListener('click', function() {
-                                                    const courseId = this.getAttribute('data-course-id');
+                                                    let courseId = this.getAttribute('data-course-id');
                                                     htmx.ajax('GET', `/course/${courseId}`, {
                                                         target: '#main-content'
                                                     });
@@ -276,7 +286,7 @@
                                 });
                         };
 
-                        map.on('load', () => {
+                        courseMap.on('load', () => {
                             // Add pins for each course with an address
                             if (courses && courses.length > 0) {
                                 courses.forEach(course => {
