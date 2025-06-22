@@ -119,6 +119,14 @@
                 background-color: #2d6509;
                 color: #FFFCE7;
             }
+            .login-btn {
+                background-color: #F0ED0C;
+                color: #204606;
+            }
+            .login-btn:hover {
+                background-color: #204606;
+                color: #FFFCE7;
+            }
             #map {
                 position: absolute;
                 top: 0;
@@ -153,6 +161,17 @@
                 color: #204606;
                 font-size: 16px;
                 font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                padding: 2px 4px;
+                border-radius: 3px;
+            }
+
+            .popup-header h3:hover {
+                color: #2d6509;
+                background-color: rgba(32, 70, 6, 0.1);
+                transform: translateY(-1px);
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             }
 
             .marker-popup p {
@@ -163,7 +182,7 @@
 
             .rating-plaque {
                 background-color: #204606;
-                color: white;
+                color: black;
                 padding: 8px 12px;
                 border-radius: 4px;
                 font-size: 16px;
@@ -172,6 +191,11 @@
                 text-align: center;
                 flex-shrink: 0;
                 align-self: center;
+            }
+
+            .mapboxgl-popup-content {
+                border-radius: 4px;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.1);
             }
         </style>
     </head>
@@ -184,6 +208,7 @@
                         <button id="home-button" hx-get="/introduction" hx-target="#main-content">Home</button>
                         <button class="create-course-btn" hx-get="/create-course" hx-target="#main-content">Add Course</button>
                         <button class="map-btn" hx-get="/map" hx-target="#main-content">View Map</button>
+                        <button class="login-btn" hx-get="/login" hx-target="#main-content">Login</button>
                     </div>
                 </div>
                 {{ template "courses-map" .Courses }}
@@ -199,8 +224,15 @@
                 script.src = 'https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js';
                 script.onload = function() {
                     window.initMap = function(mapboxToken, courses) {
+                        // Check if map already exists and destroy it
+                        if (window.existingMap) {
+                            window.existingMap.remove();
+                        }
+                        
                         mapboxgl.accessToken = mapboxToken;
-                        const map = new mapboxgl.Map({
+                        
+                        // Use a unique variable name to avoid redeclaration
+                        let courseMap = new mapboxgl.Map({
                             container: 'map',
                             style: 'mapbox://styles/mapbox/streets-v12',
                             center: [-98.5795, 39.8283],
@@ -212,11 +244,27 @@
                             preserveDrawingBuffer: false
                         });
 
-                        window.addPinFromAddress = function(address, courseName, rating, color = '#204606') {
+                        // Store the map reference globally
+                        window.existingMap = courseMap;
+
+                        window.addPinFromAddress = function(address, courseName, rating, courseId, color = '#204606') {
                             if (!address || address.trim() === '') {
                                 console.log('No address provided for course:', courseName);
                                 return;
                             }
+                            
+                            // Define rating colors based on the course.html color scheme
+                            const ratingColors = {
+                                'S': '#73FF73',
+                                'A': '#B7FF73', 
+                                'B': '#FFFF73',
+                                'C': '#FFDA74',
+                                'D': '#FFB774',
+                                'F': '#FF7474'
+                            };
+                            
+                            // Get the color for this rating, default to the original color if not found
+                            const markerColor = ratingColors[rating] || color;
                             
                             fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${mapboxToken}`)
                                 .then(response => response.json())
@@ -224,8 +272,8 @@
                                     if (data.features && data.features.length > 0) {
                                         const [lng, lat] = data.features[0].center;
                                         
-                                        const marker = new mapboxgl.Marker({
-                                            color: color,
+                                        let marker = new mapboxgl.Marker({
+                                            color: markerColor, // Use the rating-based color
                                             scale: 1.2
                                         })
                                         .setLngLat([lng, lat])
@@ -235,14 +283,27 @@
                                                     <div class="marker-popup">
                                                         <div class="popup-content">
                                                             <div class="popup-header">
-                                                                <h3>${courseName}</h3>
+                                                                <h3 class="course-title" data-course-id="${courseId}">${courseName}</h3>
                                                             </div>
                                                         </div>
-                                                        <div class="rating-plaque">${rating}</div>
+                                                        <div class="rating-plaque" style="background-color: ${markerColor};">${rating}</div>
                                                     </div>
                                                 `)
                                         )
-                                        .addTo(map);
+                                        .addTo(courseMap);
+
+                                        // Add click event listener after popup is created
+                                        marker.getPopup().on('open', () => {
+                                            let titleElement = document.querySelector('.course-title');
+                                            if (titleElement) {
+                                                titleElement.addEventListener('click', function() {
+                                                    let courseId = this.getAttribute('data-course-id');
+                                                    htmx.ajax('GET', `/course/${courseId}`, {
+                                                        target: '#main-content'
+                                                    });
+                                                });
+                                            }
+                                        });
                                     } else {
                                         console.log('Could not geocode address:', address, 'for course:', courseName);
                                     }
@@ -252,12 +313,12 @@
                                 });
                         };
 
-                        map.on('load', () => {
+                        courseMap.on('load', () => {
                             // Add pins for each course with an address
                             if (courses && courses.length > 0) {
                                 courses.forEach(course => {
                                     if (course.Address && course.Address.trim() !== '') {
-                                        addPinFromAddress(course.Address, course.Name, course.OverallRating, '#204606');
+                                        addPinFromAddress(course.Address, course.Name, course.OverallRating, course.ID, '#204606');
                                     }
                                 });
                             }

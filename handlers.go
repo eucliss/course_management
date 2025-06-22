@@ -179,3 +179,46 @@ func (h *Handlers) Map(c echo.Context) error {
 
 	return c.Render(http.StatusOK, "map", data)
 }
+
+func (h *Handlers) LoginForm(c echo.Context) error {
+	return c.Render(http.StatusOK, "authentication", nil)
+}
+
+func (h *Handlers) Login(c echo.Context) error {
+	username := c.FormValue("username")
+	password := c.FormValue("password")
+
+	if username == "admin" && password == "password" {
+		return c.HTML(http.StatusOK, `
+			<div class="auth-container">
+				<div class="auth-box">
+					<div class="success-message">
+						<h2>Login Successful!</h2>
+						<p>Welcome, admin!</p>
+						<button hx-get="/introduction" hx-target="#main-content" style="background-color: #204606; color: #FFFCE7; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin-top: 15px;">Return to Home</button>
+					</div>
+				</div>
+			</div>
+		`)
+	} else {
+		return c.HTML(http.StatusUnauthorized, `
+			<div class="auth-container">
+				<div class="auth-box">
+					<h2>Login</h2>
+					<div style="color: #FF7474; text-align: center; margin-bottom: 20px;">Invalid username or password</div>
+					<form id="login-form" hx-post="/login" hx-target="#main-content">
+						<div class="form-group">
+							<label for="username">Username:</label>
+							<input type="text" id="username" name="username" value="`+username+`" required>
+						</div>
+						<div class="form-group">
+							<label for="password">Password:</label>
+							<input type="password" id="password" name="password" required>
+						</div>
+						<button type="submit" class="submit-btn">Login</button>
+					</form>
+				</div>
+			</div>
+		`)
+	}
+}

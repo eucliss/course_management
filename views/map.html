@@ -5,6 +5,7 @@
     <meta charset="utf-8" />
     <title>Course Map</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://unpkg.com/htmx.org/dist/htmx.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet" />
     <style>
       body {
@@ -36,6 +37,17 @@
         color: #204606;
         font-size: 16px;
         font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        padding: 2px 4px;
+        border-radius: 3px;
+      }
+
+      .popup-header h3:hover {
+        color: #2d6509;
+        background-color: rgba(32, 70, 6, 0.1);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       }
 
       .marker-popup p {
@@ -46,7 +58,7 @@
 
       .rating-plaque {
         background-color: #204606;
-        color: white;
+        color: black;
         padding: 8px 12px;
         border-radius: 4px;
         font-size: 16px;
@@ -69,24 +81,46 @@
     </div>
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
     <script>
+      
       mapboxgl.accessToken = '{{ .MapboxToken }}';
-      const map = new mapboxgl.Map({
-        container: 'map',
-        style: 'mapbox://styles/mapbox/streets-v12',
-        center: [-98.5795, 39.8283],
-        zoom: 4.5,
-        minZoom: 3,
-        maxZoom: 15,
-        renderWorldCopies: false,
-        antialias: false,
-        preserveDrawingBuffer: false
-      });
 
-      function addPinFromAddress(address, courseName, rating, color = '#204606') {
+      // Use a unique variable name to avoid redeclaration
+      try {
+        let courseMap = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v12',
+            center: [-98.5795, 39.8283],
+            zoom: 4.5,
+            minZoom: 3,
+            maxZoom: 15,
+            renderWorldCopies: false,
+            antialias: false,
+            preserveDrawingBuffer: false
+        });
+        loadCourses(courseMap);
+      } catch (error) {
+        console.error('Map already exists', error);
+        loadCourses(courseMap);
+      }
+
+      function addPinFromAddress(courseMap, address, courseName, rating, courseId, color = '#204606') {
         if (!address || address.trim() === '') {
           console.log('No address provided for course:', courseName);
           return;
         }
+        
+        // Define rating colors based on the course.html color scheme
+        const ratingColors = {
+          'S': '#73FF73',
+          'A': '#B7FF73', 
+          'B': '#FFFF73',
+          'C': '#FFDA74',
+          'D': '#FFB774',
+          'F': '#FF7474'
+        };
+        
+        // Get the color for this rating, default to the original color if not found
+        const markerColor = ratingColors[rating] || color;
         
         fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token={{ .MapboxToken }}`)
           .then(response => response.json())
@@ -94,8 +128,8 @@
             if (data.features && data.features.length > 0) {
               const [lng, lat] = data.features[0].center;
               
-              const marker = new mapboxgl.Marker({
-                color: color,
+              let marker = new mapboxgl.Marker({
+                color: markerColor, // Use the rating-based color
                 scale: 1.2
               })
               .setLngLat([lng, lat])
@@ -105,14 +139,27 @@
                     <div class="marker-popup">
                       <div class="popup-content">
                         <div class="popup-header">
-                          <h3>${courseName}</h3>
+                          <h3 class="course-title" data-course-id="${courseId}">${courseName}</h3>
                         </div>
                       </div>
-                      <div class="rating-plaque">${rating}</div>
+                      <div class="rating-plaque" style="background-color: ${markerColor};">${rating}</div>
                     </div>
                   `)
               )
-              .addTo(map);
+              .addTo(courseMap);
+
+              // Add click event listener after popup is created
+              marker.getPopup().on('open', () => {
+                let titleElement = document.querySelector('.course-title');
+                if (titleElement) {
+                  titleElement.addEventListener('click', function() {
+                    let courseId = this.getAttribute('data-course-id');
+                    htmx.ajax('GET', `/course/${courseId}`, {
+                      target: '#main-content'
+                    });
+                  });
+                }
+              });
             } else {
               console.log('Could not geocode address:', address, 'for course:', courseName);
             }
@@ -122,15 +169,15 @@
           });
       }
 
-      map.on('load', () => {
-        const courses = JSON.parse('{{ .CoursesJSON }}');
+      function loadCourses(courseMap) {
+        let courses = JSON.parse('{{ .CoursesJSON }}');
         console.log('Map loaded, courses:', courses);
         
         if (courses && courses.length > 0) {
           courses.forEach(course => {
             console.log('Processing course:', course.Name, 'Address:', course.Address, 'Rating:', course.OverallRating);
             if (course.Address && course.Address.trim() !== '') {
-              addPinFromAddress(course.Address, course.Name, course.OverallRating, '#204606');
+              addPinFromAddress(courseMap, course.Address, course.Name, course.OverallRating, course.ID, '#204606');
             } else {
               console.log('Skipping course without address:', course.Name);
             }
@@ -138,7 +185,7 @@
         } else {
           console.log('No courses found or courses array is empty');
         }
-      });
+      }
     </script>
   </body>
 </html>
