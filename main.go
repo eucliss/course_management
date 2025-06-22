@@ -33,6 +33,7 @@ func NewTemplates() *Templates {
 			"views/introduction.html",
 			"views/create-course.html",
 			"views/map.html",
+			"views/authentication.html",
 		)),
 	}
 }
@@ -144,6 +145,8 @@ func main() {
 	e.GET("/create-course", handlers.CreateCourseForm)
 	e.POST("/create-course", handlers.CreateCourse)
 	e.GET("/map", handlers.Map)
+	e.GET("/login", handlers.LoginForm)
+	e.POST("/login", handlers.Login)
 	e.Static("/favicon.ico", "static/favicon.ico")
 
 	log.Printf("Server starting on port %s", config.Port)

@@ -119,6 +119,14 @@
                 background-color: #2d6509;
                 color: #FFFCE7;
             }
+            .login-btn {
+                background-color: #F0ED0C;
+                color: #204606;
+            }
+            .login-btn:hover {
+                background-color: #204606;
+                color: #FFFCE7;
+            }
             #map {
                 position: absolute;
                 top: 0;
@@ -200,6 +208,7 @@
                         <button id="home-button" hx-get="/introduction" hx-target="#main-content">Home</button>
                         <button class="create-course-btn" hx-get="/create-course" hx-target="#main-content">Add Course</button>
                         <button class="map-btn" hx-get="/map" hx-target="#main-content">View Map</button>
+                        <button class="login-btn" hx-get="/login" hx-target="#main-content">Login</button>
                     </div>
                 </div>
                 {{ template "courses-map" .Courses }}
