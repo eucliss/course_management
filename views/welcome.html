@@ -36,6 +36,9 @@
                 border: 1px solid #E5E7EB;
                 background-color: #F5F7F9;
                 transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
             }
             .course-item:hover {
                 background-color: #F0ED0C;
@@ -197,6 +200,47 @@
                 border-radius: 4px;
                 box-shadow: 0 1px 2px rgba(0,0,0,0.1);
             }
+
+            .course-content {
+                flex: 1;
+                cursor: pointer;
+            }
+
+            .course-content h4 {
+                margin: 0;
+                font-size: 1.1em;
+                color: #204606;
+            }
+
+            .edit-btn {
+                background: none;
+                border: none;
+                color: #204606;
+                cursor: pointer;
+                padding: 4px;
+                border-radius: 4px;
+                transition: all 0.2s ease;
+                opacity: 0.7;
+                margin-left: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-width: 24px;
+                height: 24px;
+            }
+
+            .edit-btn:hover {
+                background-color: #204606;
+                color: #FFFCE7;
+                opacity: 1;
+                transform: scale(1.1);
+            }
+
+            .edit-btn svg {
+                width: 16px;
+                height: 16px;
+                stroke: currentColor;
+            }
         </style>
     </head>
     <body>
@@ -335,7 +379,15 @@
 {{ block "courses-map" . }}
 {{ range . }}
 <div class="course-item" hx-get="/course/{{ .ID }}" hx-target="#main-content">
-    <h4>{{ .Name }}</h4>
+    <div class="course-content">
+        <h4>{{ .Name }}</h4>
+    </div>
+    <button class="edit-btn" hx-get="/edit-course/{{ .ID }}" hx-target="#main-content" title="Edit Course">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+        </svg>
+    </button>
 </div>
 {{ end }}
 {{ end }}

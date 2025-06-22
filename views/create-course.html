@@ -768,10 +768,3 @@
 </script>
 {{ end }}
 
-{{ block "courses-map" . }}
-{{ range . }}
-<div class="course-item" hx-get="/course/{{ .ID }}" hx-target="#main-content">
-    <h4>{{ .Name }}</h4>
-</div>
-{{ end }}
-{{ end }}
