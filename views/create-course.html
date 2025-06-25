@@ -195,6 +195,7 @@
 </div>
 
 <style>
+    /* Base Layout */
     .course-detail {
         padding: 20px;
         max-width: 1200px;
@@ -221,31 +222,6 @@
         margin-right: 20px;
     }
 
-    .course-detail h1 {
-        text-align: center;
-        color: #204606;
-        font-size: 3.5em;
-        font-weight: bold;
-        margin: 0;
-        border: 2px dashed transparent;
-        padding: 10px;
-        border-radius: 8px;
-        min-height: 1.2em;
-        outline: none;
-        cursor: text;
-    }
-
-    .course-detail h1:hover, .course-detail h1:focus {
-        border-color: #204606;
-        background-color: rgba(32, 70, 6, 0.05);
-    }
-
-    .course-detail h1:empty:before {
-        content: attr(data-placeholder);
-        color: #999;
-        font-style: italic;
-    }
-
     .course-content {
         display: flex;
         gap: 40px;
@@ -265,68 +241,27 @@
         border: 1px solid #E5E7EB;
     }
 
-    .tier-box {
-        background-color: #204606;
-        color: white;
-        padding: 15px 30px;
-        border-radius: 8px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 5px;
-        flex-shrink: 0;
-    }
-
-    .rating-value-select {
-        font-size: 3em;
-        font-weight: bold;
-        line-height: 1;
-        background: transparent;
-        border: none;
-        color: white;
+    /* Typography */
+    .course-detail h1 {
         text-align: center;
-        outline: none;
-        cursor: pointer;
-        width: 80px;
-    }
-
-    .rating-value-select option {
-        background-color: #204606;
-        color: white;
-    }
-
-    .tier-label {
-        font-size: 0.8em;
-        font-weight: 500;
-        letter-spacing: 1px;
-    }
-
-    .line-section {
-        text-align: center;
-        font-size: 1.3em;
-        line-height: 1.6;
-        margin: 0;
-    }
-
-    .line-description {
         color: #204606;
-        font-style: italic;
+        font-size: 3.5em;
+        font-weight: bold;
+        margin: 0;
         border: 2px dashed transparent;
-        padding: 8px;
-        border-radius: 4px;
+        padding: 10px;
+        border-radius: 8px;
+        min-height: 1.2em;
         outline: none;
         cursor: text;
-        display: inline-block;
-        min-width: 200px;
-        min-height: 1.2em;
     }
 
-    .line-description:hover, .line-description:focus {
+    .course-detail h1:hover, .course-detail h1:focus {
         border-color: #204606;
         background-color: rgba(32, 70, 6, 0.05);
     }
 
-    .line-description:empty:before {
+    .course-detail h1:empty:before, .line-description:empty:before {
         content: attr(data-placeholder);
         color: #999;
         font-style: italic;
@@ -346,6 +281,95 @@
         font-size: 1.3em;
     }
 
+    /* Form Elements - Unified Styling */
+    input, textarea, select {
+        padding: 10px 12px;
+        border: 2px dashed #204606;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #204606;
+        background-color: rgba(255, 255, 255, 0.8);
+        outline: none;
+        transition: all 0.2s ease;
+        font-family: inherit;
+    }
+
+    input:focus, textarea:focus, select:focus {
+        border-style: solid;
+        background-color: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 0 0 2px rgba(32, 70, 6, 0.1);
+    }
+
+    input::placeholder, textarea::placeholder {
+        color: #999;
+        font-style: italic;
+    }
+
+    input[readonly] {
+        background-color: rgba(32, 70, 6, 0.1);
+        border-style: solid;
+        color: #666;
+        cursor: not-allowed;
+    }
+
+    /* Specific Form Overrides */
+    .rating-value-select {
+        font-size: 3em;
+        font-weight: bold;
+        background: transparent;
+        border: none;
+        color: white;
+        text-align: center;
+        width: 80px;
+    }
+
+    .rating-select, .number-input {
+        background: transparent;
+        border: 1px solid transparent;
+        width: 80px;
+        padding: 4px 8px;
+    }
+
+    .rating-select:hover, .rating-select:focus,
+    .number-input:hover, .number-input:focus {
+        border-color: #204606;
+        background-color: rgba(255, 255, 255, 0.9);
+    }
+
+    .address-input {
+        width: 100%;
+        padding: 12px;
+    }
+
+    .review-textarea {
+        width: 100%;
+        min-height: 120px;
+        padding: 15px;
+        line-height: 1.6;
+        resize: vertical;
+        box-sizing: border-box;
+    }
+
+    /* Tier Box */
+    .tier-box {
+        background-color: #204606;
+        color: white;
+        padding: 15px 30px;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        flex-shrink: 0;
+    }
+
+    .tier-label {
+        font-size: 0.8em;
+        font-weight: 500;
+        letter-spacing: 1px;
+    }
+
+    /* Table */
     table {
         width: 100%;
         border-collapse: collapse;
@@ -384,119 +408,64 @@
         background-color: #B5D844;
     }
 
-    .editable-cell {
-        position: relative;
-    }
-
-    .rating-select, .number-input {
-        background: transparent;
-        border: 1px solid transparent;
-        outline: none;
-        font-size: 14px;
-        padding: 4px 8px;
-        border-radius: 4px;
-        cursor: pointer;
-        width: 80px;
-    }
-
-    .rating-select:hover, .rating-select:focus,
-    .number-input:hover, .number-input:focus {
-        border-color: #204606;
-        background-color: rgba(255, 255, 255, 0.9);
-    }
-
-    .unit-text {
-        margin-left: 8px;
-        font-size: 14px;
-        color: #666;
-    }
-
-    .review-textarea {
-        width: 100%;
-        min-height: 120px;
-        padding: 15px;
-        border: 2px dashed #204606;
-        border-radius: 8px;
-        background-color: rgba(255, 255, 255, 0.7);
-        color: #204606;
-        font-size: 14px;
-        line-height: 1.6;
-        resize: vertical;
-        outline: none;
-        font-family: inherit;
-        box-sizing: border-box;
-    }
-
-    .review-textarea:focus {
-        border-style: solid;
-        background-color: rgba(255, 255, 255, 0.9);
-    }
-
-    .hole-by-hole-section {
-        margin-top: 30px;
-    }
-
-    .hole-item {
+    /* Dynamic Content Containers */
+    .hole-entry, .score-entry {
         background-color: rgba(255, 255, 255, 0.7);
         border-radius: 8px;
-        padding: 15px;
+        padding: 15px 20px;
         margin-bottom: 15px;
         border: 1px solid rgba(32, 70, 6, 0.2);
     }
 
-    .hole-header {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        margin-bottom: 10px;
-        flex-wrap: wrap;
+    .hole-entry {
+        padding: 20px;
+        margin-bottom: 20px;
     }
 
-    .hole-header h4 {
+    .hole-entry h3 {
         color: #204606;
-        margin: 0;
-        font-size: 1.2em;
-        min-width: 80px;
+        margin: 0 0 15px 0;
+        font-size: 1.3em;
+        font-weight: 600;
     }
 
-    .hole-input {
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        padding: 6px 10px;
-        font-size: 14px;
-        outline: none;
+    /* Grid Layouts */
+    .hole-inputs {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 15px;
     }
 
-    .hole-input:focus {
-        border-color: #204606;
-    }
-
-    .hole-description {
-        width: 100%;
-        min-height: 60px;
-        padding: 10px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        resize: vertical;
-        outline: none;
-        font-family: inherit;
+    .hole-inputs textarea {
+        grid-column: 1 / -1;
+        min-height: 80px;
+        line-height: 1.5;
         box-sizing: border-box;
     }
 
-    .hole-description:focus {
-        border-color: #204606;
+    .score-inputs {
+        display: grid;
+        grid-template-columns: 80px 180px auto;
+        gap: 15px;
+        align-items: center;
     }
 
-    .add-hole-btn, .add-score-btn, .save-course-btn {
+    /* Buttons */
+    .add-hole-btn, .add-score-btn, .save-course-btn, .remove-btn {
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background-color 0.2s ease;
+    }
+
+    .add-hole-btn, .add-score-btn {
         background-color: #204606;
         color: white;
-        border: none;
         padding: 10px 20px;
         border-radius: 6px;
-        cursor: pointer;
         font-size: 14px;
-        font-weight: 500;
-        transition: background-color 0.2s;
         margin-top: 10px;
     }
 
@@ -506,6 +475,7 @@
 
     .save-course-btn {
         background-color: #28a745;
+        color: white;
         font-size: 18px;
         padding: 15px 30px;
         margin-top: 30px;
@@ -519,16 +489,31 @@
     .remove-btn {
         background-color: #dc3545;
         color: white;
-        border: none;
-        padding: 4px 8px;
-        border-radius: 4px;
-        cursor: pointer;
+        padding: 8px 12px;
         font-size: 12px;
-        margin-left: auto;
     }
 
     .remove-btn:hover {
         background-color: #c82333;
+    }
+
+    /* Utility Classes */
+    .line-description {
+        color: #204606;
+        font-style: italic;
+        border: 2px dashed transparent;
+        padding: 8px;
+        border-radius: 4px;
+        outline: none;
+        cursor: text;
+        display: inline-block;
+        min-width: 200px;
+        min-height: 1.2em;
+    }
+
+    .line-description:hover, .line-description:focus {
+        border-color: #204606;
+        background-color: rgba(32, 70, 6, 0.05);
     }
 
     .scoring-section {
@@ -537,35 +522,27 @@
         border-top: 2px solid #204606;
     }
 
-    .score-item {
-        display: flex;
-        gap: 15px;
-        align-items: center;
-        padding: 10px;
-        background-color: #F5F7F9;
-        border-radius: 4px;
-        margin-bottom: 10px;
-    }
-
-    .score-input {
-        width: 80px;
-        padding: 6px 10px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        outline: none;
-    }
-
-    .score-input:focus {
-        border-color: #204606;
-    }
-
     .save-section {
         margin-top: 40px;
         padding-top: 20px;
         border-top: 2px solid #204606;
     }
 
-    /* Color classes for dynamic updates */
+    .hole-by-hole-section {
+        margin-top: 30px;
+    }
+
+    #holes-container, #scores-container {
+        margin-bottom: 20px;
+    }
+
+    .unit-text {
+        margin-left: 8px;
+        font-size: 14px;
+        color: #666;
+    }
+
+    /* Rating Colors */
     .rating-S { background-color: #73FF73 !important; }
     .rating-A { background-color: #B7FF73 !important; }
     .rating-B { background-color: #FFFF73 !important; }
@@ -573,70 +550,23 @@
     .rating-D { background-color: #FFB774 !important; }
     .rating-F { background-color: #FF7474 !important; }
 
-    .hazard-1 { background-color: #73FF73 !important; }
-    .hazard-2 { background-color: #B7FF73 !important; }
-    .hazard-3 { background-color: #FFFF73 !important; }
-    .hazard-4 { background-color: #FFDA74 !important; }
-    .hazard-5 { background-color: #FFB774 !important; }
-
-    .price-1 { background-color: #73FF73 !important; }
-    .price-2 { background-color: #B7FF73 !important; }
-    .price-3 { background-color: #FFFF73 !important; }
-    .price-4 { background-color: #FFDA74 !important; }
-
-    .handicap-1, .handicap-2, .handicap-3 { background-color: #FF7474 !important; }
-    .handicap-4, .handicap-5, .handicap-6 { background-color: #FFB774 !important; }
-    .handicap-7, .handicap-8, .handicap-9 { background-color: #FFDA74 !important; }
-    .handicap-10, .handicap-11, .handicap-12 { background-color: #FFFF73 !important; }
-    .handicap-13, .handicap-14, .handicap-15 { background-color: #B7FF73 !important; }
-    .handicap-16, .handicap-17, .handicap-18, .handicap-19, .handicap-20 { background-color: #73FF73 !important; }
-
-    .course-details-section {
-        margin-bottom: 30px;
-        background-color: rgba(255, 255, 255, 0.7);
-        border-radius: 8px;
-        padding: 20px;
-        border: 1px solid rgba(32, 70, 6, 0.2);
-    }
-
-    .detail-item {
-        margin-bottom: 15px;
-    }
-
-    .detail-item label {
-        display: block;
-        color: #204606;
-        font-size: 1.1em;
-        font-weight: 500;
-        margin-bottom: 8px;
-    }
-
-    .address-input {
-        width: 100%;
-        padding: 12px;
-        border: 2px dashed #204606;
-        border-radius: 8px;
-        font-size: 1em;
-        color: #204606;
-        background-color: rgba(255, 255, 255, 0.7);
-        transition: all 0.2s ease;
-    }
-
-    .address-input:focus {
-        outline: none;
-        border-style: solid;
-        background-color: rgba(255, 255, 255, 0.9);
-    }
-
-    .address-input::placeholder {
-        color: #999;
-        font-style: italic;
+    /* Mobile */
+    @media (max-width: 768px) {
+        .hole-inputs, .score-inputs {
+            grid-template-columns: 1fr;
+        }
+        
+        .hole-inputs textarea {
+            grid-column: 1;
+        }
     }
 </style>
 
 <script>
     /* eslint-disable */
     // @ts-nocheck
+    
+    console.log('🎯 Create course page loading...');
     
     // Global variables for counters
     var holeCount = 0;
@@ -646,54 +576,103 @@
     var isEdit = {{ if .IsEdit }}true{{ else }}false{{ end }};
     var courseId = {{ if .IsEdit }}{{ .Course.ID }}{{ else }}null{{ end }};
 
+    console.log('📋 Form initialized:', { isEdit, courseId, holeCount, scoreCount });
+
     // Function to add a new hole
     function addHole(holeData = null) {
-        const container = document.getElementById('holes-container');
-        const holeDiv = document.createElement('div');
-        holeDiv.className = 'hole-entry';
+        console.log('⛳ Adding hole:', { holeData, currentCount: holeCount });
         
-        const holeNumber = holeData ? holeData.Number : (holeCount + 1);
-        const par = holeData ? holeData.Par : '';
-        const yardage = holeData ? holeData.Yardage : '';
-        const description = holeData ? holeData.Description : '';
-        
-        holeDiv.innerHTML = `
-            <h3>Hole ${holeNumber}</h3>
-            <div class="hole-inputs">
-                <input type="number" name="holes[${holeCount}].number" value="${holeNumber}" readonly>
-                <input type="number" name="holes[${holeCount}].par" placeholder="Par" min="3" max="6" value="${par}">
-                <input type="number" name="holes[${holeCount}].yardage" placeholder="Yardage" value="${yardage}">
-                <textarea name="holes[${holeCount}].description" placeholder="Hole description">${description}</textarea>
-            </div>
-        `;
-        container.appendChild(holeDiv);
-        holeCount++;
+        try {
+            const container = document.getElementById('holes-container');
+            if (!container) {
+                console.error('❌ Holes container not found');
+                return;
+            }
+            
+            const holeDiv = document.createElement('div');
+            holeDiv.className = 'hole-entry';
+            
+            const holeNumber = holeData ? holeData.Number : (holeCount + 1);
+            const par = holeData ? holeData.Par : '';
+            const yardage = holeData ? holeData.Yardage : '';
+            const description = holeData ? holeData.Description : '';
+            
+            holeDiv.innerHTML = `
+                <h3>Hole ${holeNumber}</h3>
+                <div class="hole-inputs">
+                    <input type="number" name="holes[${holeCount}].number" value="${holeNumber}" readonly>
+                    <input type="number" name="holes[${holeCount}].par" placeholder="Par (3-6)" min="3" max="6" value="${par}">
+                    <input type="number" name="holes[${holeCount}].yardage" placeholder="Yardage" min="0" value="${yardage}">
+                    <textarea name="holes[${holeCount}].description" placeholder="Describe this hole (optional)">${description}</textarea>
+                    <button type="button" onclick="removeHole(this)" class="remove-btn">Remove Hole</button>
+                </div>
+            `;
+            container.appendChild(holeDiv);
+            holeCount++;
+            
+            console.log('✅ Hole added successfully. Total holes:', holeCount);
+            
+        } catch (error) {
+            console.error('💥 Error adding hole:', error);
+        }
     }
 
     // Function to add a new score
     function addScore(scoreData = null) {
-        const container = document.getElementById('scores-container');
-        const scoreDiv = document.createElement('div');
-        scoreDiv.className = 'score-entry';
+        console.log('🎯 Adding score:', { scoreData, currentCount: scoreCount });
         
-        const score = scoreData ? scoreData.Score : '';
-        const handicap = scoreData ? scoreData.Handicap : '';
-        
-        scoreDiv.innerHTML = `
-            <div class="score-inputs">
-                <input type="number" name="scores[${scoreCount}].score" placeholder="Score" value="${score}">
-                <input type="number" name="scores[${scoreCount}].handicap" placeholder="Handicap" step="0.1" value="${handicap}">
-            </div>
-        `;
-        container.appendChild(scoreDiv);
-        scoreCount++;
+        try {
+            const container = document.getElementById('scores-container');
+            if (!container) {
+                console.error('❌ Scores container not found');
+                return;
+            }
+            
+            const scoreDiv = document.createElement('div');
+            scoreDiv.className = 'score-entry';
+            
+            const score = scoreData ? scoreData.Score : '';
+            const handicap = scoreData ? scoreData.Handicap : '';
+            
+            scoreDiv.innerHTML = `
+                <div class="score-inputs">
+                    <input type="number" name="scores[${scoreCount}].score" placeholder="Total Score" min="0" value="${score}">
+                    <input type="number" name="scores[${scoreCount}].handicap" placeholder="Handicap" step="0.1" min="0" max="54" value="${handicap}">
+                    <button type="button" onclick="removeScore(this)" class="remove-btn">Remove</button>
+                </div>
+            `;
+            container.appendChild(scoreDiv);
+            scoreCount++;
+            
+            console.log('✅ Score added successfully. Total scores:', scoreCount);
+            
+        } catch (error) {
+            console.error('💥 Error adding score:', error);
+        }
     }
 
-    // Initialize immediately - no DOM events needed
-    // If editing, populate existing holes and scores
+    // Add remove functions
+    function removeHole(button) {
+        const holeEntry = button.closest('.hole-entry');
+        console.log('🗑️ Removing hole');
+        holeEntry.remove();
+    }
+
+    function removeScore(button) {
+        const scoreEntry = button.closest('.score-entry');
+        console.log('🗑️ Removing score');
+        scoreEntry.remove();
+    }
+
+    // Initialize data loading
+    console.log('🚀 Starting data initialization...');
+    
     if (isEdit) {
+        console.log('✏️ Edit mode: Loading existing course data');
+        
         // Add existing holes if they exist
         {{ if and .IsEdit .Course.Holes }}
+            console.log('📊 Loading {{ len .Course.Holes }} existing holes');
             {{ range .Course.Holes }}
                 addHole({
                     Number: {{ .Number }},
@@ -702,49 +681,79 @@
                     Description: {{ .Description | printf "%q" }}
                 });
             {{ end }}
+            console.log('✅ All holes loaded');
+        {{ else }}
+            console.log('ℹ️ No existing holes to load');
         {{ end }}
         
         // Add existing scores if they exist
         {{ if and .IsEdit .Course.Scores }}
+            console.log('📊 Loading {{ len .Course.Scores }} existing scores');
             {{ range .Course.Scores }}
                 addScore({
                     Score: {{ .Score }},
                     Handicap: {{ .Handicap }}
                 });
             {{ end }}
+            console.log('✅ All scores loaded');
+        {{ else }}
+            console.log('ℹ️ No existing scores to load');
         {{ end }}
+    } else {
+        console.log('🆕 Create mode: Starting with empty form');
     }
+
+    console.log('✅ Data initialization complete');
 
     // Function to save the course
     function saveCourse() {
+        console.log('💾 Starting course save process...');
+        
         try {
             // Get form values
             const formData = new FormData();
             
-            // Basic course information - Handle contenteditable placeholders
+            // Basic course information
             let name = document.getElementById('course-name').innerText.trim();
             let description = document.getElementById('course-description').innerText.trim();
-            
-            // Handle placeholder text
-            if (name === 'New Golf Course' || name === 'Enter Course Name') {
-                name = ''; // Or set a default: name = 'Untitled Course';
-            }
-            if (description === 'Click to add description' || description === 'Enter course description') {
-                description = ''; // Or set a default: description = 'No description provided';
-            }
-            
             const overallRating = document.getElementById('overall-rating').value;
             const address = document.getElementById('course-address').value;
             const review = document.getElementById('course-review').value;
 
-            // Debug logging
-            console.log('Form data:', { name, description, overallRating });
+            console.log('📝 Raw form data:', { 
+                name, 
+                description, 
+                overallRating, 
+                address, 
+                reviewLength: review.length 
+            });
 
-            // Validate required fields on frontend
+            // Handle placeholder text
+            if (name === 'New Golf Course' || name === 'Enter Course Name') {
+                console.warn('⚠️ Placeholder name detected, clearing');
+                name = '';
+            }
+            if (description === 'Click to add description' || description === 'Enter course description') {
+                console.warn('⚠️ Placeholder description detected, clearing');
+                description = '';
+            }
+
+            // Validate required fields
+            const validation = {
+                name: !!name,
+                description: !!description,
+                rating: !!overallRating
+            };
+            
+            console.log('🔍 Validation check:', validation);
+            
             if (!name || !description || !overallRating) {
-                alert('Please fill in the course name, description, and overall rating');
+                console.error('❌ Validation failed:', validation);
+                alert('Please fill in course name, description, and overall rating');
                 return;
             }
+            
+            console.log('✅ Validation passed');
 
             // Add basic information to form data
             formData.append('name', name);
@@ -754,54 +763,85 @@
             formData.append('review', review);
 
             // Add rankings
-            formData.append('price', document.getElementById('price').value);
-            formData.append('handicapDifficulty', document.getElementById('handicap-difficulty').value);
-            formData.append('hazardDifficulty', document.getElementById('hazard-difficulty').value);
-            formData.append('merch', document.getElementById('merch').value);
-            formData.append('condition', document.getElementById('condition').value);
-            formData.append('enjoymentRating', document.getElementById('enjoyment-rating').value);
-            formData.append('vibe', document.getElementById('vibe').value);
-            formData.append('range', document.getElementById('range').value);
-            formData.append('amenities', document.getElementById('amenities').value);
-            formData.append('glizzies', document.getElementById('glizzies').value);
+            const rankings = [
+                'price', 'handicapDifficulty', 'hazardDifficulty', 'merch', 
+                'condition', 'enjoymentRating', 'vibe', 'range', 'amenities', 'glizzies'
+            ];
+            
+            rankings.forEach(ranking => {
+                const value = document.getElementById(ranking.replace(/([A-Z])/g, '-$1').toLowerCase()).value;
+                formData.append(ranking, value);
+                console.log(`📊 ${ranking}:`, value);
+            });
 
             // Add holes
             const holeElements = document.querySelectorAll('.hole-entry');
+            console.log(`⛳ Processing ${holeElements.length} holes`);
+            
             holeElements.forEach((holeElement, index) => {
                 const inputs = holeElement.querySelectorAll('input, textarea');
+                const holeData = {};
+                
                 inputs.forEach(input => {
-                    formData.append(`holes[${index}].${input.name.split('.').pop()}`, input.value);
+                    const fieldName = input.name.split('.').pop();
+                    holeData[fieldName] = input.value;
+                    formData.append(`holes[${index}].${fieldName}`, input.value);
                 });
+                
+                console.log(`⛳ Hole ${index + 1}:`, holeData);
             });
 
             // Add scores
             const scoreElements = document.querySelectorAll('.score-entry');
+            console.log(`🎯 Processing ${scoreElements.length} scores`);
+            
             scoreElements.forEach((scoreElement, index) => {
                 const inputs = scoreElement.querySelectorAll('input');
+                const scoreData = {};
+                
                 inputs.forEach(input => {
-                    formData.append(`scores[${index}].${input.name.split('.').pop()}`, input.value);
+                    const fieldName = input.name.split('.').pop();
+                    scoreData[fieldName] = input.value;
+                    formData.append(`scores[${index}].${fieldName}`, input.value);
                 });
+                
+                console.log(`🎯 Score ${index + 1}:`, scoreData);
             });
 
-            // Determine the endpoint based on whether we're editing or creating
+            // Determine the endpoint
             const endpoint = isEdit ? `/edit-course/${courseId}` : '/create-course';
+            const method = 'POST';
+            
+            console.log('🎯 Submitting to:', { endpoint, method, isEdit });
             
             // Submit via HTMX
             htmx.ajax('POST', endpoint, {
                 values: formData,
                 target: '#main-content'
             });
-
-            console.log('Sending:', { 
-                name: name, 
-                description: description, 
-                overallRating: overallRating 
-            });
+            
+            console.log('📤 Form submitted via HTMX');
+            
         } catch (error) {
-            console.error('Error in saveCourse:', error);
+            console.error('💥 Critical error in saveCourse:', error);
             alert('An error occurred while saving the course: ' + error.message);
         }
     }
+    
+    // Add HTMX event logging
+    document.addEventListener('htmx:beforeRequest', function(e) {
+        console.log('🚀 HTMX Request starting:', e.detail.requestConfig.verb, e.detail.requestConfig.path);
+    });
+    
+    document.addEventListener('htmx:afterRequest', function(e) {
+        if (e.detail.xhr.status >= 400) {
+            console.error('❌ HTMX Error:', e.detail.xhr.status, e.detail.xhr.response);
+        } else {
+            console.log('✅ HTMX Success:', e.detail.xhr.status);
+        }
+    });
+    
+    console.log('🎉 Create course JavaScript fully loaded');
 </script>
 {{ end }}
 
