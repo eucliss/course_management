@@ -1,136 +1,136 @@
 {
-  "Name": "The Club at Longview",
+  "name": "The Club at Longview",
   "ID": 0,
-  "Description": "'It’s as if it was always meant to be the home of a great golf course.' - Jack Nicklaus",
-  "Ranks": {
-    "Price": "$$$$",
-    "HandicapDifficulty": 7,
-    "HazardDifficulty": 2,
-    "Merch": "B",
-    "Condition": "S",
-    "EnjoymentRating": "S",
-    "Vibe": "S",
-    "Range": "S",
-    "Amenities": "B",
-    "Glizzies": "A"
+  "description": "'It's as if it was always meant to be the home of a great golf course.' - Jack Nicklaus",
+  "ranks": {
+    "price": "$$$$",
+    "handicapDifficulty": 7,
+    "hazardDifficulty": 2,
+    "merch": "B",
+    "condition": "S",
+    "enjoymentRating": "S",
+    "vibe": "S",
+    "range": "S",
+    "amenities": "B",
+    "glizzies": "A"
   },
-  "OverallRating": "S",
-  "Review": "The Club at Longview has golf course in North Carolina offers an array of options for every level of player. Members may enjoy golf alone, with friends, or even with their chosen guests. Our golf course weaves throughout our gated community, providing natural scenery to our local neighbors. We offer all the amenities and services you could want for a fun and rewarding experience. The golf course is available, without tee times, for those seeking a set of links with 18 pristine holes. ",
-  "Holes": [
+  "overallRating": "S",
+  "review": "The Club at Longview has golf course in North Carolina offers an array of options for every level of player. Members may enjoy golf alone, with friends, or even with their chosen guests. Our golf course weaves throughout our gated community, providing natural scenery to our local neighbors. We offer all the amenities and services you could want for a fun and rewarding experience. The golf course is available, without tee times, for those seeking a set of links with 18 pristine holes. ",
+  "holes": [
     {
-      "Number": 1,
-      "Par": 4,
-      "Yardage": 359,
-      "Description": "The opening hole is a straight forward medium length par 4. Off the tee the golfer must be aware of the bunker that guards the right side of the landing area. Another bunker frames the left side just beyond the landing area and will only come into play for the long hitter. The green is framed on the right side by two large majestic oak trees that are perched on a slope that feeds any shot hit right of the green down on to the putting surface. The left side of the green is defended by a bunker located adjacent to the putting surface and a wetland area beyond. "
+      "number": 1,
+      "par": 4,
+      "yardage": 359,
+      "description": "The opening hole is a straight forward medium length par 4. Off the tee the golfer must be aware of the bunker that guards the right side of the landing area. Another bunker frames the left side just beyond the landing area and will only come into play for the long hitter. The green is framed on the right side by two large majestic oak trees that are perched on a slope that feeds any shot hit right of the green down on to the putting surface. The left side of the green is defended by a bunker located adjacent to the putting surface and a wetland area beyond. "
     },
     {
-      "Number": 2,
-      "Par": 4,
-      "Yardage": 345,
-      "Description": "The second hole is a short par 4 dogleg right that plays slightly uphill from the tees which are located adjacent to a small lake. A large complex of bunkers along the right side of the hole requires the golfer to play their tee shot out to the left. After navigating safely on to the fairway the player should only have a short iron shot left the reach the shallow green that is guarded at the front by a very deep bunker. "
+      "number": 2,
+      "par": 4,
+      "yardage": 345,
+      "description": "The second hole is a short par 4 dogleg right that plays slightly uphill from the tees which are located adjacent to a small lake. A large complex of bunkers along the right side of the hole requires the golfer to play their tee shot out to the left. After navigating safely on to the fairway the player should only have a short iron shot left the reach the shallow green that is guarded at the front by a very deep bunker. "
     },
     {
-      "Number": 3,
-      "Par": 3,
-      "Yardage": 182,
-      "Description": "This strong par 3 is the longest par 3 on the course and is the first in a string of challenging holes to be conquered by the golfer. This slightly downhill hole plays over a stream that angles toward the tees from left to right. This hole has the largest green on the course and is very receptive to a shot that runs in right to left from the large approach area at the right front of the green. A ball hit left of the green will find the bunker that separates the green from the rock lined stream. "
+      "number": 3,
+      "par": 3,
+      "yardage": 182,
+      "description": "This strong par 3 is the longest par 3 on the course and is the first in a string of challenging holes to be conquered by the golfer. This slightly downhill hole plays over a stream that angles toward the tees from left to right. This hole has the largest green on the course and is very receptive to a shot that runs in right to left from the large approach area at the right front of the green. A ball hit left of the green will find the bunker that separates the green from the rock lined stream. "
     },
     {
-      "Number": 4,
-      "Par": 5,
-      "Yardage": 483,
-      "Description": "From the tees this medium-long par 5 play over the edge of a lake and up onto a high bluff to the first landing area with deep fairway bunker on the left side guards that inside of the dogleg. With a good tee shot the golfer can carry the bunker and be in position to possibly go for the green in two. From high on the bluff the player has the option play short of or right of the two fairways cross bunkers. A more aggressive line would be to play a shot over the bunkers to carry to the approach or even the green. A deep bunker in front of this shallow two tiered green to collect any shot that falls short. "
+      "number": 4,
+      "par": 5,
+      "yardage": 483,
+      "description": "From the tees this medium-long par 5 play over the edge of a lake and up onto a high bluff to the first landing area with deep fairway bunker on the left side guards that inside of the dogleg. With a good tee shot the golfer can carry the bunker and be in position to possibly go for the green in two. From high on the bluff the player has the option play short of or right of the two fairways cross bunkers. A more aggressive line would be to play a shot over the bunkers to carry to the approach or even the green. A deep bunker in front of this shallow two tiered green to collect any shot that falls short. "
     },
     {
-      "Number": 5,
-      "Par": 4,
-      "Yardage": 364,
-      "Description": "This long par 4 plays uphill from the tees to the land area where it doglegs sharply to the left. A golfer trying to cut the corner on the inside of the dogleg will find a large group of bunkers that will collect the ball and make for a difficult second shot to the green. The best position off the tee is play close to the bunkers to be rewarded with a more open shot to the green. From the elevated fairway a medium to long iron shot will be required to reach the putting surface that works from left to right. "
+      "number": 5,
+      "par": 4,
+      "yardage": 364,
+      "description": "This long par 4 plays uphill from the tees to the land area where it doglegs sharply to the left. A golfer trying to cut the corner on the inside of the dogleg will find a large group of bunkers that will collect the ball and make for a difficult second shot to the green. The best position off the tee is play close to the bunkers to be rewarded with a more open shot to the green. From the elevated fairway a medium to long iron shot will be required to reach the putting surface that works from left to right. "
     },
     {
-      "Number": 6,
-      "Par": 5,
-      "Yardage": 539,
-      "Description": "At just over 600 yards from the back tee this double dogleg par 5 is the longest hole on the golf course. The first landing area has one bunker short right and two bunkers cut into the high slope on the left. At the first landing area the fairway doglegs to the right so if the golfer risks a shot over the right bunker the reward is an extra 20 to 30 yards of roll on the down slope. From the landing area the golfer is facing a downhill shot with a lake along the left side and a few bunkers along the right. For most golfers it will require three shots to reach this green which is oriented from right to left and fronted by a rock wall along the lake and a bunker splashed in the slope above the putting surface. "
+      "number": 6,
+      "par": 5,
+      "yardage": 539,
+      "description": "At just over 600 yards from the back tee this double dogleg par 5 is the longest hole on the golf course. The first landing area has one bunker short right and two bunkers cut into the high slope on the left. At the first landing area the fairway doglegs to the right so if the golfer risks a shot over the right bunker the reward is an extra 20 to 30 yards of roll on the down slope. From the landing area the golfer is facing a downhill shot with a lake along the left side and a few bunkers along the right. For most golfers it will require three shots to reach this green which is oriented from right to left and fronted by a rock wall along the lake and a bunker splashed in the slope above the putting surface. "
     },
     {
-      "Number": 7,
-      "Par": 3,
-      "Yardage": 120,
-      "Description": "This par 3 is the shortest hole on the course yet one of the most challenging because it requires a precise shot. The tees play from a high bluff down to a perched \"island green\" that has streams both front \u0026 back and a small bunker located in on the left side. With little room for error a golfer must ´hit and hold' the putting surface to stay out of trouble on this one. The green is oriented from right to left and if the pin is tucked in the back left section, the safest course of action would be to play to the center of the green take two putts and be happy to walk away with par. "
+      "number": 7,
+      "par": 3,
+      "yardage": 120,
+      "description": "This par 3 is the shortest hole on the course yet one of the most challenging because it requires a precise shot. The tees play from a high bluff down to a perched \"island green\" that has streams both front & back and a small bunker located in on the left side. With little room for error a golfer must ´hit and hold' the putting surface to stay out of trouble on this one. The green is oriented from right to left and if the pin is tucked in the back left section, the safest course of action would be to play to the center of the green take two putts and be happy to walk away with par. "
     },
     {
-      "Number": 8,
-      "Par": 4,
-      "Yardage": 311,
-      "Description": "This short and narrow par 4 offers many challenges to the golfer. With the creek running all along the right and two fairway bunkers on the left the fairway gets quite narrow at the landing area. For most golfers the sensible choice is to play a long iron shot from the tee to try to position the ball for a short iron second shot to the green. The small perched green is guarded on the front left \u0026 back right by bunkers and by the rock wall along the stream on the right. Also the back section of the green falls away from the direction of play making it a bit harder to hold a shot. "
+      "number": 8,
+      "par": 4,
+      "yardage": 311,
+      "description": "This short and narrow par 4 offers many challenges to the golfer. With the creek running all along the right and two fairway bunkers on the left the fairway gets quite narrow at the landing area. For most golfers the sensible choice is to play a long iron shot from the tee to try to position the ball for a short iron second shot to the green. The small perched green is guarded on the front left & back right by bunkers and by the rock wall along the stream on the right. Also the back section of the green falls away from the direction of play making it a bit harder to hold a shot. "
     },
     {
-      "Number": 9,
-      "Par": 4,
-      "Yardage": 328,
-      "Description": "On this medium length dogleg right par 4, the golfer has to first carry over a wetland area and a small channel to reach the fairway. However the player must be careful to avoid the right fairway bunker and the wetland that crosses the fairway just beyond the landing area. The green plays from left to right with a tree line slope along the left. Any shots left out to the right of the green will be collected in the deep green side bunker the largest on the course. "
+      "number": 9,
+      "par": 4,
+      "yardage": 328,
+      "description": "On this medium length dogleg right par 4, the golfer has to first carry over a wetland area and a small channel to reach the fairway. However the player must be careful to avoid the right fairway bunker and the wetland that crosses the fairway just beyond the landing area. The green plays from left to right with a tree line slope along the left. Any shots left out to the right of the green will be collected in the deep green side bunker the largest on the course. "
     },
     {
-      "Number": 10,
-      "Par": 3,
-      "Yardage": 147,
-      "Description": "After making the turn at #9 the golfer starts the backside off on this medium length par 3. From the tees the hole plays slightly downhill to a two tiered green that sits nestled into the trees. The green is oriented perpendicular to the line of play with a strong bunker located at the front of the green. The approach leads into the putting surface from the left side and feeds a ball from the left and higher side of the green down to the right hand lower section of the green. The real challenge of this hole lies in the position of the pin and how aggressively the player chooses to attack the flag. The farther right the pin is set the more the front bunker comes into play thus creating a higher degree of difficulty. "
+      "number": 10,
+      "par": 3,
+      "yardage": 147,
+      "description": "After making the turn at #9 the golfer starts the backside off on this medium length par 3. From the tees the hole plays slightly downhill to a two tiered green that sits nestled into the trees. The green is oriented perpendicular to the line of play with a strong bunker located at the front of the green. The approach leads into the putting surface from the left side and feeds a ball from the left and higher side of the green down to the right hand lower section of the green. The real challenge of this hole lies in the position of the pin and how aggressively the player chooses to attack the flag. The farther right the pin is set the more the front bunker comes into play thus creating a higher degree of difficulty. "
     },
     {
-      "Number": 11,
-      "Par": 4,
-      "Yardage": 309,
-      "Description": "The shortest par 4 on the course is a narrow hole with lots of strategy to excite golfers of all skill levels. The hole doglegs slightly to the right with trees bordering the left side of the fairway and a complex of deep bunkers lying in wait along the right side.The fairway is narrow at the bunkers so the player must decide whether to risk flirting with the bunkers or laying back with a fairway wood or long iron to minimize the risk. On occasion when the hole is playing down wind the big hitters may want to challenge the bunkers and try to carry a shot over the complex. The small green is guarded at the front and on the left side by bunkers and has lots of movement within the putting surface. "
+      "number": 11,
+      "par": 4,
+      "yardage": 309,
+      "description": "The shortest par 4 on the course is a narrow hole with lots of strategy to excite golfers of all skill levels. The hole doglegs slightly to the right with trees bordering the left side of the fairway and a complex of deep bunkers lying in wait along the right side.The fairway is narrow at the bunkers so the player must decide whether to risk flirting with the bunkers or laying back with a fairway wood or long iron to minimize the risk. On occasion when the hole is playing down wind the big hitters may want to challenge the bunkers and try to carry a shot over the complex. The small green is guarded at the front and on the left side by bunkers and has lots of movement within the putting surface. "
     },
     {
-      "Number": 12,
-      "Par": 5,
-      "Yardage": 497,
-      "Description": "A strong par 5 that gets more exciting with each successive shot. The first shot plays slightly uphill to a landing area with two bunkers on the right side. The holedoglegs to left and at this point the golfer must decide how much risk to take on the next shot. The second landing area is guarded on the right by a lake and by multiple bunkers on the left. The green is oriented from left to right with the lake along the right side, a bunker splashed into the left slope above the putting surface and a bunker in the center of the approach. With multiple options the safest shot is to lay-up on the right side short of the lake. To get a better angle to the green the golfer can try to squeeze a shot in between the lake and the bunkers or fire a shot aggressively toward the approach or the putting surface. "
+      "number": 12,
+      "par": 5,
+      "yardage": 497,
+      "description": "A strong par 5 that gets more exciting with each successive shot. The first shot plays slightly uphill to a landing area with two bunkers on the right side. The holedoglegs to left and at this point the golfer must decide how much risk to take on the next shot. The second landing area is guarded on the right by a lake and by multiple bunkers on the left. The green is oriented from left to right with the lake along the right side, a bunker splashed into the left slope above the putting surface and a bunker in the center of the approach. With multiple options the safest shot is to lay-up on the right side short of the lake. To get a better angle to the green the golfer can try to squeeze a shot in between the lake and the bunkers or fire a shot aggressively toward the approach or the putting surface. "
     },
     {
-      "Number": 13,
-      "Par": 4,
-      "Yardage": 348,
-      "Description": "With the tees perched high on the existing hillside you can catch a glimpse of the city of Charlotte skyline framing the backdrop of this downhill medium length par 4 and the golfer now understands where the name originated. The hole doglegs to the left around the slope from the existing lake. A shot taken over the bunker complex on the left will cut down on the distance to the green. Any shot hit long and right runs the risk of ending up in the bunker that frames the right side of the landing area. The green is situated from right to left with a bunker between the putting surface and the small lake located left of the green. A mid to short iron shot will be required to accurately place the ball on rolling putting surface. "
+      "number": 13,
+      "par": 4,
+      "yardage": 348,
+      "description": "With the tees perched high on the existing hillside you can catch a glimpse of the city of Charlotte skyline framing the backdrop of this downhill medium length par 4 and the golfer now understands where the name originated. The hole doglegs to the left around the slope from the existing lake. A shot taken over the bunker complex on the left will cut down on the distance to the green. Any shot hit long and right runs the risk of ending up in the bunker that frames the right side of the landing area. The green is situated from right to left with a bunker between the putting surface and the small lake located left of the green. A mid to short iron shot will be required to accurately place the ball on rolling putting surface. "
     },
     {
-      "Number": 14,
-      "Par": 3,
-      "Yardage": 340,
-      "Description": "Standing on the tees looking down the fairway of this short par 4 the golfer feels comfortable surveying the wide landing zone. However upon further inspection the golfer realizes that there are bunkers left, center, long and short. With a small green that pitches hard from right to left and is well flanked by bunkers on both sides the golfers is best advise to attack the green from the left or center of the fairway. This means trying to bite off as much of the fairway as possible without ending up in one of the fairway bunkers. Shots hit too far to the right off the tee will leave the with golfer with a short iron to the green that will have to be hit high and soft with lots of back spin to hold the green from this angle. This strategy of this green bears resemblance to the 13th green at Riviera Country Club. "
+      "number": 14,
+      "par": 3,
+      "yardage": 340,
+      "description": "Standing on the tees looking down the fairway of this short par 4 the golfer feels comfortable surveying the wide landing zone. However upon further inspection the golfer realizes that there are bunkers left, center, long and short. With a small green that pitches hard from right to left and is well flanked by bunkers on both sides the golfers is best advise to attack the green from the left or center of the fairway. This means trying to bite off as much of the fairway as possible without ending up in one of the fairway bunkers. Shots hit too far to the right off the tee will leave the with golfer with a short iron to the green that will have to be hit high and soft with lots of back spin to hold the green from this angle. This strategy of this green bears resemblance to the 13th green at Riviera Country Club. "
     },
     {
-      "Number": 15,
-      "Par": 3,
-      "Yardage": 138,
-      "Description": "The fifteenth hole is the first of the final four holes that really give the course a strong finish. The longish par 3 with its tees set along a small stream to a challenging green requires a long, yet precise shot to score on this hole. The perched green is fronted on the left by a very large deep bunker that should be avoided at all costs. The approach feeds a ball in from right to left and also contains a bunker that will collect shots left out to the right. The putting surface is large with lots of subtle movement. Long putts on the will tend to have multiple breaks making par an acceptable score on this one. "
+      "number": 15,
+      "par": 3,
+      "yardage": 138,
+      "description": "The fifteenth hole is the first of the final four holes that really give the course a strong finish. The longish par 3 with its tees set along a small stream to a challenging green requires a long, yet precise shot to score on this hole. The perched green is fronted on the left by a very large deep bunker that should be avoided at all costs. The approach feeds a ball in from right to left and also contains a bunker that will collect shots left out to the right. The putting surface is large with lots of subtle movement. Long putts on the will tend to have multiple breaks making par an acceptable score on this one. "
     },
     {
-      "Number": 16,
-      "Par": 4,
-      "Yardage": 364,
-      "Description": " Like the fifteenth hole this one also plays along the bottom of the draw. The stream meanders through the tee complex and crosses the hole once again in front of the green on this medium-long par 4. From the tee players will observe a bunker in the center of the fairway where the hole begins to dogleg sharply to the left. To the left of the bunkers the fairway is narrow and bordered on the left side by a natural wetland. This is the shorter yet more risky route to the green. Playing out to the right or short of the bunker is the safer path although it will then require a longer approach shot to the green. The shallow green is tucked into the hillside above the stream and guarded by a deep bunker at the front and one to the left of the putting surface. "
+      "number": 16,
+      "par": 4,
+      "yardage": 364,
+      "description": " Like the fifteenth hole this one also plays along the bottom of the draw. The stream meanders through the tee complex and crosses the hole once again in front of the green on this medium-long par 4. From the tee players will observe a bunker in the center of the fairway where the hole begins to dogleg sharply to the left. To the left of the bunkers the fairway is narrow and bordered on the left side by a natural wetland. This is the shorter yet more risky route to the green. Playing out to the right or short of the bunker is the safer path although it will then require a longer approach shot to the green. The shallow green is tucked into the hillside above the stream and guarded by a deep bunker at the front and one to the left of the putting surface. "
     },
     {
-      "Number": 17,
-      "Par": 5,
-      "Yardage": 467,
-      "Description": "This hole is a medium length par 5 that will require two well struck shots to get home in two. A large lake extends along the right side of the hole from the tees to well beyond the first landing area. The hole doglegs to the right around the lake with two bunkers protecting the left side of the landing area. The second shot requires a strong carry over a natural wetland area to a fairway that extends up the hillside to the green. A deep bunker giving the golfer the option of playing to the narrow shorter route to the right or bailing out left of the bunker divides the fairway of the second landing area. The shallow green is oriented from left to right with a large deep bunker situated along the entire right front of the putting surface. The fairway approach ties into the green along the left and continues to wrap around behind the back half of this perched green. Shots not holding the left hand portion of the green will repel and be collected in the lower fairway area. "
+      "number": 17,
+      "par": 5,
+      "yardage": 467,
+      "description": "This hole is a medium length par 5 that will require two well struck shots to get home in two. A large lake extends along the right side of the hole from the tees to well beyond the first landing area. The hole doglegs to the right around the lake with two bunkers protecting the left side of the landing area. The second shot requires a strong carry over a natural wetland area to a fairway that extends up the hillside to the green. A deep bunker giving the golfer the option of playing to the narrow shorter route to the right or bailing out left of the bunker divides the fairway of the second landing area. The shallow green is oriented from left to right with a large deep bunker situated along the entire right front of the putting surface. The fairway approach ties into the green along the left and continues to wrap around behind the back half of this perched green. Shots not holding the left hand portion of the green will repel and be collected in the lower fairway area. "
     },
     {
-      "Number": 18,
-      "Par": 4,
-      "Yardage": 401,
-      "Description": "Standing on the tees situated high on the slope overlooking the grand lake and the clubhouse in the backdrop of the eighteenth green, golfers will want to take a moment to reflect back on their round and enjoy the sheer beauty of the surrounding. For this is the essence of Longview and a golfing experience that delights all of the senses and leaves the golfer longing to return. Not to get to caught up in the moment as there is still some unfinished business to attend to such as taking on the longest par 4 on the course. With the lake that cuts in front of the fairway and extends down the entire length of the hole to the green, the golfer must stay focused to take on this demanding hole. With only one bunker guarding the landing area on the left side this hole encourages a strong tee shot while at the same time keeping aware of the dangers of the lake along the right side. Generally a mid to long iron shot will be needed to carry over the edge of the lake to reach the putting surface that sits just above the beautiful stone wall at the waters edge. The green has plenty of movement and any shot played away from the hazard will collect in the low fairway that sweeps left of and behind the green. A recovery shot from this position with the water just beyond the putting surface will test the nerves if even the best golfers. Whether two putting the green or getting up and down from the fairway collection areas, most players will be satisfied to walk away from this one with a par and head to the clubhouse to reminisce about their experience. "
+      "number": 18,
+      "par": 4,
+      "yardage": 401,
+      "description": "Standing on the tees situated high on the slope overlooking the grand lake and the clubhouse in the backdrop of the eighteenth green, golfers will want to take a moment to reflect back on their round and enjoy the sheer beauty of the surrounding. For this is the essence of Longview and a golfing experience that delights all of the senses and leaves the golfer longing to return. Not to get to caught up in the moment as there is still some unfinished business to attend to such as taking on the longest par 4 on the course. With the lake that cuts in front of the fairway and extends down the entire length of the hole to the green, the golfer must stay focused to take on this demanding hole. With only one bunker guarding the landing area on the left side this hole encourages a strong tee shot while at the same time keeping aware of the dangers of the lake along the right side. Generally a mid to long iron shot will be needed to carry over the edge of the lake to reach the putting surface that sits just above the beautiful stone wall at the waters edge. The green has plenty of movement and any shot played away from the hazard will collect in the low fairway that sweeps left of and behind the green. A recovery shot from this position with the water just beyond the putting surface will test the nerves if even the best golfers. Whether two putting the green or getting up and down from the fairway collection areas, most players will be satisfied to walk away from this one with a par and head to the clubhouse to reminisce about their experience. "
     }
   ],
-  "Scores": [
+  "scores": [
     {
-      "Score": 92,
-      "Handicap": 16
+      "score": 92,
+      "handicap": 16
     }
   ],
-  "Address": "8801 Longview Club Drive, Waxhaw, NC 28173"
+  "address": "8801 Longview Club Drive, Waxhaw, NC 28173"
 }

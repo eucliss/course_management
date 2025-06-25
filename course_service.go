@@ -82,6 +82,18 @@ func (cs *CourseService) SaveCourse(course Course) error {
 	return os.WriteFile(filepath, courseJSON, 0644)
 }
 
+func (cs *CourseService) UpdateCourse(course Course) error {
+	filename := cs.sanitizeFilename(course.Name) + ".json"
+	filepath := filepath.Join("courses", filename)
+
+	courseJSON, err := json.MarshalIndent(course, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to create course JSON: %v", err)
+	}
+
+	return os.WriteFile(filepath, courseJSON, 0644)
+}
+
 func (cs *CourseService) sanitizeFilename(name string) string {
 	reg := regexp.MustCompile(`[^a-zA-Z0-9]+`)
 	return strings.ToLower(reg.ReplaceAllString(name, "_"))
@@ -129,7 +141,7 @@ func (cs *CourseService) parseHoles(form url.Values) []Hole {
 	}
 
 	// Convert hole map to slice in order
-	var holes []Hole
+	holes := make([]Hole, 0) // Initialize as empty slice, not nil
 	for i := 0; i < len(holeMap); i++ {
 		if hole, exists := holeMap[i]; exists {
 			holes = append(holes, hole)
@@ -171,7 +183,7 @@ func (cs *CourseService) parseScores(form url.Values) []Score {
 	}
 
 	// Convert score map to slice in order
-	var scores []Score
+	scores := make([]Score, 0) // Initialize as empty slice, not nil
 	for i := 0; i < len(scoreMap); i++ {
 		if score, exists := scoreMap[i]; exists {
 			scores = append(scores, score)
