@@ -86,6 +86,12 @@
       
       mapboxgl.accessToken = '{{ .MapboxToken }}';
 
+      // Check if token is actually set
+      if (!mapboxgl.accessToken || mapboxgl.accessToken === '') {
+          console.error('Mapbox token is missing!');
+          alert('Mapbox token not configured');
+      }
+
       // Use a unique variable name to avoid redeclaration
       try {
         let courseMap = new mapboxgl.Map({
@@ -99,7 +105,16 @@
             antialias: false,
             preserveDrawingBuffer: false
         });
-        loadCourses(courseMap);
+        
+        courseMap.on('error', function(e) {
+            console.error('Mapbox error:', e);
+        });
+        
+        courseMap.on('load', function() {
+            console.log('Map loaded successfully');
+            loadCourses(courseMap);
+        });
+        
       } catch (error) {
         console.error('Map already exists', error);
         loadCourses(courseMap);
@@ -177,11 +192,11 @@
         
         if (courses && courses.length > 0) {
           courses.forEach(course => {
-            console.log('Processing course:', course.Name, 'Address:', course.Address, 'Rating:', course.OverallRating);
-            if (course.Address && course.Address.trim() !== '') {
-              addPinFromAddress(courseMap, course.Address, course.Name, course.OverallRating, course.ID, '#204606');
+            console.log('Processing course:', course.name, 'Address:', course.address, 'Rating:', course.overallRating);
+            if (course.address && course.address.trim() !== '') {
+              addPinFromAddress(courseMap, course.address, course.name, course.overallRating, course.ID, '#204606');
             } else {
-              console.log('Skipping course without address:', course.Name);
+              console.log('Skipping course without address:', course.name);
             }
           });
         } else {

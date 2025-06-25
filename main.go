@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
@@ -61,6 +62,22 @@ func init() {
 	if err := godotenv.Load(); err != nil {
 		log.Printf("Warning: .env file not found: %v", err)
 	}
+
+	// Create logs directory if it doesn't exist
+	if err := os.MkdirAll("logs", 0755); err != nil {
+		log.Printf("Failed to create logs directory: %v", err)
+	}
+
+	// Open log file
+	logFile, err := os.OpenFile("logs/app.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		log.Printf("Failed to open log file: %v", err)
+		return
+	}
+
+	// Log to both file and console
+	log.SetOutput(io.MultiWriter(os.Stdout, logFile))
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 }
 
 func loadCourses() ([]Course, error) {
@@ -116,6 +133,31 @@ func sanitizeFilename(name string) string {
 	return strings.ToLower(reg.ReplaceAllString(name, "_"))
 }
 
+func RequestLogger() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			start := time.Now()
+
+			log.Printf("[REQUEST] %s %s - Started", c.Request().Method, c.Request().URL.Path)
+
+			err := next(c)
+
+			duration := time.Since(start)
+			status := c.Response().Status
+
+			if err != nil {
+				log.Printf("[REQUEST] %s %s - ERROR: %v (Duration: %v)",
+					c.Request().Method, c.Request().URL.Path, err, duration)
+			} else {
+				log.Printf("[REQUEST] %s %s - %d (Duration: %v)",
+					c.Request().Method, c.Request().URL.Path, status, duration)
+			}
+
+			return err
+		}
+	}
+}
+
 func main() {
 	config := LoadConfig()
 
@@ -137,6 +179,7 @@ func main() {
 		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete},
 		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
 	}))
+	e.Use(RequestLogger())
 
 	// Routes
 	e.GET("/", handlers.Home)

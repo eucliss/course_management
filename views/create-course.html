@@ -632,11 +632,191 @@
         color: #999;
         font-style: italic;
     }
+
+    /* Dynamic hole entry styling */
+    .hole-entry {
+        background-color: rgba(255, 255, 255, 0.7);
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border: 1px solid rgba(32, 70, 6, 0.2);
+    }
+    
+    .hole-entry h3 {
+        color: #204606;
+        margin: 0 0 15px 0;
+        font-size: 1.3em;
+        font-weight: 600;
+    }
+    
+    .hole-inputs {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .hole-inputs input {
+        padding: 10px 12px;
+        border: 2px dashed #204606;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #204606;
+        background-color: rgba(255, 255, 255, 0.8);
+        outline: none;
+        transition: all 0.2s ease;
+    }
+    
+    .hole-inputs input:focus {
+        border-style: solid;
+        background-color: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 0 0 2px rgba(32, 70, 6, 0.1);
+    }
+    
+    .hole-inputs input::placeholder {
+        color: #999;
+        font-style: italic;
+    }
+    
+    .hole-inputs input[readonly] {
+        background-color: rgba(32, 70, 6, 0.1);
+        border-style: solid;
+        color: #666;
+        cursor: not-allowed;
+    }
+    
+    .hole-inputs textarea {
+        grid-column: 1 / -1;
+        width: 100%;
+        min-height: 80px;
+        padding: 12px;
+        border: 2px dashed #204606;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #204606;
+        background-color: rgba(255, 255, 255, 0.8);
+        outline: none;
+        resize: vertical;
+        font-family: inherit;
+        line-height: 1.5;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+    }
+    
+    .hole-inputs textarea:focus {
+        border-style: solid;
+        background-color: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 0 0 2px rgba(32, 70, 6, 0.1);
+    }
+    
+    .hole-inputs textarea::placeholder {
+        color: #999;
+        font-style: italic;
+    }
+    
+    /* Dynamic score entry styling */
+    .score-entry {
+        background-color: rgba(255, 255, 255, 0.7);
+        border-radius: 8px;
+        padding: 15px 20px;
+        margin-bottom: 15px;
+        border: 1px solid rgba(32, 70, 6, 0.2);
+    }
+    
+    .score-inputs {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        gap: 15px;
+        align-items: center;
+    }
+    
+    .score-inputs input {
+        padding: 10px 12px;
+        border: 2px dashed #204606;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #204606;
+        background-color: rgba(255, 255, 255, 0.8);
+        outline: none;
+        transition: all 0.2s ease;
+    }
+    
+    .score-inputs input:focus {
+        border-style: solid;
+        background-color: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 0 0 2px rgba(32, 70, 6, 0.1);
+    }
+    
+    .score-inputs input::placeholder {
+        color: #999;
+        font-style: italic;
+    }
+    
+    /* Remove button styling */
+    .remove-btn {
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 500;
+        transition: background-color 0.2s ease;
+    }
+    
+    .remove-btn:hover {
+        background-color: #c82333;
+    }
+    
+    /* Ensure containers have proper spacing */
+    #holes-container {
+        margin-bottom: 20px;
+    }
+    
+    #scores-container {
+        margin-bottom: 20px;
+    }
+    
+    /* Add/Remove button styling consistency */
+    .add-hole-btn, .add-score-btn {
+        background-color: #204606;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: background-color 0.2s ease;
+        margin-top: 10px;
+    }
+    
+    .add-hole-btn:hover, .add-score-btn:hover {
+        background-color: #153505;
+    }
+    
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+        .hole-inputs {
+            grid-template-columns: 1fr;
+        }
+        
+        .score-inputs {
+            grid-template-columns: 1fr;
+        }
+        
+        .hole-inputs textarea {
+            grid-column: 1;
+        }
+    }
 </style>
 
 <script>
     /* eslint-disable */
     // @ts-nocheck
+    
+    console.log('🎯 Create course page loading...');
     
     // Global variables for counters
     var holeCount = 0;
@@ -646,54 +826,103 @@
     var isEdit = {{ if .IsEdit }}true{{ else }}false{{ end }};
     var courseId = {{ if .IsEdit }}{{ .Course.ID }}{{ else }}null{{ end }};
 
+    console.log('📋 Form initialized:', { isEdit, courseId, holeCount, scoreCount });
+
     // Function to add a new hole
     function addHole(holeData = null) {
-        const container = document.getElementById('holes-container');
-        const holeDiv = document.createElement('div');
-        holeDiv.className = 'hole-entry';
+        console.log('⛳ Adding hole:', { holeData, currentCount: holeCount });
         
-        const holeNumber = holeData ? holeData.Number : (holeCount + 1);
-        const par = holeData ? holeData.Par : '';
-        const yardage = holeData ? holeData.Yardage : '';
-        const description = holeData ? holeData.Description : '';
-        
-        holeDiv.innerHTML = `
-            <h3>Hole ${holeNumber}</h3>
-            <div class="hole-inputs">
-                <input type="number" name="holes[${holeCount}].number" value="${holeNumber}" readonly>
-                <input type="number" name="holes[${holeCount}].par" placeholder="Par" min="3" max="6" value="${par}">
-                <input type="number" name="holes[${holeCount}].yardage" placeholder="Yardage" value="${yardage}">
-                <textarea name="holes[${holeCount}].description" placeholder="Hole description">${description}</textarea>
-            </div>
-        `;
-        container.appendChild(holeDiv);
-        holeCount++;
+        try {
+            const container = document.getElementById('holes-container');
+            if (!container) {
+                console.error('❌ Holes container not found');
+                return;
+            }
+            
+            const holeDiv = document.createElement('div');
+            holeDiv.className = 'hole-entry';
+            
+            const holeNumber = holeData ? holeData.Number : (holeCount + 1);
+            const par = holeData ? holeData.Par : '';
+            const yardage = holeData ? holeData.Yardage : '';
+            const description = holeData ? holeData.Description : '';
+            
+            holeDiv.innerHTML = `
+                <h3>Hole ${holeNumber}</h3>
+                <div class="hole-inputs">
+                    <input type="number" name="holes[${holeCount}].number" value="${holeNumber}" readonly>
+                    <input type="number" name="holes[${holeCount}].par" placeholder="Par (3-6)" min="3" max="6" value="${par}">
+                    <input type="number" name="holes[${holeCount}].yardage" placeholder="Yardage" min="0" value="${yardage}">
+                    <textarea name="holes[${holeCount}].description" placeholder="Describe this hole (optional)">${description}</textarea>
+                    <button type="button" onclick="removeHole(this)" class="remove-btn">Remove Hole</button>
+                </div>
+            `;
+            container.appendChild(holeDiv);
+            holeCount++;
+            
+            console.log('✅ Hole added successfully. Total holes:', holeCount);
+            
+        } catch (error) {
+            console.error('💥 Error adding hole:', error);
+        }
     }
 
     // Function to add a new score
     function addScore(scoreData = null) {
-        const container = document.getElementById('scores-container');
-        const scoreDiv = document.createElement('div');
-        scoreDiv.className = 'score-entry';
+        console.log('🎯 Adding score:', { scoreData, currentCount: scoreCount });
         
-        const score = scoreData ? scoreData.Score : '';
-        const handicap = scoreData ? scoreData.Handicap : '';
-        
-        scoreDiv.innerHTML = `
-            <div class="score-inputs">
-                <input type="number" name="scores[${scoreCount}].score" placeholder="Score" value="${score}">
-                <input type="number" name="scores[${scoreCount}].handicap" placeholder="Handicap" step="0.1" value="${handicap}">
-            </div>
-        `;
-        container.appendChild(scoreDiv);
-        scoreCount++;
+        try {
+            const container = document.getElementById('scores-container');
+            if (!container) {
+                console.error('❌ Scores container not found');
+                return;
+            }
+            
+            const scoreDiv = document.createElement('div');
+            scoreDiv.className = 'score-entry';
+            
+            const score = scoreData ? scoreData.Score : '';
+            const handicap = scoreData ? scoreData.Handicap : '';
+            
+            scoreDiv.innerHTML = `
+                <div class="score-inputs">
+                    <input type="number" name="scores[${scoreCount}].score" placeholder="Total Score" min="0" value="${score}">
+                    <input type="number" name="scores[${scoreCount}].handicap" placeholder="Handicap" step="0.1" min="0" max="54" value="${handicap}">
+                    <button type="button" onclick="removeScore(this)" class="remove-btn">Remove</button>
+                </div>
+            `;
+            container.appendChild(scoreDiv);
+            scoreCount++;
+            
+            console.log('✅ Score added successfully. Total scores:', scoreCount);
+            
+        } catch (error) {
+            console.error('💥 Error adding score:', error);
+        }
     }
 
-    // Initialize immediately - no DOM events needed
-    // If editing, populate existing holes and scores
+    // Add remove functions
+    function removeHole(button) {
+        const holeEntry = button.closest('.hole-entry');
+        console.log('🗑️ Removing hole');
+        holeEntry.remove();
+    }
+
+    function removeScore(button) {
+        const scoreEntry = button.closest('.score-entry');
+        console.log('🗑️ Removing score');
+        scoreEntry.remove();
+    }
+
+    // Initialize data loading
+    console.log('🚀 Starting data initialization...');
+    
     if (isEdit) {
+        console.log('✏️ Edit mode: Loading existing course data');
+        
         // Add existing holes if they exist
         {{ if and .IsEdit .Course.Holes }}
+            console.log('📊 Loading {{ len .Course.Holes }} existing holes');
             {{ range .Course.Holes }}
                 addHole({
                     Number: {{ .Number }},
@@ -702,49 +931,79 @@
                     Description: {{ .Description | printf "%q" }}
                 });
             {{ end }}
+            console.log('✅ All holes loaded');
+        {{ else }}
+            console.log('ℹ️ No existing holes to load');
         {{ end }}
         
         // Add existing scores if they exist
         {{ if and .IsEdit .Course.Scores }}
+            console.log('📊 Loading {{ len .Course.Scores }} existing scores');
             {{ range .Course.Scores }}
                 addScore({
                     Score: {{ .Score }},
                     Handicap: {{ .Handicap }}
                 });
             {{ end }}
+            console.log('✅ All scores loaded');
+        {{ else }}
+            console.log('ℹ️ No existing scores to load');
         {{ end }}
+    } else {
+        console.log('🆕 Create mode: Starting with empty form');
     }
+
+    console.log('✅ Data initialization complete');
 
     // Function to save the course
     function saveCourse() {
+        console.log('💾 Starting course save process...');
+        
         try {
             // Get form values
             const formData = new FormData();
             
-            // Basic course information - Handle contenteditable placeholders
+            // Basic course information
             let name = document.getElementById('course-name').innerText.trim();
             let description = document.getElementById('course-description').innerText.trim();
-            
-            // Handle placeholder text
-            if (name === 'New Golf Course' || name === 'Enter Course Name') {
-                name = ''; // Or set a default: name = 'Untitled Course';
-            }
-            if (description === 'Click to add description' || description === 'Enter course description') {
-                description = ''; // Or set a default: description = 'No description provided';
-            }
-            
             const overallRating = document.getElementById('overall-rating').value;
             const address = document.getElementById('course-address').value;
             const review = document.getElementById('course-review').value;
 
-            // Debug logging
-            console.log('Form data:', { name, description, overallRating });
+            console.log('📝 Raw form data:', { 
+                name, 
+                description, 
+                overallRating, 
+                address, 
+                reviewLength: review.length 
+            });
 
-            // Validate required fields on frontend
+            // Handle placeholder text
+            if (name === 'New Golf Course' || name === 'Enter Course Name') {
+                console.warn('⚠️ Placeholder name detected, clearing');
+                name = '';
+            }
+            if (description === 'Click to add description' || description === 'Enter course description') {
+                console.warn('⚠️ Placeholder description detected, clearing');
+                description = '';
+            }
+
+            // Validate required fields
+            const validation = {
+                name: !!name,
+                description: !!description,
+                rating: !!overallRating
+            };
+            
+            console.log('🔍 Validation check:', validation);
+            
             if (!name || !description || !overallRating) {
-                alert('Please fill in the course name, description, and overall rating');
+                console.error('❌ Validation failed:', validation);
+                alert('Please fill in course name, description, and overall rating');
                 return;
             }
+            
+            console.log('✅ Validation passed');
 
             // Add basic information to form data
             formData.append('name', name);
@@ -754,54 +1013,85 @@
             formData.append('review', review);
 
             // Add rankings
-            formData.append('price', document.getElementById('price').value);
-            formData.append('handicapDifficulty', document.getElementById('handicap-difficulty').value);
-            formData.append('hazardDifficulty', document.getElementById('hazard-difficulty').value);
-            formData.append('merch', document.getElementById('merch').value);
-            formData.append('condition', document.getElementById('condition').value);
-            formData.append('enjoymentRating', document.getElementById('enjoyment-rating').value);
-            formData.append('vibe', document.getElementById('vibe').value);
-            formData.append('range', document.getElementById('range').value);
-            formData.append('amenities', document.getElementById('amenities').value);
-            formData.append('glizzies', document.getElementById('glizzies').value);
+            const rankings = [
+                'price', 'handicapDifficulty', 'hazardDifficulty', 'merch', 
+                'condition', 'enjoymentRating', 'vibe', 'range', 'amenities', 'glizzies'
+            ];
+            
+            rankings.forEach(ranking => {
+                const value = document.getElementById(ranking.replace(/([A-Z])/g, '-$1').toLowerCase()).value;
+                formData.append(ranking, value);
+                console.log(`📊 ${ranking}:`, value);
+            });
 
             // Add holes
             const holeElements = document.querySelectorAll('.hole-entry');
+            console.log(`⛳ Processing ${holeElements.length} holes`);
+            
             holeElements.forEach((holeElement, index) => {
                 const inputs = holeElement.querySelectorAll('input, textarea');
+                const holeData = {};
+                
                 inputs.forEach(input => {
-                    formData.append(`holes[${index}].${input.name.split('.').pop()}`, input.value);
+                    const fieldName = input.name.split('.').pop();
+                    holeData[fieldName] = input.value;
+                    formData.append(`holes[${index}].${fieldName}`, input.value);
                 });
+                
+                console.log(`⛳ Hole ${index + 1}:`, holeData);
             });
 
             // Add scores
             const scoreElements = document.querySelectorAll('.score-entry');
+            console.log(`🎯 Processing ${scoreElements.length} scores`);
+            
             scoreElements.forEach((scoreElement, index) => {
                 const inputs = scoreElement.querySelectorAll('input');
+                const scoreData = {};
+                
                 inputs.forEach(input => {
-                    formData.append(`scores[${index}].${input.name.split('.').pop()}`, input.value);
+                    const fieldName = input.name.split('.').pop();
+                    scoreData[fieldName] = input.value;
+                    formData.append(`scores[${index}].${fieldName}`, input.value);
                 });
+                
+                console.log(`🎯 Score ${index + 1}:`, scoreData);
             });
 
-            // Determine the endpoint based on whether we're editing or creating
+            // Determine the endpoint
             const endpoint = isEdit ? `/edit-course/${courseId}` : '/create-course';
+            const method = 'POST';
+            
+            console.log('🎯 Submitting to:', { endpoint, method, isEdit });
             
             // Submit via HTMX
             htmx.ajax('POST', endpoint, {
                 values: formData,
                 target: '#main-content'
             });
-
-            console.log('Sending:', { 
-                name: name, 
-                description: description, 
-                overallRating: overallRating 
-            });
+            
+            console.log('📤 Form submitted via HTMX');
+            
         } catch (error) {
-            console.error('Error in saveCourse:', error);
+            console.error('💥 Critical error in saveCourse:', error);
             alert('An error occurred while saving the course: ' + error.message);
         }
     }
+    
+    // Add HTMX event logging
+    document.addEventListener('htmx:beforeRequest', function(e) {
+        console.log('🚀 HTMX Request starting:', e.detail.requestConfig.verb, e.detail.requestConfig.path);
+    });
+    
+    document.addEventListener('htmx:afterRequest', function(e) {
+        if (e.detail.xhr.status >= 400) {
+            console.error('❌ HTMX Error:', e.detail.xhr.status, e.detail.xhr.response);
+        } else {
+            console.log('✅ HTMX Success:', e.detail.xhr.status);
+        }
+    });
+    
+    console.log('🎉 Create course JavaScript fully loaded');
 </script>
 {{ end }}
 

@@ -171,12 +171,26 @@ func (h *Handlers) UpdateCourse(c echo.Context) error {
 }
 
 func (h *Handlers) CreateCourse(c echo.Context) error {
-	// Parse form data first
+	// Check if it's an HTMX request
+	isHTMX := c.Request().Header.Get("HX-Request") == "true"
+	log.Printf("[CREATE_COURSE] HTMX Request: %v", isHTMX)
+
+	if isHTMX {
+		log.Printf("[CREATE_COURSE] HTMX Target: %s", c.Request().Header.Get("HX-Target"))
+		log.Printf("[CREATE_COURSE] HTMX Trigger: %s", c.Request().Header.Get("HX-Trigger"))
+	}
+
+	log.Printf("[CREATE_COURSE] Starting request from %s", c.RealIP())
+
+	// Parse form
 	if err := c.Request().ParseForm(); err != nil {
+		log.Printf("[CREATE_COURSE] ERROR: Failed to parse form: %v", err)
 		return c.String(http.StatusBadRequest, "Failed to parse form data: "+err.Error())
 	}
 
-	// Parse basic form data
+	// Log form data
+	log.Printf("[CREATE_COURSE] Form data received: %v", c.Request().Form)
+
 	name := c.FormValue("name")
 	description := c.FormValue("description")
 	overallRating := c.FormValue("overallRating")

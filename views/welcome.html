@@ -371,7 +371,23 @@
             }
         </script>
     </body>
+
+    <script>
+        // Simple HTMX request logging
+        htmx.on('htmx:beforeRequest', function(e) {
+            console.log('HTMX Request:', e.detail.requestConfig.verb, e.detail.requestConfig.path);
+        });
+        
+        htmx.on('htmx:afterRequest', function(e) {
+            console.log('HTMX Response:', e.detail.xhr.status);
+            if (e.detail.xhr.status >= 400) {
+                console.error('HTMX Error:', e.detail.xhr.response);
+            }
+        });
+        </script>
 </html>
+
+
 {{ end }}
 
 {{ block "courses-map" . }}
