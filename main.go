@@ -147,6 +147,8 @@ func main() {
 	e.GET("/map", handlers.Map)
 	e.GET("/login", handlers.LoginForm)
 	e.POST("/login", handlers.Login)
+	e.GET("/edit-course/:id", handlers.EditCourseForm)
+	e.POST("/edit-course/:id", handlers.UpdateCourse)
 	e.Static("/favicon.ico", "static/favicon.ico")
 
 	log.Printf("Server starting on port %s", config.Port)

@@ -2,20 +2,20 @@
 <div class="course-detail">
     <div class="header-section">
         <div class="title-and-line">
-            <h1 contenteditable="true" id="course-name" data-placeholder="Enter Course Name">New Golf Course</h1>
+            <h1 contenteditable="true" id="course-name" data-placeholder="Enter Course Name">{{ if .IsEdit }}{{ .Course.Name }}{{ else }}New Golf Course{{ end }}</h1>
             <div class="line-section">
-                <span class="line-description" contenteditable="true" id="course-description" data-placeholder="Enter course description">Click to add description</span>
+                <span class="line-description" contenteditable="true" id="course-description" data-placeholder="Enter course description">{{ if .IsEdit }}{{ .Course.Description }}{{ else }}Click to add description{{ end }}</span>
             </div>
         </div>
         <div class="tier-box">
             <select id="overall-rating" class="rating-value-select">
                 <option value="">?</option>
-                <option value="S">S</option>
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="C">C</option>
-                <option value="D">D</option>
-                <option value="F">F</option>
+                <option value="S" {{ if and .IsEdit (eq .Course.OverallRating "S") }}selected{{ end }}>S</option>
+                <option value="A" {{ if and .IsEdit (eq .Course.OverallRating "A") }}selected{{ end }}>A</option>
+                <option value="B" {{ if and .IsEdit (eq .Course.OverallRating "B") }}selected{{ end }}>B</option>
+                <option value="C" {{ if and .IsEdit (eq .Course.OverallRating "C") }}selected{{ end }}>C</option>
+                <option value="D" {{ if and .IsEdit (eq .Course.OverallRating "D") }}selected{{ end }}>D</option>
+                <option value="F" {{ if and .IsEdit (eq .Course.OverallRating "F") }}selected{{ end }}>F</option>
             </select>
             <div class="tier-label">TIER</div>
         </div>
@@ -33,24 +33,24 @@
                     <td class="editable-cell">
                         <select id="price" class="rating-select">
                             <option value="">Select</option>
-                            <option value="$">$</option>
-                            <option value="$$">$$</option>
-                            <option value="$$$">$$$</option>
-                            <option value="$$$$">$$$$</option>
+                            <option value="$" {{ if and .IsEdit (eq .Course.Ranks.Price "$") }}selected{{ end }}>$</option>
+                            <option value="$$" {{ if and .IsEdit (eq .Course.Ranks.Price "$$") }}selected{{ end }}>$$</option>
+                            <option value="$$$" {{ if and .IsEdit (eq .Course.Ranks.Price "$$$") }}selected{{ end }}>$$$</option>
+                            <option value="$$$$" {{ if and .IsEdit (eq .Course.Ranks.Price "$$$$") }}selected{{ end }}>$$$$</option>
                         </select>
                     </td>
                 </tr>
                 <tr>
                     <td>Handicap Difficulty</td>
                     <td class="editable-cell">
-                        <input type="number" id="handicap-difficulty" min="0" max="20" placeholder="0-20" class="number-input">
+                        <input type="number" id="handicap-difficulty" min="0" max="20" placeholder="0-20" class="number-input" value="{{ if .IsEdit }}{{ .Course.Ranks.HandicapDifficulty }}{{ end }}">
                         <span class="unit-text">handicap</span>
                     </td>
                 </tr>
                 <tr>
                     <td>Hazard Difficulty</td>
                     <td class="editable-cell">
-                        <input type="number" id="hazard-difficulty" min="0" max="5" placeholder="0-5" class="number-input">
+                        <input type="number" id="hazard-difficulty" min="0" max="5" placeholder="0-5" class="number-input" value="{{ if .IsEdit }}{{ .Course.Ranks.HazardDifficulty }}{{ end }}">
                         <span class="unit-text">Sleeve(s)</span>
                     </td>
                 </tr>
@@ -59,12 +59,12 @@
                     <td class="editable-cell">
                         <select id="merch" class="rating-select">
                             <option value="">Select</option>
-                            <option value="S">S</option>
-                            <option value="A">A</option>
-                            <option value="B">B</option>
-                            <option value="C">C</option>
-                            <option value="D">D</option>
-                            <option value="F">F</option>
+                            <option value="S" {{ if and .IsEdit (eq .Course.Ranks.Merch "S") }}selected{{ end }}>S</option>
+                            <option value="A" {{ if and .IsEdit (eq .Course.Ranks.Merch "A") }}selected{{ end }}>A</option>
+                            <option value="B" {{ if and .IsEdit (eq .Course.Ranks.Merch "B") }}selected{{ end }}>B</option>
+                            <option value="C" {{ if and .IsEdit (eq .Course.Ranks.Merch "C") }}selected{{ end }}>C</option>
+                            <option value="D" {{ if and .IsEdit (eq .Course.Ranks.Merch "D") }}selected{{ end }}>D</option>
+                            <option value="F" {{ if and .IsEdit (eq .Course.Ranks.Merch "F") }}selected{{ end }}>F</option>
                         </select>
                     </td>
                 </tr>
@@ -73,12 +73,12 @@
                     <td class="editable-cell">
                         <select id="condition" class="rating-select">
                             <option value="">Select</option>
-                            <option value="S">S</option>
-                            <option value="A">A</option>
-                            <option value="B">B</option>
-                            <option value="C">C</option>
-                            <option value="D">D</option>
-                            <option value="F">F</option>
+                            <option value="S" {{ if and .IsEdit (eq .Course.Ranks.Condition "S") }}selected{{ end }}>S</option>
+                            <option value="A" {{ if and .IsEdit (eq .Course.Ranks.Condition "A") }}selected{{ end }}>A</option>
+                            <option value="B" {{ if and .IsEdit (eq .Course.Ranks.Condition "B") }}selected{{ end }}>B</option>
+                            <option value="C" {{ if and .IsEdit (eq .Course.Ranks.Condition "C") }}selected{{ end }}>C</option>
+                            <option value="D" {{ if and .IsEdit (eq .Course.Ranks.Condition "D") }}selected{{ end }}>D</option>
+                            <option value="F" {{ if and .IsEdit (eq .Course.Ranks.Condition "F") }}selected{{ end }}>F</option>
                         </select>
                     </td>
                 </tr>
@@ -87,12 +87,12 @@
                     <td class="editable-cell">
                         <select id="enjoyment-rating" class="rating-select">
                             <option value="">Select</option>
-                            <option value="S">S</option>
-                            <option value="A">A</option>
-                            <option value="B">B</option>
-                            <option value="C">C</option>
-                            <option value="D">D</option>
-                            <option value="F">F</option>
+                            <option value="S" {{ if and .IsEdit (eq .Course.Ranks.EnjoymentRating "S") }}selected{{ end }}>S</option>
+                            <option value="A" {{ if and .IsEdit (eq .Course.Ranks.EnjoymentRating "A") }}selected{{ end }}>A</option>
+                            <option value="B" {{ if and .IsEdit (eq .Course.Ranks.EnjoymentRating "B") }}selected{{ end }}>B</option>
+                            <option value="C" {{ if and .IsEdit (eq .Course.Ranks.EnjoymentRating "C") }}selected{{ end }}>C</option>
+                            <option value="D" {{ if and .IsEdit (eq .Course.Ranks.EnjoymentRating "D") }}selected{{ end }}>D</option>
+                            <option value="F" {{ if and .IsEdit (eq .Course.Ranks.EnjoymentRating "F") }}selected{{ end }}>F</option>
                         </select>
                     </td>
                 </tr>
@@ -101,12 +101,12 @@
                     <td class="editable-cell">
                         <select id="vibe" class="rating-select">
                             <option value="">Select</option>
-                            <option value="S">S</option>
-                            <option value="A">A</option>
-                            <option value="B">B</option>
-                            <option value="C">C</option>
-                            <option value="D">D</option>
-                            <option value="F">F</option>
+                            <option value="S" {{ if and .IsEdit (eq .Course.Ranks.Vibe "S") }}selected{{ end }}>S</option>
+                            <option value="A" {{ if and .IsEdit (eq .Course.Ranks.Vibe "A") }}selected{{ end }}>A</option>
+                            <option value="B" {{ if and .IsEdit (eq .Course.Ranks.Vibe "B") }}selected{{ end }}>B</option>
+                            <option value="C" {{ if and .IsEdit (eq .Course.Ranks.Vibe "C") }}selected{{ end }}>C</option>
+                            <option value="D" {{ if and .IsEdit (eq .Course.Ranks.Vibe "D") }}selected{{ end }}>D</option>
+                            <option value="F" {{ if and .IsEdit (eq .Course.Ranks.Vibe "F") }}selected{{ end }}>F</option>
                         </select>
                     </td>
                 </tr>
@@ -115,12 +115,12 @@
                     <td class="editable-cell">
                         <select id="range" class="rating-select">
                             <option value="">Select</option>
-                            <option value="S">S</option>
-                            <option value="A">A</option>
-                            <option value="B">B</option>
-                            <option value="C">C</option>
-                            <option value="D">D</option>
-                            <option value="F">F</option>
+                            <option value="S" {{ if and .IsEdit (eq .Course.Ranks.Range "S") }}selected{{ end }}>S</option>
+                            <option value="A" {{ if and .IsEdit (eq .Course.Ranks.Range "A") }}selected{{ end }}>A</option>
+                            <option value="B" {{ if and .IsEdit (eq .Course.Ranks.Range "B") }}selected{{ end }}>B</option>
+                            <option value="C" {{ if and .IsEdit (eq .Course.Ranks.Range "C") }}selected{{ end }}>C</option>
+                            <option value="D" {{ if and .IsEdit (eq .Course.Ranks.Range "D") }}selected{{ end }}>D</option>
+                            <option value="F" {{ if and .IsEdit (eq .Course.Ranks.Range "F") }}selected{{ end }}>F</option>
                         </select>
                     </td>
                 </tr>
@@ -129,12 +129,12 @@
                     <td class="editable-cell">
                         <select id="amenities" class="rating-select">
                             <option value="">Select</option>
-                            <option value="S">S</option>
-                            <option value="A">A</option>
-                            <option value="B">B</option>
-                            <option value="C">C</option>
-                            <option value="D">D</option>
-                            <option value="F">F</option>
+                            <option value="S" {{ if and .IsEdit (eq .Course.Ranks.Amenities "S") }}selected{{ end }}>S</option>
+                            <option value="A" {{ if and .IsEdit (eq .Course.Ranks.Amenities "A") }}selected{{ end }}>A</option>
+                            <option value="B" {{ if and .IsEdit (eq .Course.Ranks.Amenities "B") }}selected{{ end }}>B</option>
+                            <option value="C" {{ if and .IsEdit (eq .Course.Ranks.Amenities "C") }}selected{{ end }}>C</option>
+                            <option value="D" {{ if and .IsEdit (eq .Course.Ranks.Amenities "D") }}selected{{ end }}>D</option>
+                            <option value="F" {{ if and .IsEdit (eq .Course.Ranks.Amenities "F") }}selected{{ end }}>F</option>
                         </select>
                     </td>
                 </tr>
@@ -143,12 +143,12 @@
                     <td class="editable-cell">
                         <select id="glizzies" class="rating-select">
                             <option value="">Select</option>
-                            <option value="S">S</option>
-                            <option value="A">A</option>
-                            <option value="B">B</option>
-                            <option value="C">C</option>
-                            <option value="D">D</option>
-                            <option value="F">F</option>
+                            <option value="S" {{ if and .IsEdit (eq .Course.Ranks.Glizzies "S") }}selected{{ end }}>S</option>
+                            <option value="A" {{ if and .IsEdit (eq .Course.Ranks.Glizzies "A") }}selected{{ end }}>A</option>
+                            <option value="B" {{ if and .IsEdit (eq .Course.Ranks.Glizzies "B") }}selected{{ end }}>B</option>
+                            <option value="C" {{ if and .IsEdit (eq .Course.Ranks.Glizzies "C") }}selected{{ end }}>C</option>
+                            <option value="D" {{ if and .IsEdit (eq .Course.Ranks.Glizzies "D") }}selected{{ end }}>D</option>
+                            <option value="F" {{ if and .IsEdit (eq .Course.Ranks.Glizzies "F") }}selected{{ end }}>F</option>
                         </select>
                     </td>
                 </tr>
@@ -168,12 +168,13 @@
             <div class="detail-item">
                 <label for="course-address">Address:</label>
                 <input type="text" id="course-address" class="address-input" 
-                       placeholder="Enter the full address of the course">
+                       placeholder="Enter the full address of the course"
+                       value="{{ if .IsEdit }}{{ .Course.Address }}{{ end }}">
             </div>
             
             <h2>Course Review</h2>
             <div class="review-section">
-                <textarea id="course-review" placeholder="Write a detailed review of the course including highlights, challenges, and overall experience" class="review-textarea"></textarea>
+                <textarea id="course-review" placeholder="Write a detailed review of the course including highlights, challenges, and overall experience" class="review-textarea">{{ if .IsEdit }}{{ .Course.Review }}{{ end }}</textarea>
             </div>
             
             <br style="clear: both; margin-bottom: 20px;"/>
@@ -187,7 +188,7 @@
             </div>
             
             <div class="save-section">
-                <button type="button" class="save-course-btn" onclick="saveCourse()">Save Course</button>
+                <button type="button" class="save-course-btn" onclick="saveCourse()">{{ if .IsEdit }}Update Course{{ else }}Save Course{{ end }}</button>
             </div>
         </div>
     </div>
@@ -634,22 +635,35 @@
 </style>
 
 <script>
+    /* eslint-disable */
+    // @ts-nocheck
+    
     // Global variables for counters
-    let holeCount = 0;
-    let scoreCount = 0;
+    var holeCount = 0;
+    var scoreCount = 0;
+    
+    // Check if we're editing
+    var isEdit = {{ if .IsEdit }}true{{ else }}false{{ end }};
+    var courseId = {{ if .IsEdit }}{{ .Course.ID }}{{ else }}null{{ end }};
 
     // Function to add a new hole
-    function addHole() {
+    function addHole(holeData = null) {
         const container = document.getElementById('holes-container');
         const holeDiv = document.createElement('div');
         holeDiv.className = 'hole-entry';
+        
+        const holeNumber = holeData ? holeData.Number : (holeCount + 1);
+        const par = holeData ? holeData.Par : '';
+        const yardage = holeData ? holeData.Yardage : '';
+        const description = holeData ? holeData.Description : '';
+        
         holeDiv.innerHTML = `
-            <h3>Hole ${holeCount + 1}</h3>
+            <h3>Hole ${holeNumber}</h3>
             <div class="hole-inputs">
-                <input type="number" name="holes[${holeCount}].number" value="${holeCount + 1}" readonly>
-                <input type="number" name="holes[${holeCount}].par" placeholder="Par" min="3" max="6">
-                <input type="number" name="holes[${holeCount}].yardage" placeholder="Yardage">
-                <textarea name="holes[${holeCount}].description" placeholder="Hole description"></textarea>
+                <input type="number" name="holes[${holeCount}].number" value="${holeNumber}" readonly>
+                <input type="number" name="holes[${holeCount}].par" placeholder="Par" min="3" max="6" value="${par}">
+                <input type="number" name="holes[${holeCount}].yardage" placeholder="Yardage" value="${yardage}">
+                <textarea name="holes[${holeCount}].description" placeholder="Hole description">${description}</textarea>
             </div>
         `;
         container.appendChild(holeDiv);
@@ -657,18 +671,48 @@
     }
 
     // Function to add a new score
-    function addScore() {
+    function addScore(scoreData = null) {
         const container = document.getElementById('scores-container');
         const scoreDiv = document.createElement('div');
         scoreDiv.className = 'score-entry';
+        
+        const score = scoreData ? scoreData.Score : '';
+        const handicap = scoreData ? scoreData.Handicap : '';
+        
         scoreDiv.innerHTML = `
             <div class="score-inputs">
-                <input type="number" name="scores[${scoreCount}].score" placeholder="Score">
-                <input type="number" name="scores[${scoreCount}].handicap" placeholder="Handicap" step="0.1">
+                <input type="number" name="scores[${scoreCount}].score" placeholder="Score" value="${score}">
+                <input type="number" name="scores[${scoreCount}].handicap" placeholder="Handicap" step="0.1" value="${handicap}">
             </div>
         `;
         container.appendChild(scoreDiv);
         scoreCount++;
+    }
+
+    // Initialize immediately - no DOM events needed
+    // If editing, populate existing holes and scores
+    if (isEdit) {
+        // Add existing holes if they exist
+        {{ if and .IsEdit .Course.Holes }}
+            {{ range .Course.Holes }}
+                addHole({
+                    Number: {{ .Number }},
+                    Par: {{ .Par }},
+                    Yardage: {{ .Yardage }},
+                    Description: {{ .Description | printf "%q" }}
+                });
+            {{ end }}
+        {{ end }}
+        
+        // Add existing scores if they exist
+        {{ if and .IsEdit .Course.Scores }}
+            {{ range .Course.Scores }}
+                addScore({
+                    Score: {{ .Score }},
+                    Handicap: {{ .Handicap }}
+                });
+            {{ end }}
+        {{ end }}
     }
 
     // Function to save the course
@@ -677,21 +721,30 @@
             // Get form values
             const formData = new FormData();
             
-            // Basic course information - Fix for contenteditable elements
-            const name = document.getElementById('course-name').innerText.trim();
-            const description = document.getElementById('course-description').innerText.trim();
+            // Basic course information - Handle contenteditable placeholders
+            let name = document.getElementById('course-name').innerText.trim();
+            let description = document.getElementById('course-description').innerText.trim();
+            
+            // Handle placeholder text
+            if (name === 'New Golf Course' || name === 'Enter Course Name') {
+                name = ''; // Or set a default: name = 'Untitled Course';
+            }
+            if (description === 'Click to add description' || description === 'Enter course description') {
+                description = ''; // Or set a default: description = 'No description provided';
+            }
+            
             const overallRating = document.getElementById('overall-rating').value;
             const address = document.getElementById('course-address').value;
             const review = document.getElementById('course-review').value;
 
-            // Debug log the raw values
-            console.log('Raw form values:', {
-                name,
-                description,
-                overallRating,
-                address,
-                review
-            });
+            // Debug logging
+            console.log('Form data:', { name, description, overallRating });
+
+            // Validate required fields on frontend
+            if (!name || !description || !overallRating) {
+                alert('Please fill in the course name, description, and overall rating');
+                return;
+            }
 
             // Add basic information to form data
             formData.append('name', name);
@@ -730,48 +783,25 @@
                 });
             });
 
-            // Debug log the FormData object
-            console.log('FormData contents:');
-            for (let pair of formData.entries()) {
-                console.log(pair[0] + ': ' + pair[1]);
-            }
+            // Determine the endpoint based on whether we're editing or creating
+            const endpoint = isEdit ? `/edit-course/${courseId}` : '/create-course';
+            
+            // Submit via HTMX
+            htmx.ajax('POST', endpoint, {
+                values: formData,
+                target: '#main-content'
+            });
 
-        // Submit via HTMX
-        htmx.ajax('POST', '/create-course', {
-            values: formData,
-            target: '#main-content'
-        });
+            console.log('Sending:', { 
+                name: name, 
+                description: description, 
+                overallRating: overallRating 
+            });
         } catch (error) {
             console.error('Error in saveCourse:', error);
             alert('An error occurred while saving the course: ' + error.message);
         }
     }
-
-    // Initialize when DOM is loaded
-    document.addEventListener('DOMContentLoaded', function() {
-        // Add initial hole and score
-        addHole();
-        addScore();
-
-        // Add event listeners
-        document.querySelector('.add-score-btn').addEventListener('click', addScore);
-        document.querySelector('.add-hole-btn').addEventListener('click', addHole);
-        document.querySelector('.save-course-btn').addEventListener('click', saveCourse);
-
-        console.log('Course name element:', document.getElementById('course-name'));
-        console.log('Course name value:', document.getElementById('course-name').innerText);
-        console.log('Description element:', document.getElementById('course-description'));
-        console.log('Description value:', document.getElementById('course-description').innerText);
-        console.log('Overall rating element:', document.getElementById('overall-rating'));
-        console.log('Overall rating value:', document.getElementById('overall-rating').value);
-    });
 </script>
 {{ end }}
 
-{{ block "courses-map" . }}
-{{ range . }}
-<div class="course-item" hx-get="/course/{{ .ID }}" hx-target="#main-content">
-    <h4>{{ .Name }}</h4>
-</div>
-{{ end }}
-{{ end }}
