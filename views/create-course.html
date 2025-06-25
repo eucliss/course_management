@@ -547,18 +547,6 @@
         margin-bottom: 10px;
     }
 
-    .score-input {
-        width: 80px;
-        padding: 6px 10px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        outline: none;
-    }
-
-    .score-input:focus {
-        border-color: #204606;
-    }
-
     .save-section {
         margin-top: 40px;
         padding-top: 20px;
@@ -725,7 +713,7 @@
     
     .score-inputs {
         display: grid;
-        grid-template-columns: 1fr 1fr auto;
+        grid-template-columns: 80px 180px auto;  /* Score: 80px, Handicap: 180px, Remove button: auto */
         gap: 15px;
         align-items: center;
     }
