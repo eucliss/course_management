@@ -258,64 +258,72 @@
         </div>
 
         <script>
-            /* eslint-disable */
-            // @ts-nocheck
+            console.log('🏠 Welcome page loaded');
             
+            // HTMX event logging
+            htmx.on('htmx:beforeRequest', function(e) {
+                console.log('🚀 HTMX Request:', e.detail.requestConfig.verb, e.detail.requestConfig.path);
+            });
+            
+            htmx.on('htmx:afterRequest', function(e) {
+                if (e.detail.xhr.status >= 400) {
+                    console.error('❌ HTMX Error:', e.detail.xhr.status, e.detail.xhr.response);
+                } else {
+                    console.log('✅ HTMX Response:', e.detail.xhr.status);
+                }
+            });
+            
+            // Mapbox initialization (only if not already loaded)
             if (!document.querySelector('script[src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"]')) {
                 const script = document.createElement('script');
                 script.src = 'https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js';
                 script.onload = function() {
+                    console.log('📦 Mapbox GL JS loaded');
+                    
                     window.initMap = function(mapboxToken, courses) {
-                        // Check if map already exists and destroy it
+                        console.log('🗺️ Initializing map with', courses.length, 'courses');
+                        
+                        // Clean up existing map
                         if (window.existingMap) {
                             window.existingMap.remove();
+                            console.log('🗑️ Removed existing map');
                         }
                         
                         mapboxgl.accessToken = mapboxToken;
                         
-                        // Use a unique variable name to avoid redeclaration
                         let courseMap = new mapboxgl.Map({
                             container: 'map',
                             style: 'mapbox://styles/mapbox/streets-v12',
                             center: [-98.5795, 39.8283],
                             zoom: 4.5,
                             minZoom: 3,
-                            maxZoom: 15,
-                            renderWorldCopies: false,
-                            antialias: false,
-                            preserveDrawingBuffer: false
+                            maxZoom: 15
                         });
 
-                        // Store the map reference globally
                         window.existingMap = courseMap;
 
-                        window.addPinFromAddress = function(address, courseName, rating, courseId, color = '#204606') {
+                        window.addPinFromAddress = function(address, courseName, rating, courseId) {
                             if (!address || address.trim() === '') {
-                                console.log('No address provided for course:', courseName);
+                                console.log('⚠️ No address for:', courseName);
                                 return;
                             }
                             
-                            // Define rating colors based on the course.html color scheme
                             const ratingColors = {
-                                'S': '#73FF73',
-                                'A': '#B7FF73', 
-                                'B': '#FFFF73',
-                                'C': '#FFDA74',
-                                'D': '#FFB774',
-                                'F': '#FF7474'
+                                'S': '#73FF73', 'A': '#B7FF73', 'B': '#FFFF73',
+                                'C': '#FFDA74', 'D': '#FFB774', 'F': '#FF7474'
                             };
                             
-                            // Get the color for this rating, default to the original color if not found
-                            const markerColor = ratingColors[rating] || color;
+                            const markerColor = ratingColors[rating] || '#204606';
                             
                             fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${mapboxToken}`)
                                 .then(response => response.json())
                                 .then(data => {
                                     if (data.features && data.features.length > 0) {
                                         const [lng, lat] = data.features[0].center;
+                                        console.log('📍 Added pin for:', courseName);
                                         
                                         let marker = new mapboxgl.Marker({
-                                            color: markerColor, // Use the rating-based color
+                                            color: markerColor,
                                             scale: 1.2
                                         })
                                         .setLngLat([lng, lat])
@@ -325,7 +333,7 @@
                                                     <div class="marker-popup">
                                                         <div class="popup-content">
                                                             <div class="popup-header">
-                                                                <h3 class="course-title" data-course-id="${courseId}">${courseName}</h3>
+                                                                <h3 class="course-title" data-course-id="${courseId}" style="cursor: pointer; text-decoration: underline;">${courseName}</h3>
                                                             </div>
                                                         </div>
                                                         <div class="rating-plaque" style="background-color: ${markerColor};">${rating}</div>
@@ -334,33 +342,35 @@
                                         )
                                         .addTo(courseMap);
 
-                                        // Add click event listener after popup is created
                                         marker.getPopup().on('open', () => {
-                                            let titleElement = document.querySelector('.course-title');
-                                            if (titleElement) {
-                                                titleElement.addEventListener('click', function() {
-                                                    let courseId = this.getAttribute('data-course-id');
-                                                    htmx.ajax('GET', `/course/${courseId}`, {
-                                                        target: '#main-content'
+                                            setTimeout(() => {
+                                                const titleElement = document.querySelector(`[data-course-id="${courseId}"]`);
+                                                if (titleElement) {
+                                                    titleElement.addEventListener('click', function() {
+                                                        const id = this.getAttribute('data-course-id');
+                                                        console.log('🎯 Course clicked:', id);
+                                                        htmx.ajax('GET', `/course/${id}`, {
+                                                            target: '#main-content'
+                                                        });
                                                     });
-                                                });
-                                            }
+                                                }
+                                            }, 100);
                                         });
                                     } else {
-                                        console.log('Could not geocode address:', address, 'for course:', courseName);
+                                        console.log('❌ Could not geocode:', address);
                                     }
                                 })
                                 .catch(error => {
-                                    console.error('Error geocoding address:', address, 'for course:', courseName, error);
+                                    console.error('💥 Geocoding error:', error);
                                 });
                         };
 
                         courseMap.on('load', () => {
-                            // Add pins for each course with an address
+                            console.log('✅ Map loaded, adding pins');
                             if (courses && courses.length > 0) {
                                 courses.forEach(course => {
                                     if (course.Address && course.Address.trim() !== '') {
-                                        addPinFromAddress(course.Address, course.Name, course.OverallRating, course.ID, '#204606');
+                                        addPinFromAddress(course.Address, course.Name, course.OverallRating, course.ID);
                                     }
                                 });
                             }
@@ -371,20 +381,6 @@
             }
         </script>
     </body>
-
-    <script>
-        // Simple HTMX request logging
-        htmx.on('htmx:beforeRequest', function(e) {
-            console.log('HTMX Request:', e.detail.requestConfig.verb, e.detail.requestConfig.path);
-        });
-        
-        htmx.on('htmx:afterRequest', function(e) {
-            console.log('HTMX Response:', e.detail.xhr.status);
-            if (e.detail.xhr.status >= 400) {
-                console.error('HTMX Error:', e.detail.xhr.response);
-            }
-        });
-        </script>
 </html>
 
 
