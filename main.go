@@ -1,16 +1,11 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
 	"html/template"
 	"io"
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
-	"regexp"
-	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -80,59 +75,6 @@ func init() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 }
 
-func loadCourses() ([]Course, error) {
-	var courses []Course
-
-	// Read all files from courses directory
-	files, err := os.ReadDir("courses")
-	if err != nil {
-		return nil, fmt.Errorf("failed to read courses directory: %v", err)
-	}
-
-	courseID := 0
-	// Load each JSON file
-	for _, file := range files {
-		if !strings.HasSuffix(file.Name(), ".json") {
-			continue
-		}
-
-		// Skip schema files
-		if strings.Contains(file.Name(), "schema") {
-			continue
-		}
-
-		data, err := os.ReadFile(filepath.Join("courses", file.Name()))
-		if err != nil {
-			log.Printf("Warning: failed to read course file %s: %v", file.Name(), err)
-			continue
-		}
-
-		var course Course
-		if err := json.Unmarshal(data, &course); err != nil {
-			log.Printf("Warning: failed to parse course file %s: %v", file.Name(), err)
-			continue
-		}
-
-		// Assign unique ID
-		course.ID = courseID
-		courseID++
-
-		courses = append(courses, course)
-	}
-
-	if len(courses) == 0 {
-		return nil, fmt.Errorf("no course files found in courses directory")
-	}
-
-	return courses, nil
-}
-
-func sanitizeFilename(name string) string {
-	// Replace spaces and special characters with underscores
-	reg := regexp.MustCompile(`[^a-zA-Z0-9]+`)
-	return strings.ToLower(reg.ReplaceAllString(name, "_"))
-}
-
 func RequestLogger() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -160,8 +102,9 @@ func RequestLogger() echo.MiddlewareFunc {
 
 func main() {
 	config := LoadConfig()
-
 	courseService := NewCourseService()
+
+	// Remove the duplicate loadCourses() function from main.go
 	courses, err := courseService.LoadCourses()
 	if err != nil {
 		log.Printf("Warning: failed to load courses: %v", err)
