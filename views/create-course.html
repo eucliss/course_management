@@ -580,41 +580,68 @@
 
     // Function to add a new hole
     function addHole(holeData = null) {
-        console.log('⛳ Adding hole:', { holeData, currentCount: holeCount });
+        const container = document.getElementById('holes-container');
+        if (!container) return;
         
-        try {
-            const container = document.getElementById('holes-container');
-            if (!container) {
-                console.error('❌ Holes container not found');
-                return;
-            }
-            
-            const holeDiv = document.createElement('div');
-            holeDiv.className = 'hole-entry';
-            
-            const holeNumber = holeData ? holeData.Number : (holeCount + 1);
-            const par = holeData ? holeData.Par : '';
-            const yardage = holeData ? holeData.Yardage : '';
-            const description = holeData ? holeData.Description : '';
-            
-            holeDiv.innerHTML = `
-                <h3>Hole ${holeNumber}</h3>
-                <div class="hole-inputs">
-                    <input type="number" name="holes[${holeCount}].number" value="${holeNumber}" readonly>
-                    <input type="number" name="holes[${holeCount}].par" placeholder="Par (3-6)" min="3" max="6" value="${par}">
-                    <input type="number" name="holes[${holeCount}].yardage" placeholder="Yardage" min="0" value="${yardage}">
-                    <textarea name="holes[${holeCount}].description" placeholder="Describe this hole (optional)">${description}</textarea>
-                    <button type="button" onclick="removeHole(this)" class="remove-btn">Remove Hole</button>
-                </div>
-            `;
-            container.appendChild(holeDiv);
-            holeCount++;
-            
-            console.log('✅ Hole added successfully. Total holes:', holeCount);
-            
-        } catch (error) {
-            console.error('💥 Error adding hole:', error);
-        }
+        // Create elements safely
+        const holeDiv = document.createElement('div');
+        holeDiv.className = 'hole-entry';
+        
+        const holeNumber = holeData ? holeData.Number : (holeCount + 1);
+        
+        // Create structure with createElement instead of innerHTML
+        const title = document.createElement('h3');
+        title.textContent = `Hole ${holeNumber}`;
+        
+        const inputsDiv = document.createElement('div');
+        inputsDiv.className = 'hole-inputs';
+        
+        // Create inputs safely
+        const numberInput = document.createElement('input');
+        numberInput.type = 'number';
+        numberInput.name = `holes[${holeCount}].number`;
+        numberInput.value = holeNumber;
+        numberInput.readOnly = true;
+        
+        const parInput = document.createElement('input');
+        parInput.type = 'number';
+        parInput.name = `holes[${holeCount}].par`;
+        parInput.placeholder = 'Par (3-6)';
+        parInput.min = '3';
+        parInput.max = '6';
+        parInput.value = holeData ? holeData.Par : '';
+        
+        const yardageInput = document.createElement('input');
+        yardageInput.type = 'number';
+        yardageInput.name = `holes[${holeCount}].yardage`;
+        yardageInput.placeholder = 'Yardage';
+        yardageInput.min = '0';
+        yardageInput.value = holeData ? holeData.Yardage : '';
+        
+        const descriptionInput = document.createElement('textarea');
+        descriptionInput.name = `holes[${holeCount}].description`;
+        descriptionInput.placeholder = 'Describe this hole (optional)';
+        descriptionInput.value = holeData ? holeData.Description : '';
+        
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        removeButton.className = 'remove-btn';
+        removeButton.textContent = 'Remove Hole';
+        removeButton.onclick = function() {
+            removeHole(this);
+        };
+        
+        inputsDiv.appendChild(numberInput);
+        inputsDiv.appendChild(parInput);
+        inputsDiv.appendChild(yardageInput);
+        inputsDiv.appendChild(descriptionInput);
+        inputsDiv.appendChild(removeButton);
+        
+        holeDiv.appendChild(title);
+        holeDiv.appendChild(inputsDiv);
+        container.appendChild(holeDiv);
+        
+        holeCount++;
     }
 
     // Function to add a new score

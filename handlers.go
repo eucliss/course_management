@@ -10,12 +10,17 @@ import (
 	"os"
 	"strconv"
 
+	"strings"
+
+	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 )
 
 type Handlers struct {
 	courses *[]Course
 }
+
+var validate = validator.New()
 
 func NewHandlers(courses *[]Course) *Handlers {
 	return &Handlers{courses: courses}
@@ -346,50 +351,54 @@ func (h *Handlers) Login(c echo.Context) error {
 	}
 }
 
-func (h *Handlers) parseFormToCourse(c echo.Context, existingID int) (Course, error) {
-	name := c.FormValue("name")
-	description := c.FormValue("description")
-	overallRating := c.FormValue("overallRating")
-	price := c.FormValue("price")
-	handicapDifficulty, _ := strconv.Atoi(c.FormValue("handicapDifficulty"))
-	hazardDifficulty, _ := strconv.Atoi(c.FormValue("hazardDifficulty"))
-	condition := c.FormValue("condition")
-	merch := c.FormValue("merch")
-	enjoymentRating := c.FormValue("enjoymentRating")
-	vibe := c.FormValue("vibe")
-	rangeRating := c.FormValue("range")
-	amenities := c.FormValue("amenities")
-	glizzies := c.FormValue("glizzies")
-	review := c.FormValue("review")
-	address := c.FormValue("address")
+func (h *Handlers) validateAndSanitizeCourse(c echo.Context, existingID int) (Course, error) {
+	// Sanitize inputs
+	name := html.EscapeString(strings.TrimSpace(c.FormValue("name")))
+	description := html.EscapeString(strings.TrimSpace(c.FormValue("description")))
+	overallRating := strings.TrimSpace(c.FormValue("overallRating"))
+	review := html.EscapeString(strings.TrimSpace(c.FormValue("review")))
+	address := html.EscapeString(strings.TrimSpace(c.FormValue("address")))
 
-	if name == "" || description == "" || overallRating == "" {
-		return Course{}, fmt.Errorf("missing required fields")
+	// Parse and validate integers
+	handicapDifficulty, err := strconv.Atoi(c.FormValue("handicapDifficulty"))
+	if err != nil {
+		handicapDifficulty = 0
+	}
+
+	hazardDifficulty, err := strconv.Atoi(c.FormValue("hazardDifficulty"))
+	if err != nil {
+		hazardDifficulty = 0
 	}
 
 	course := Course{
-		ID:            existingID, // Will be 0 for new courses
+		ID:            existingID,
 		Name:          name,
 		Description:   description,
 		OverallRating: overallRating,
 		Review:        review,
 		Address:       address,
 		Ranks: Ranking{
-			Price:              price,
+			Price:              strings.TrimSpace(c.FormValue("price")),
 			HandicapDifficulty: handicapDifficulty,
 			HazardDifficulty:   hazardDifficulty,
-			Merch:              merch,
-			Condition:          condition,
-			EnjoymentRating:    enjoymentRating,
-			Vibe:               vibe,
-			Range:              rangeRating,
-			Amenities:          amenities,
-			Glizzies:           glizzies,
+			Merch:              strings.TrimSpace(c.FormValue("merch")),
+			Condition:          strings.TrimSpace(c.FormValue("condition")),
+			EnjoymentRating:    strings.TrimSpace(c.FormValue("enjoymentRating")),
+			Vibe:               strings.TrimSpace(c.FormValue("vibe")),
+			Range:              strings.TrimSpace(c.FormValue("range")),
+			Amenities:          strings.TrimSpace(c.FormValue("amenities")),
+			Glizzies:           strings.TrimSpace(c.FormValue("glizzies")),
 		},
 		Holes:  []Hole{},
 		Scores: []Score{},
 	}
 
+	// Validate the struct
+	if err := validate.Struct(course); err != nil {
+		return Course{}, fmt.Errorf("validation failed: %v", err)
+	}
+
+	// Parse complex data
 	courseService := NewCourseService()
 	holes, scores, err := courseService.ParseFormData(c.Request().Form)
 	if err != nil {

@@ -73,6 +73,23 @@ window.CourseMap = {
         
         const markerColor = ratingColors[course.OverallRating] || '#204606';
         
+        // Escape data before using in popup
+        const escapedName = this.escapeHtml(course.Name);
+        const escapedRating = this.escapeHtml(course.OverallRating);
+        
+        const popup = new mapboxgl.Popup({ offset: 25 })
+            .setHTML(`
+                <div class="marker-popup">
+                    <div class="popup-content">
+                        <div class="popup-header">
+                            <h3 class="course-title" data-course-id="${course.ID}">${escapedName}</h3>
+                            <p>Click to view course details</p>
+                        </div>
+                    </div>
+                    <div class="rating-plaque">${escapedRating}</div>
+                </div>
+            `);
+        
         fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(course.Address)}.json?access_token=${mapboxgl.accessToken}`)
             .then(response => response.json())
             .then(data => {
@@ -85,24 +102,7 @@ window.CourseMap = {
                         scale: 1.2
                     })
                     .setLngLat([lng, lat])
-                    .setPopup(
-                        new mapboxgl.Popup({ offset: 25 })
-                            .setHTML(`
-                                <div class="marker-popup">
-                                    <div class="popup-content">
-                                        <div class="popup-header">
-                                            <h3 class="course-title" 
-                                               data-course-id="${course.ID}" 
-                                               style="cursor: pointer; text-decoration: underline;">
-                                               ${course.Name}
-                                            </h3>
-                                            <p>Click to view course details</p>
-                                        </div>
-                                    </div>
-                                    <div class="rating-plaque" style="background-color: ${markerColor};">${course.OverallRating}</div>
-                                </div>
-                            `)
-                    )
+                    .setPopup(popup)
                     .addTo(this.map);
 
                     // HTMX-compatible click handler
@@ -129,6 +129,12 @@ window.CourseMap = {
             .catch(error => {
                 console.error('💥 Geocoding error for', course.Name, ':', error);
             });
+    },
+    
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     },
     
     destroy() {
