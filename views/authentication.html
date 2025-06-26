@@ -107,3 +107,35 @@
     }
 </style>
 {{ end }}
+
+{{ block "login-success" . }}
+<div class="auth-container">
+    <div class="auth-box">
+        <div class="success-message">
+            <h2>Login Successful!</h2>
+            <p>Welcome, {{.Username}}!</p>
+            <button hx-get="/introduction" hx-target="#main-content" class="submit-btn">Return to Home</button>
+        </div>
+    </div>
+</div>
+{{ end }}
+
+{{ block "login-error" . }}
+<div class="auth-container">
+    <div class="auth-box">
+        <h2>Login</h2>
+        <div style="color: #FF7474; text-align: center; margin-bottom: 20px;">{{.ErrorMessage}}</div>
+        <form id="login-form" hx-post="/login" hx-target="#main-content">
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" value="{{.Username}}" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit" class="submit-btn">Login</button>
+        </form>
+    </div>
+</div>
+{{ end }}
