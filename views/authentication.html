@@ -1,20 +1,52 @@
 {{ block "authentication" . }}
 <div class="auth-container">
     <div class="auth-box">
-        <h2>Login</h2>
-        <form id="login-form" hx-post="/login" hx-target="#main-content">
-            <div class="form-group">
-                <label for="username">Username:</label>
-                <input type="text" id="username" name="username" required>
-            </div>
-            <div class="form-group">
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" required>
-            </div>
-            <button type="submit" class="submit-btn">Login</button>
-        </form>
+        <h2>Login to Course Management</h2>
+        <p style="text-align: center; margin-bottom: 30px;">Sign in with your Google account</p>
+        
+        <!-- Google Sign-In Button -->
+        <div id="g_id_onload"
+             data-client_id="{{ .GoogleClientID }}"
+             data-context="signin"
+             data-ux_mode="popup"
+             data-callback="handleCredentialResponse"
+             data-auto_prompt="false">
+        </div>
+        
+        <div class="g_id_signin" 
+             data-type="standard"
+             data-shape="rectangular"
+             data-theme="outline"
+             data-text="signin_with"
+             data-size="large"
+             data-logo_alignment="left">
+        </div>
     </div>
 </div>
+
+<!-- Load Google Identity Services -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<script>
+// Handle the credential response
+function handleCredentialResponse(response) {
+    console.log('🔐 Google Sign-In successful');
+    
+    // Send the JWT token to your backend via HTMX
+    htmx.ajax('POST', '/auth/google/verify', {
+        values: { 
+            credential: response.credential 
+        },
+        target: '#main-content'
+    });
+}
+
+// Optional: Handle sign-in errors
+window.addEventListener('load', function() {
+    // Additional Google Sign-In configuration if needed
+    console.log('🚀 Google Identity Services loaded');
+});
+</script>
 
 <style>
     .auth-container {
@@ -30,80 +62,87 @@
         border-radius: 8px;
         padding: 40px;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        border: 1px solid #E5E7EB;
         max-width: 400px;
         width: 100%;
+        text-align: center;
     }
 
     .auth-box h2 {
         color: #204606;
-        text-align: center;
-        margin-bottom: 30px;
+        margin-bottom: 10px;
         font-size: 2em;
     }
 
-    .form-group {
-        margin-bottom: 20px;
-    }
-
-    .form-group label {
-        display: block;
+    .auth-box p {
         color: #204606;
-        font-size: 1.1em;
-        font-weight: 500;
-        margin-bottom: 8px;
+        margin-bottom: 30px;
     }
 
-    .form-group input {
-        width: 100%;
-        padding: 12px;
-        border: 2px dashed #204606;
+    /* Center the Google button */
+    .g_id_signin {
+        display: flex;
+        justify-content: center;
+        margin-top: 20px;
+    }
+</style>
+{{ end }}
+
+{{ block "user-profile" . }}
+<div class="user-profile">
+    <img src="{{.Picture}}" alt="{{.Name}}" class="profile-picture">
+    <div class="user-info">
+        <h3>{{.Name}}</h3>
+        <p>{{.Email}}</p>
+        <button hx-post="/auth/logout" hx-target="#main-content" class="logout-btn">
+            Sign Out
+        </button>
+    </div>
+</div>
+
+<style>
+    .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 20px;
+        background-color: rgba(181, 216, 68, 0.1);
         border-radius: 8px;
-        font-size: 1em;
+        margin: 20px 0;
+    }
+    
+    .profile-picture {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        border: 3px solid #204606;
+    }
+    
+    .user-info h3 {
+        margin: 0;
         color: #204606;
-        background-color: rgba(255, 255, 255, 0.7);
-        transition: all 0.2s ease;
-        box-sizing: border-box;
+        font-size: 1.2em;
     }
-
-    .form-group input:focus {
-        outline: none;
-        border-style: solid;
-        background-color: rgba(255, 255, 255, 0.9);
+    
+    .user-info p {
+        margin: 5px 0;
+        color: #666;
+        font-size: 0.9em;
     }
-
-    .form-group input::placeholder {
-        color: #999;
-        font-style: italic;
-    }
-
-    .submit-btn {
-        width: 100%;
+    
+    .logout-btn {
         background-color: #204606;
-        color: #FFFCE7;
+        color: white;
         border: none;
-        padding: 15px;
+        padding: 10px 20px;
         border-radius: 6px;
-        font-size: 1.1em;
-        font-weight: 500;
         cursor: pointer;
+        font-size: 0.9em;
         transition: background-color 0.2s;
         margin-top: 10px;
     }
-
-    .submit-btn:hover {
+    
+    .logout-btn:hover {
         background-color: #2d6509;
-    }
-
-    .success-message {
-        text-align: center;
-        color: #204606;
-        font-size: 1.2em;
-        margin-top: 20px;
-        padding: 15px;
-        background-color: rgba(255, 255, 255, 0.7);
-        border-radius: 6px;
-        border: 1px solid #204606;
     }
 </style>
 {{ end }}
