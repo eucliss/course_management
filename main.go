@@ -8,7 +8,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/gorilla/sessions"
 	"github.com/joho/godotenv"
+	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -100,9 +102,21 @@ func RequestLogger() echo.MiddlewareFunc {
 	}
 }
 
+func RequireAuth(sessionService *SessionService) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			if !sessionService.IsAuthenticated(c) {
+				return c.Redirect(http.StatusTemporaryRedirect, "/login")
+			}
+			return next(c)
+		}
+	}
+}
+
 func main() {
 	config := LoadConfig()
 	courseService := NewCourseService()
+	sessionService := NewSessionService()
 
 	// Remove the duplicate loadCourses() function from main.go
 	courses, err := courseService.LoadCourses()
@@ -117,22 +131,39 @@ func main() {
 	e.Renderer = NewTemplates()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
-	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{"*"},
-		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete},
-		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
-	}))
+	// e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+	// 	AllowOrigins: []string{"*"},
+	// 	AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete},
+	// 	AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
+	// }))
 	e.Use(RequestLogger())
+
+	// Add session middleware with proper secret handling
+	sessionSecret := os.Getenv("SESSION_SECRET")
+	if sessionSecret == "" {
+		log.Printf("Warning: SESSION_SECRET not set, using default (not secure for production)")
+		sessionSecret = "development-secret-key-please-change-in-production-32chars"
+	}
+	if len(sessionSecret) < 32 {
+		log.Printf("Warning: SESSION_SECRET should be at least 32 characters")
+	}
+	e.Use(session.Middleware(sessions.NewCookieStore([]byte(sessionSecret))))
+
+	// Add auth handlers
+	authHandlers := NewAuthHandlers()
+
+	// Modern auth routes
+	e.POST("/auth/google/verify", authHandlers.VerifyGoogleToken)
+	e.POST("/auth/logout", authHandlers.Logout)
+	e.GET("/login", authHandlers.GetAuthStatus)
 
 	// Routes
 	e.GET("/", handlers.Home)
 	e.GET("/introduction", handlers.Introduction)
 	e.GET("/course/:id", handlers.GetCourse)
-	e.GET("/create-course", handlers.CreateCourseForm)
+	e.GET("/create-course", handlers.CreateCourseForm, RequireAuth(sessionService))
 	e.POST("/create-course", handlers.CreateCourse)
 	e.GET("/map", handlers.Map)
-	e.GET("/login", handlers.LoginForm)
-	e.POST("/login", handlers.Login)
 	e.GET("/edit-course/:id", handlers.EditCourseForm)
 	e.POST("/edit-course/:id", handlers.UpdateCourse)
 	e.Static("/favicon.ico", "static/favicon.ico")
