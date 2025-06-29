@@ -150,6 +150,10 @@ window.addEventListener('load', function() {
                 Sign Out
             </button>
         </div>
+        <div class="handicap-box">
+            <input type="number" class="handicap-input" placeholder="0.0" step="0.1" min="0" max="54">
+            <div class="handicap-label">HANDICAP</div>
+        </div>
     </div>
 
     <div class="courses-reviewed-section">
@@ -260,6 +264,10 @@ window.addEventListener('load', function() {
         margin-bottom: 30px;
         border: 2px solid rgba(32, 70, 6, 0.1);
     }
+
+    .user-info {
+        flex: 1;
+    }
     
     .profile-picture {
         width: 80px;
@@ -299,6 +307,47 @@ window.addEventListener('load', function() {
         background-color: #2d6509;
         transform: translateY(-1px);
         box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    .handicap-box {
+        background-color: #204606;
+        color: white;
+        padding: 15px 30px;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        flex-shrink: 0;
+        min-width: 100px;
+    }
+
+    .handicap-input {
+        font-size: 2em;
+        font-weight: bold;
+        background: transparent;
+        border: none;
+        color: white;
+        text-align: center;
+        width: 80px;
+        padding: 0;
+        outline: none;
+    }
+
+    .handicap-input::placeholder {
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    .handicap-input:focus {
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+    }
+
+    .handicap-label {
+        font-size: 0.7em;
+        opacity: 0.9;
+        font-weight: 500;
+        letter-spacing: 1px;
     }
 
     .courses-reviewed-header {
@@ -610,6 +659,11 @@ window.addEventListener('load', function() {
         .user-profile-header {
             flex-direction: column;
             text-align: center;
+            gap: 20px;
+        }
+
+        .handicap-box {
+            align-self: center;
         }
 
         .courses-reviewed-header {
