@@ -62,7 +62,7 @@ func (a *AuthHandlers) VerifyGoogleToken(c echo.Context) error {
 
 	// Return HTMX-friendly response that redirects to main app
 	return c.HTML(http.StatusOK, `
-		<div hx-get="/introduction" hx-target="body" hx-trigger="load">
+		<div hx-get="/" hx-target="body" hx-trigger="load">
 			<div style="text-align: center; padding: 40px; color: #204606;">
 				<h2>Welcome, `+user.Name+`!</h2>
 				<p>Redirecting to dashboard...</p>
