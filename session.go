@@ -34,27 +34,52 @@ func (s *SessionService) SetUser(c echo.Context, user *GoogleUser) error {
 }
 
 func (s *SessionService) GetUser(c echo.Context) *GoogleUser {
-	sess, _ := session.Get("session", c)
+	sess, err := session.Get("session", c)
+	if err != nil {
+		return nil
+	}
 	if auth, ok := sess.Values["authenticated"].(bool); !ok || !auth {
 		return nil
 	}
 
+	// Type assertions with safety checks
+	userID, ok1 := sess.Values["user_id"].(string)
+	userEmail, ok2 := sess.Values["user_email"].(string)
+	userName, ok3 := sess.Values["user_name"].(string)
+	userPicture, ok4 := sess.Values["user_picture"].(string)
+
+	if !ok1 || !ok2 || !ok3 || !ok4 {
+		log.Printf("Warning: Invalid session data types")
+		return nil
+	}
+
 	return &GoogleUser{
-		ID:      sess.Values["user_id"].(string),
-		Email:   sess.Values["user_email"].(string),
-		Name:    sess.Values["user_name"].(string),
-		Picture: sess.Values["user_picture"].(string),
+		ID:      userID,
+		Email:   userEmail,
+		Name:    userName,
+		Picture: userPicture,
 	}
 }
 
 func (s *SessionService) Logout(c echo.Context) error {
-	sess, _ := session.Get("session", c)
+	sess, err := session.Get("session", c)
+	if err != nil {
+		return err
+	}
 	sess.Values["authenticated"] = false
+	// Clear all user data
+	delete(sess.Values, "user_id")
+	delete(sess.Values, "user_email")
+	delete(sess.Values, "user_name")
+	delete(sess.Values, "user_picture")
 	return sess.Save(c.Request(), c.Response())
 }
 
 func (s *SessionService) IsAuthenticated(c echo.Context) bool {
-	sess, _ := session.Get("session", c)
+	sess, err := session.Get("session", c)
+	if err != nil {
+		return false
+	}
 	if auth, ok := sess.Values["authenticated"].(bool); ok && auth {
 		return true
 	}

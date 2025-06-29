@@ -85,64 +85,651 @@ window.addEventListener('load', function() {
         margin-top: 20px;
     }
 </style>
+
+<script>
+    // Auto-calculate total score when out and in scores are entered
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('score-input') && (e.target.placeholder === 'Out' || e.target.placeholder === 'In')) {
+            const scoreSection = e.target.closest('.score-input-section');
+            const outInput = scoreSection.querySelector('input[placeholder="Out"]');
+            const inInput = scoreSection.querySelector('input[placeholder="In"]');
+            const totalInput = scoreSection.querySelector('input[placeholder="Total"]');
+            
+            const outScore = parseInt(outInput.value) || 0;
+            const inScore = parseInt(inInput.value) || 0;
+            
+            if (outScore > 0 && inScore > 0) {
+                totalInput.value = outScore + inScore;
+            } else {
+                totalInput.value = '';
+            }
+        }
+    });
+
+    // Placeholder function for adding score
+    function addScore(courseId) {
+        const scoreSection = event.target.closest('.score-input-section');
+        const outScore = scoreSection.querySelector('input[placeholder="Out"]').value;
+        const inScore = scoreSection.querySelector('input[placeholder="In"]').value;
+        const totalScore = scoreSection.querySelector('input[placeholder="Total"]').value;
+        const handicap = scoreSection.querySelector('input[placeholder="Handicap"]').value;
+        
+        if (!outScore || !inScore || !totalScore) {
+            alert('Please enter both out and in scores');
+            return;
+        }
+        
+        // TODO: Implement score submission to backend
+        console.log('Adding score for course', courseId, {
+            out: outScore,
+            in: inScore,
+            total: totalScore,
+            handicap: handicap
+        });
+        
+        // Clear inputs after successful submission
+        scoreSection.querySelector('input[placeholder="Out"]').value = '';
+        scoreSection.querySelector('input[placeholder="In"]').value = '';
+        scoreSection.querySelector('input[placeholder="Total"]').value = '';
+        scoreSection.querySelector('input[placeholder="Handicap"]').value = '';
+        
+        alert('Score added successfully!');
+    }
+</script>
+
 {{ end }}
 
 {{ block "user-profile" . }}
-<div class="user-profile">
-    <img src="{{.Picture}}" alt="{{.Name}}" class="profile-picture">
-    <div class="user-info">
-        <h3>{{.Name}}</h3>
-        <p>{{.Email}}</p>
-        <button hx-post="/auth/logout" hx-target="#main-content" class="logout-btn">
-            Sign Out
-        </button>
+<div class="profile-container">
+    <div class="user-profile-header">
+        <img src="{{.Picture}}" alt="{{.Name}}" class="profile-picture">
+        <div class="user-info">
+            <h2>{{.Name}}</h2>
+            <p>{{.Email}}</p>
+            <button hx-post="/auth/logout" hx-target="#main-content" class="logout-btn">
+                Sign Out
+            </button>
+        </div>
+        <div class="handicap-box">
+            <input type="number" class="handicap-input" placeholder="0.0" step="0.1" min="0" max="54">
+            <div class="handicap-label">HANDICAP</div>
+        </div>
+    </div>
+
+    <div class="courses-reviewed-section">
+        <div class="courses-reviewed-header">
+            <h3>Courses Reviewed ({{len .Courses}})</h3>
+            <button hx-get="/create-course" hx-target="#main-content" class="add-course-btn">
+                + Add Course
+            </button>
+        </div>
+        {{ if gt (len .Courses) 0 }}
+            <div class="courses-table-container">
+                {{ range .Courses }}
+                <div class="course-review-card">
+                    <div class="course-header">
+                        <div class="course-basic-info">
+                            <div class="course-title-row">
+                                <h4 class="course-name" hx-get="/course/{{ .ID }}" hx-target="#main-content" style="cursor: pointer;">{{ .Name }}</h4>
+                                <button hx-get="/edit-course/{{ .ID }}" hx-target="#main-content" class="edit-course-btn">
+                                    Edit
+                                </button>
+                            </div>
+                            <p class="course-description">{{ .Description }}</p>
+                        </div>
+                        <div class="overall-rating-badge">
+                            <span class="rating-value">{{ .OverallRating }}</span>
+                            <span class="rating-label">TIER</span>
+                        </div>
+                    </div>
+                    
+                    <div class="rankings-grid">
+                        <div class="ranking-item">
+                            <span class="ranking-label">Price</span>
+                            <span class="ranking-value price-{{ len .Ranks.Price }}">{{ .Ranks.Price }}</span>
+                        </div>
+                        <div class="ranking-item">
+                            <span class="ranking-label">Handicap Difficulty</span>
+                            <span class="ranking-value handicap-{{ .Ranks.HandicapDifficulty }}">{{ .Ranks.HandicapDifficulty }}</span>
+                        </div>
+                        <div class="ranking-item">
+                            <span class="ranking-label">Hazard Difficulty</span>
+                            <span class="ranking-value hazard-{{ .Ranks.HazardDifficulty }}">{{ .Ranks.HazardDifficulty }}</span>
+                        </div>
+                        <div class="ranking-item">
+                            <span class="ranking-label">Condition</span>
+                            <span class="ranking-value rating-{{ .Ranks.Condition }}">{{ .Ranks.Condition }}</span>
+                        </div>
+                        <div class="ranking-item">
+                            <span class="ranking-label">Enjoyment</span>
+                            <span class="ranking-value rating-{{ .Ranks.EnjoymentRating }}">{{ .Ranks.EnjoymentRating }}</span>
+                        </div>
+                        <div class="ranking-item">
+                            <span class="ranking-label">Vibe</span>
+                            <span class="ranking-value rating-{{ .Ranks.Vibe }}">{{ .Ranks.Vibe }}</span>
+                        </div>
+                        <div class="ranking-item">
+                            <span class="ranking-label">Range</span>
+                            <span class="ranking-value rating-{{ .Ranks.Range }}">{{ .Ranks.Range }}</span>
+                        </div>
+                        <div class="ranking-item">
+                            <span class="ranking-label">Amenities</span>
+                            <span class="ranking-value rating-{{ .Ranks.Amenities }}">{{ .Ranks.Amenities }}</span>
+                        </div>
+                        <div class="ranking-item">
+                            <span class="ranking-label">Turn Dog</span>
+                            <span class="ranking-value rating-{{ .Ranks.Glizzies }}">{{ .Ranks.Glizzies }}</span>
+                        </div>
+                        <div class="ranking-item">
+                            <span class="ranking-label">Merch</span>
+                            <span class="ranking-value rating-{{ .Ranks.Merch }}">{{ .Ranks.Merch }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="score-input-section">
+                        <span class="score-label">Post new score</span>
+                        <div class="score-inputs">
+                            <input type="number" class="score-input" placeholder="Out" min="18" max="90">
+                            <input type="number" class="score-input" placeholder="In" min="18" max="90">
+                            <input type="number" class="score-input" placeholder="Total" min="36" max="180" readonly>
+                            <input type="number" class="score-input" placeholder="Handicap" min="0" max="54">
+                            <button class="add-score-btn" onclick="addScore({{ .ID }})">Add Score</button>
+                        </div>
+                    </div>
+                </div>
+                {{ end }}
+            </div>
+        {{ else }}
+            <div class="no-courses">
+                <p>No courses reviewed yet. <a hx-get="/create-course" hx-target="#main-content" style="color: #204606; text-decoration: underline; cursor: pointer;">Add your first course review!</a></p>
+            </div>
+        {{ end }}
     </div>
 </div>
 
 <style>
-    .user-profile {
+    .profile-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .user-profile-header {
         display: flex;
         align-items: center;
-        gap: 15px;
-        padding: 20px;
+        gap: 20px;
+        padding: 30px;
         background-color: rgba(181, 216, 68, 0.1);
-        border-radius: 8px;
-        margin: 20px 0;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        border: 2px solid rgba(32, 70, 6, 0.1);
+    }
+
+    .user-info {
+        flex: 1;
     }
     
     .profile-picture {
-        width: 60px;
-        height: 60px;
+        width: 80px;
+        height: 80px;
         border-radius: 50%;
-        border: 3px solid #204606;
+        border: 4px solid #204606;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
     
-    .user-info h3 {
-        margin: 0;
+    .user-info h2 {
+        margin: 0 0 5px 0;
         color: #204606;
-        font-size: 1.2em;
+        font-size: 1.8em;
+        font-weight: 600;
     }
     
     .user-info p {
-        margin: 5px 0;
+        margin: 0 0 15px 0;
         color: #666;
-        font-size: 0.9em;
+        font-size: 1.1em;
     }
     
     .logout-btn {
         background-color: #204606;
         color: white;
         border: none;
-        padding: 10px 20px;
-        border-radius: 6px;
+        padding: 12px 24px;
+        border-radius: 8px;
         cursor: pointer;
-        font-size: 0.9em;
-        transition: background-color 0.2s;
-        margin-top: 10px;
+        font-size: 1em;
+        font-weight: 500;
+        transition: all 0.2s;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     
     .logout-btn:hover {
         background-color: #2d6509;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    .handicap-box {
+        background-color: #204606;
+        color: white;
+        padding: 15px 30px;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        flex-shrink: 0;
+        min-width: 100px;
+    }
+
+    .handicap-input {
+        font-size: 2em;
+        font-weight: bold;
+        background: transparent;
+        border: none;
+        color: white;
+        text-align: center;
+        width: 80px;
+        padding: 0;
+        outline: none;
+    }
+
+    .handicap-input::placeholder {
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    .handicap-input:focus {
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+    }
+
+    .handicap-label {
+        font-size: 0.7em;
+        opacity: 0.9;
+        font-weight: 500;
+        letter-spacing: 1px;
+    }
+
+    .courses-reviewed-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #204606;
+        padding-bottom: 10px;
+    }
+
+    .courses-reviewed-section h3 {
+        color: #204606;
+        font-size: 1.5em;
+        margin: 0;
+    }
+
+    .add-course-btn {
+        background-color: #204606;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.9em;
+        font-weight: 500;
+        transition: all 0.2s;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .add-course-btn:hover {
+        background-color: #2d6509;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    .courses-table-container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .course-review-card {
+        background-color: white;
+        border: 2px solid rgba(32, 70, 6, 0.1);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        transition: all 0.2s;
+    }
+
+    .course-review-card:hover {
+        box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        border-color: rgba(32, 70, 6, 0.3);
+    }
+
+    .course-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid rgba(32, 70, 6, 0.1);
+    }
+
+    .course-basic-info {
+        flex: 1;
+    }
+
+    .course-title-row {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 8px;
+    }
+
+    .edit-course-btn {
+        background-color: transparent;
+        color: #204606;
+        border: 2px solid #204606;
+        padding: 4px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.75em;
+        font-weight: 500;
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+
+    .edit-course-btn:hover {
+        background-color: #204606;
+        color: white;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .course-name {
+        margin: 0;
+        color: #204606;
+        font-size: 1.3em;
+        font-weight: 600;
+        transition: color 0.2s;
+    }
+
+    .course-name:hover {
+        color: #2d6509;
+        text-decoration: underline;
+    }
+
+    .course-description {
+        margin: 0;
+        color: #666;
+        font-size: 1em;
+        line-height: 1.4;
+    }
+
+    .overall-rating-badge {
+        background-color: #204606;
+        color: white;
+        padding: 12px 16px;
+        border-radius: 8px;
+        text-align: center;
+        min-width: 60px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .rating-value {
+        display: block;
+        font-size: 1.5em;
+        font-weight: bold;
+        line-height: 1;
+    }
+
+    .rating-label {
+        display: block;
+        font-size: 0.7em;
+        opacity: 0.9;
+        margin-top: 2px;
+    }
+
+    .rankings-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+    }
+
+    .ranking-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 15px;
+        background-color: #f8f9fa;
+        border-radius: 6px;
+        border-left: 4px solid #204606;
+    }
+
+    .ranking-label {
+        font-weight: 500;
+        color: #204606;
+        font-size: 0.9em;
+    }
+
+    .ranking-value {
+        font-weight: 600;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.9em;
+    }
+
+    /* Rating color classes */
+    .rating-S { background-color: #73FF73; color: #000; }
+    .rating-A { background-color: #B7FF73; color: #000; }
+    .rating-B { background-color: #FFFF73; color: #000; }
+    .rating-C { background-color: #FFDA74; color: #000; }
+    .rating-D { background-color: #FFB774; color: #000; }
+    .rating-F { background-color: #FF7474; color: #000; }
+
+    /* Price classes */
+    .price-1 { background-color: #73FF73; color: #000; }
+    .price-2 { background-color: #B7FF73; color: #000; }
+    .price-3 { background-color: #FFFF73; color: #000; }
+    .price-4 { background-color: #FFDA74; color: #000; }
+    .price-5 { background-color: #FF7474; color: #000; }
+
+    /* Handicap classes */
+    .handicap-1, .handicap-2, .handicap-3 { background-color: #FF7474; color: #000; }
+    .handicap-4, .handicap-5, .handicap-6 { background-color: #FFB774; color: #000; }
+    .handicap-7, .handicap-8, .handicap-9 { background-color: #FFDA74; color: #000; }
+    .handicap-10, .handicap-11, .handicap-12 { background-color: #FFFF73; color: #000; }
+    .handicap-13, .handicap-14, .handicap-15 { background-color: #B7FF73; color: #000; }
+    .handicap-16, .handicap-17, .handicap-18 { background-color: #73FF73; color: #000; }
+
+    /* Hazard classes */
+    .hazard-1 { background-color: #73FF73; color: #000; }
+    .hazard-2 { background-color: #B7FF73; color: #000; }
+    .hazard-3 { background-color: #FFFF73; color: #000; }
+    .hazard-4 { background-color: #FFDA74; color: #000; }
+    .hazard-5 { background-color: #FF7474; color: #000; }
+
+    .score-input-section {
+        margin-top: 20px;
+        padding-top: 15px;
+        border-top: 1px solid rgba(32, 70, 6, 0.1);
+    }
+
+    .score-label {
+        font-weight: 500;
+        color: #204606;
+        font-size: 1em;
+        margin-bottom: 10px;
+        display: block;
+    }
+
+    .score-inputs {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .score-input {
+        width: 90px;
+        padding: 12px 15px;
+        border: 2px solid rgba(32, 70, 6, 0.3);
+        border-radius: 6px;
+        font-size: 1em;
+        text-align: center;
+        background-color: white;
+        transition: border-color 0.2s;
+    }
+
+    .score-input[placeholder="Handicap"] {
+        width: 120px;
+    }
+
+    .score-input:focus {
+        outline: none;
+        border-color: #204606;
+        box-shadow: 0 0 0 2px rgba(32, 70, 6, 0.1);
+    }
+
+    .score-input[readonly] {
+        background-color: #f8f9fa;
+        color: #666;
+        cursor: not-allowed;
+    }
+
+    .add-score-btn {
+        background-color: #204606;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9em;
+        font-weight: 500;
+        transition: all 0.2s;
+        margin-left: 10px;
+    }
+
+    .add-score-btn:hover {
+        background-color: #2d6509;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .no-courses {
+        text-align: center;
+        padding: 40px 20px;
+        color: #666;
+        font-size: 1.1em;
+    }
+
+    @media (max-width: 768px) {
+        .course-header {
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .course-title-row {
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .course-name {
+            flex: none;
+            margin-bottom: 5px;
+        }
+
+        .score-inputs {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 8px;
+        }
+
+        .score-input {
+            width: 100%;
+        }
+
+        .add-score-btn {
+            margin-left: 0;
+            margin-top: 5px;
+        }
+        
+        .rankings-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .user-profile-header {
+            flex-direction: column;
+            text-align: center;
+            gap: 20px;
+        }
+
+        .handicap-box {
+            align-self: center;
+        }
+
+        .courses-reviewed-header {
+            flex-direction: column;
+            gap: 15px;
+            align-items: stretch;
+        }
+
+        .courses-reviewed-section h3 {
+            text-align: center;
+        }
     }
 </style>
+
+<script>
+    // Auto-calculate total score when out and in scores are entered
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('score-input') && (e.target.placeholder === 'Out' || e.target.placeholder === 'In')) {
+            const scoreSection = e.target.closest('.score-input-section');
+            const outInput = scoreSection.querySelector('input[placeholder="Out"]');
+            const inInput = scoreSection.querySelector('input[placeholder="In"]');
+            const totalInput = scoreSection.querySelector('input[placeholder="Total"]');
+            
+            const outScore = parseInt(outInput.value) || 0;
+            const inScore = parseInt(inInput.value) || 0;
+            
+            if (outScore > 0 && inScore > 0) {
+                totalInput.value = outScore + inScore;
+            } else if (outScore > 0 || inScore > 0) {
+                // Show partial calculation if only one score is entered
+                totalInput.value = outScore + inScore;
+            } else {
+                totalInput.value = '';
+            }
+        }
+    });
+
+    // Placeholder function for adding score
+    function addScore(courseId) {
+        const scoreSection = event.target.closest('.score-input-section');
+        const outScore = scoreSection.querySelector('input[placeholder="Out"]').value;
+        const inScore = scoreSection.querySelector('input[placeholder="In"]').value;
+        const totalScore = scoreSection.querySelector('input[placeholder="Total"]').value;
+        const handicap = scoreSection.querySelector('input[placeholder="Handicap"]').value;
+        
+        if (!outScore || !inScore || !totalScore) {
+            alert('Please enter both out and in scores');
+            return;
+        }
+        
+        // TODO: Implement score submission to backend
+        console.log('Adding score for course', courseId, {
+            out: outScore,
+            in: inScore,
+            total: totalScore,
+            handicap: handicap
+        });
+        
+        // Clear inputs after successful submission
+        scoreSection.querySelector('input[placeholder="Out"]').value = '';
+        scoreSection.querySelector('input[placeholder="In"]').value = '';
+        scoreSection.querySelector('input[placeholder="Total"]').value = '';
+        scoreSection.querySelector('input[placeholder="Handicap"]').value = '';
+        
+        alert('Score added successfully!');
+    }
+</script>
+
 {{ end }}
