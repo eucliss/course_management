@@ -14,19 +14,27 @@
             }
             .container {
                 display: flex;
-                min-height: 100vh;
+                height: 100vh;
             }
             .sidebar {
                 width: 20%;
                 background-color: #FFFCE7;
                 padding: 20px;
                 box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+                position: fixed;
+                left: 0;
+                top: 0;
+                height: 100vh;
+                overflow-y: auto;
+                z-index: 100;
             }
             .main-content {
                 width: 80%;
+                margin-left: 20%;
                 padding: 20px;
+                height: 100vh;
+                overflow-y: auto;
                 position: relative;
-                height: calc(100vh - 40px);
             }
             .course-item {
                 display: flex;
@@ -240,18 +248,7 @@
     </head>
     <body>
         <div class="container">
-            <div class="sidebar">
-                <div class="sidebar-header">
-                    <h1>Course Map</h1>
-                    <div class="nav-item">
-                        <button id="home-button" hx-get="/introduction" hx-target="#main-content">Home</button>
-                        <button class="create-course-btn" hx-get="/create-course" hx-target="#main-content">Add Course</button>
-                        <button class="map-btn" hx-get="/map" hx-target="#main-content">View Map</button>
-                        <button class="login-btn" hx-get="/login" hx-target="#main-content">Login</button>
-                    </div>
-                </div>
-                {{ template "courses-map" .Courses }}
-            </div>
+            {{ template "sidebar" . }}
             <div id="main-content" class="main-content">
                 {{ template "introduction" . }}
             </div>
@@ -384,20 +381,4 @@
 </html>
 
 
-{{ end }}
-
-{{ block "courses-map" . }}
-{{ range . }}
-<div class="course-item">
-    <div class="course-content" hx-get="/course/{{ .ID }}" hx-target="#main-content">
-        <h4>{{ .Name }}</h4>
-    </div>
-    <button class="edit-btn" hx-get="/edit-course/{{ .ID }}" hx-target="#main-content" title="Edit Course" onclick="event.stopPropagation();">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-            <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-        </svg>
-    </button>
-</div>
-{{ end }}
 {{ end }}

@@ -32,6 +32,7 @@ func NewTemplates() *Templates {
 			"views/create-course.html",
 			"views/map.html",
 			"views/authentication.html",
+			"views/sidebar.html",
 		)),
 	}
 }

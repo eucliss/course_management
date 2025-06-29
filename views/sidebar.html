@@ -1,0 +1,32 @@
+{{ block "sidebar" . }}
+<div class="sidebar">
+    <div class="sidebar-header">
+        <div class="nav-item">
+            <button id="how-it-works-button" hx-get="/introduction" hx-target="#main-content">Course Rules</button>
+            <button class="create-course-btn" hx-get="/create-course" hx-target="#main-content">Add Course</button>
+            <button class="map-btn" hx-get="/map" hx-target="#main-content">View Map</button>
+            <button class="login-btn" hx-get="/login" hx-target="#main-content">Login</button>
+        </div>
+    </div>
+    {{ template "courses-map" .Courses }}
+</div>
+{{ end }}
+
+{{ block "courses-map" . }}
+{{ range . }}
+<div class="course-item">
+    <div class="course-content" hx-get="/course/{{ .ID }}" hx-target="#main-content">
+        <h4>{{ .Name }}</h4>
+    </div>
+    <button class="edit-btn" hx-get="/edit-course/{{ .ID }}" hx-target="#main-content" title="Edit Course" onclick="event.stopPropagation();">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2-2v-7"></path>
+            <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+        </svg>
+    </button>
+</div>
+{{ end }}
+{{ end }}
+
+
+
