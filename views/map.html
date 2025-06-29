@@ -1,24 +1,38 @@
 {{ define "map" }}
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>Course Map</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <script src="https://unpkg.com/htmx.org/dist/htmx.js"></script>
-    <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet" />
-    <style>
-      body {
-        margin: 0;
-        padding: 0;
-      }
+<div class="map-content-container">
+  <div class="map-search-container">
+    <div class="map-search-wrapper">
+      <input type="text" id="map-course-search" placeholder="Search courses..." class="map-search-input">
+      <div class="map-search-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div id="map"></div>
+</div>
 
-      #map {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        width: 100%;
-      }
+<style>
+  .map-content-container {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 40px);
+    min-height: 500px;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  #map {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+  }
 
       .marker-popup {
         padding: 8px;
@@ -73,13 +87,86 @@
         border-radius: 4px;
         box-shadow: 0 1px 2px rgba(0,0,0,0.1);
       }
+
+      .map-search-container {
+        position: absolute;
+        top: 15px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1000;
+        width: 280px;
+        max-width: calc(100% - 30px);
+      }
+
+      .map-search-wrapper {
+        position: relative;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 25px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(32, 70, 6, 0.2);
+      }
+
+      .map-search-input {
+        width: 100%;
+        padding: 10px 40px 10px 18px;
+        border: none;
+        border-radius: 25px;
+        font-size: 0.9em;
+        background: transparent;
+        color: #204606;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+        font-weight: 400;
+      }
+
+      .map-search-input:focus {
+        outline: none;
+        background: rgba(255, 255, 255, 1);
+      }
+
+      .map-search-input::placeholder {
+        color: rgba(32, 70, 6, 0.6);
+        font-weight: 400;
+      }
+
+      .map-search-icon {
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: rgba(32, 70, 6, 0.6);
+        pointer-events: none;
+      }
+
+      .map-search-icon svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      @media (max-width: 768px) {
+        .map-search-container {
+          width: calc(100% - 20px);
+          top: 10px;
+        }
+        
+        .map-search-input {
+          padding: 9px 35px 9px 16px;
+          font-size: 0.85em;
+        }
+
+        .map-search-icon {
+          right: 12px;
+        }
+
+        .map-search-icon svg {
+          width: 14px;
+          height: 14px;
+        }
+      }
     </style>
-  </head>
-  <body>
-    <div class="map-container">
-      <div id="map"></div>
-    </div>
-    <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
     <script>
       /* eslint-disable */
       // @ts-nocheck
@@ -92,33 +179,49 @@
           alert('Mapbox token not configured');
       }
 
-      // Use a unique variable name to avoid redeclaration
-      try {
-        let courseMap = new mapboxgl.Map({
-            container: 'map',
-            style: 'mapbox://styles/mapbox/streets-v12',
-            center: [-98.5795, 39.8283],
-            zoom: 4.5,
-            minZoom: 3,
-            maxZoom: 15,
-            renderWorldCopies: false,
-            antialias: false,
-            preserveDrawingBuffer: false
+      // Store markers for search functionality - avoid redeclaration
+      if (typeof window.allMarkers === 'undefined') {
+        window.allMarkers = [];
+      } else {
+        // Clear existing markers
+        window.allMarkers.forEach(markerData => {
+          if (markerData.marker) {
+            markerData.marker.remove();
+          }
         });
-        
-        courseMap.on('error', function(e) {
-            console.error('Mapbox error:', e);
-        });
-        
-        courseMap.on('load', function() {
-            console.log('Map loaded successfully');
-            loadCourses(courseMap);
-        });
-        
-      } catch (error) {
-        console.error('Map already exists', error);
-        loadCourses(courseMap);
+        window.allMarkers = [];
       }
+      
+      // Clean up any existing map to avoid conflicts
+      if (window.existingMap) {
+        window.existingMap.remove();
+        console.log('🗑️ Removed existing map');
+      }
+
+      // Use a unique variable name to avoid redeclaration
+      var dedicatedCourseMap = new mapboxgl.Map({
+          container: 'map',
+          style: 'mapbox://styles/mapbox/streets-v12',
+          center: [-98.5795, 39.8283],
+          zoom: 4.5,
+          minZoom: 3,
+          maxZoom: 15,
+          renderWorldCopies: false,
+          antialias: false,
+          preserveDrawingBuffer: false
+      });
+
+      window.existingMap = dedicatedCourseMap;
+      
+      dedicatedCourseMap.on('error', function(e) {
+          console.error('Mapbox error:', e);
+      });
+      
+      dedicatedCourseMap.on('load', function() {
+          console.log('Dedicated map loaded successfully');
+          loadCourses(dedicatedCourseMap);
+          initializeMapSearch();
+      });
 
       function addPinFromAddress(courseMap, address, courseName, rating, courseId, color = '#204606') {
         if (!address || address.trim() === '') {
@@ -165,6 +268,13 @@
               )
               .addTo(courseMap);
 
+              // Store marker with course name for search functionality
+              window.allMarkers.push({
+                marker: marker,
+                courseName: courseName.toLowerCase(),
+                visible: true
+              });
+
               // Add click event listener after popup is created
               marker.getPopup().on('open', () => {
                 let titleElement = document.querySelector('.course-title');
@@ -203,7 +313,30 @@
           console.log('No courses found or courses array is empty');
         }
       }
+
+      function initializeMapSearch() {
+        const searchInput = document.getElementById('map-course-search');
+        if (searchInput) {
+          searchInput.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase().trim();
+            
+                           window.allMarkers.forEach(markerData => {
+                 if (searchTerm === '' || markerData.courseName.includes(searchTerm)) {
+                   // Show marker
+                   if (!markerData.visible) {
+                     markerData.marker.addTo(dedicatedCourseMap);
+                     markerData.visible = true;
+                   }
+                 } else {
+                   // Hide marker
+                   if (markerData.visible) {
+                     markerData.marker.remove();
+                     markerData.visible = false;
+                   }
+                 }
+               });
+          });
+        }
+      }
     </script>
-  </body>
-</html>
 {{ end }}
