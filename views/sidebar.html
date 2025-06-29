@@ -1,14 +1,22 @@
 {{ block "sidebar" . }}
 <div class="sidebar">
-    <div class="sidebar-header">
-        <div class="nav-item">
-            <button id="how-it-works-button" hx-get="/introduction" hx-target="#main-content">Course Rules</button>
-            <button class="create-course-btn" hx-get="/create-course" hx-target="#main-content">Add Course</button>
-            <button class="map-btn" hx-get="/map" hx-target="#main-content">View Map</button>
-            <button class="login-btn" hx-get="/login" hx-target="#main-content">Login</button>
+    <div class="sidebar-content">
+        <div class="sidebar-header">
+            <div class="nav-item">
+                <button id="how-it-works-button" hx-get="/introduction" hx-target="#main-content">Course Rules</button>
+                <button class="create-course-btn" hx-get="/create-course" hx-target="#main-content">Add Course</button>
+                <button class="map-btn" hx-get="/map" hx-target="#main-content">View Map</button>
+            </div>
         </div>
+        {{ template "courses-map" .Courses }}
     </div>
-    {{ template "courses-map" .Courses }}
+    <div class="sidebar-footer">
+        {{ if .User }}
+            <button class="login-btn" hx-get="/profile" hx-target="#main-content">Profile</button>
+        {{ else }}
+            <button class="login-btn" hx-get="/login" hx-target="#main-content">Login</button>
+        {{ end }}
+    </div>
 </div>
 {{ end }}
 

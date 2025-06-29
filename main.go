@@ -161,6 +161,7 @@ func main() {
 	// Routes
 	e.GET("/", handlers.Home)
 	e.GET("/introduction", handlers.Introduction)
+	e.GET("/profile", handlers.Profile)
 	e.GET("/course/:id", handlers.GetCourse)
 	e.GET("/create-course", handlers.CreateCourseForm, RequireAuth(sessionService))
 	e.POST("/create-course", handlers.CreateCourse)

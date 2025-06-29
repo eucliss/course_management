@@ -25,8 +25,39 @@
                 left: 0;
                 top: 0;
                 height: 100vh;
-                overflow-y: auto;
                 z-index: 100;
+                display: flex;
+                flex-direction: column;
+                box-sizing: border-box;
+            }
+            .sidebar-content {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                overflow-y: auto;
+                min-height: 0;
+            }
+            .sidebar-footer {
+                flex-shrink: 0;
+                padding-top: 20px;
+                border-top: 1px solid rgba(32, 70, 6, 0.1);
+                background-color: #FFFCE7;
+            }
+            .sidebar-footer .login-btn {
+                padding: 8px 16px;
+                background-color: #F0ED0C;
+                color: #204606;
+                border: 1px solid #204606;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: all 0.2s;
+                font-size: 1.1em;
+                font-weight: 500;
+                width: 100%;
+            }
+            .sidebar-footer .login-btn:hover {
+                background-color: #204606;
+                color: #FFFCE7;
             }
             .main-content {
                 width: 80%;

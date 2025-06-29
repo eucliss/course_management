@@ -21,12 +21,18 @@ func NewHandlers(courses *[]Course) *Handlers {
 }
 
 func (h *Handlers) Home(c echo.Context) error {
+	// Get user session information
+	sessionService := NewSessionService()
+	user := sessionService.GetUser(c)
+
 	data := struct {
 		Courses     []Course
 		MapboxToken string
+		User        *GoogleUser
 	}{
 		Courses:     *h.courses,
 		MapboxToken: os.Getenv("MAPBOX_ACCESS_TOKEN"),
+		User:        user,
 	}
 
 	return c.Render(http.StatusOK, "welcome", data)
@@ -36,6 +42,29 @@ func (h *Handlers) Introduction(c echo.Context) error {
 	return c.Render(http.StatusOK, "introduction", PageData{
 		Courses: *h.courses,
 	})
+}
+
+func (h *Handlers) Profile(c echo.Context) error {
+	sessionService := NewSessionService()
+	user := sessionService.GetUser(c)
+
+	if user == nil {
+		// If user is not logged in, redirect to login
+		return c.Render(http.StatusOK, "authentication", map[string]string{
+			"GoogleClientID": os.Getenv("GOOGLE_CLIENT_ID"),
+		})
+	}
+
+	// Create data structure with user and courses
+	data := struct {
+		*GoogleUser
+		Courses []Course
+	}{
+		GoogleUser: user,
+		Courses:    *h.courses,
+	}
+
+	return c.Render(http.StatusOK, "user-profile", data)
 }
 
 func (h *Handlers) GetCourse(c echo.Context) error {
