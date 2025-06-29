@@ -7,6 +7,15 @@
                 <button class="create-course-btn" hx-get="/create-course" hx-target="#main-content">Add Course</button>
                 <button class="map-btn" hx-get="/map" hx-target="#main-content">View Map</button>
             </div>
+            <div class="search-container">
+                <input type="text" id="course-search" placeholder="Search courses..." class="search-input">
+                <div class="search-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                </div>
+            </div>
         </div>
         {{ template "courses-map" .Courses }}
     </div>

@@ -275,6 +275,51 @@
                 height: 16px;
                 stroke: currentColor;
             }
+
+            .search-container {
+                position: relative;
+                margin-top: 15px;
+                margin-bottom: 15px;
+            }
+
+            .search-input {
+                width: 100%;
+                padding: 10px 40px 10px 15px;
+                border: 2px solid rgba(32, 70, 6, 0.3);
+                border-radius: 8px;
+                font-size: 0.9em;
+                background-color: #FFFCE7;
+                color: #204606;
+                transition: all 0.2s ease;
+                box-sizing: border-box;
+            }
+
+            .search-input:focus {
+                outline: none;
+                border-color: #204606;
+                box-shadow: 0 0 0 2px rgba(32, 70, 6, 0.1);
+            }
+
+            .search-input::placeholder {
+                color: rgba(32, 70, 6, 0.6);
+            }
+
+            .search-icon {
+                position: absolute;
+                right: 12px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: rgba(32, 70, 6, 0.6);
+                pointer-events: none;
+            }
+
+            .course-item {
+                transition: opacity 0.2s ease;
+            }
+
+            .course-item.hidden {
+                display: none;
+            }
         </style>
     </head>
     <body>
@@ -288,6 +333,32 @@
         <script>
             console.log('🏠 Welcome page loaded');
             
+            // Course search functionality
+            function initializeCourseSearch() {
+                const searchInput = document.getElementById('course-search');
+                if (searchInput) {
+                    searchInput.addEventListener('input', function(e) {
+                        const searchTerm = e.target.value.toLowerCase().trim();
+                        const courseItems = document.querySelectorAll('.course-item');
+                        
+                        courseItems.forEach(item => {
+                            const courseName = item.querySelector('h4');
+                            if (courseName) {
+                                const courseText = courseName.textContent.toLowerCase();
+                                if (courseText.includes(searchTerm) || searchTerm === '') {
+                                    item.classList.remove('hidden');
+                                } else {
+                                    item.classList.add('hidden');
+                                }
+                            }
+                        });
+                    });
+                }
+            }
+
+            // Initialize search on page load
+            initializeCourseSearch();
+
             // HTMX event logging
             htmx.on('htmx:beforeRequest', function(e) {
                 console.log('🚀 HTMX Request:', e.detail.requestConfig.verb, e.detail.requestConfig.path);
@@ -299,6 +370,9 @@
                 } else {
                     console.log('✅ HTMX Response:', e.detail.xhr.status);
                 }
+                
+                // Re-initialize search after HTMX content updates
+                setTimeout(initializeCourseSearch, 100);
             });
             
             // Mapbox initialization (only if not already loaded)
