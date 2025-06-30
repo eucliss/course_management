@@ -151,8 +151,14 @@ window.addEventListener('load', function() {
             </button>
         </div>
         <div class="handicap-box">
-            <input type="number" class="handicap-input" placeholder="0.0" step="0.1" min="0" max="54">
-            <div class="handicap-label">HANDICAP</div>
+            <form hx-post="/profile/handicap" hx-target="#handicap-status" hx-swap="innerHTML">
+                <input type="number" name="handicap" class="handicap-input" 
+                       placeholder="0.0" step="0.1" min="0" max="54" 
+                       value="{{if .Handicap}}{{.Handicap}}{{end}}">
+                <div class="handicap-label">HANDICAP</div>
+                <button type="submit" class="save-handicap-btn">Save</button>
+            </form>
+            <div id="handicap-status"></div>
         </div>
     </div>
 
@@ -675,6 +681,31 @@ window.addEventListener('load', function() {
         .courses-reviewed-section h3 {
             text-align: center;
         }
+    }
+
+    .save-handicap-btn {
+        background-color: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.8em;
+        font-weight: 500;
+        transition: all 0.2s;
+        margin-top: 8px;
+        width: 100%;
+    }
+
+    .save-handicap-btn:hover {
+        background-color: rgba(255, 255, 255, 0.3);
+        border-color: rgba(255, 255, 255, 0.5);
+    }
+
+    #handicap-status {
+        margin-top: 8px;
+        font-size: 0.8em;
+        min-height: 20px;
     }
 </style>
 

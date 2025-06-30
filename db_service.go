@@ -20,6 +20,10 @@ func NewDatabaseService() *DatabaseService {
 
 // User operations
 func (ds *DatabaseService) CreateUser(googleUser *GoogleUser) (*User, error) {
+	if ds.db == nil {
+		return nil, fmt.Errorf("database not connected")
+	}
+
 	user := &User{
 		GoogleID: googleUser.ID,
 		Email:    googleUser.Email,
@@ -36,6 +40,10 @@ func (ds *DatabaseService) CreateUser(googleUser *GoogleUser) (*User, error) {
 }
 
 func (ds *DatabaseService) GetUserByGoogleID(googleID string) (*User, error) {
+	if ds.db == nil {
+		return nil, fmt.Errorf("database not connected")
+	}
+
 	var user User
 	result := ds.db.Where("google_id = ?", googleID).First(&user)
 
@@ -61,6 +69,57 @@ func (ds *DatabaseService) GetUserByEmail(email string) (*User, error) {
 	}
 
 	return &user, nil
+}
+
+func (ds *DatabaseService) GetUserByID(userID uint) (*User, error) {
+	var user User
+	result := ds.db.First(&user, userID)
+
+	if result.Error != nil {
+		if result.Error.Error() == "record not found" {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to find user: %v", result.Error)
+	}
+
+	return &user, nil
+}
+
+func (ds *DatabaseService) UpdateUser(userID uint, googleUser *GoogleUser) error {
+	var user User
+	result := ds.db.First(&user, userID)
+	if result.Error != nil {
+		return fmt.Errorf("failed to find user: %v", result.Error)
+	}
+
+	// Update user fields that might have changed in Google profile
+	user.Email = googleUser.Email
+	user.Name = googleUser.Name
+	user.Picture = googleUser.Picture
+
+	result = ds.db.Save(&user)
+	if result.Error != nil {
+		return fmt.Errorf("failed to update user: %v", result.Error)
+	}
+
+	return nil
+}
+
+func (ds *DatabaseService) UpdateUserHandicap(userID uint, handicap float64) error {
+	var user User
+	result := ds.db.First(&user, userID)
+	if result.Error != nil {
+		return fmt.Errorf("failed to find user: %v", result.Error)
+	}
+
+	user.Handicap = &handicap
+
+	result = ds.db.Save(&user)
+	if result.Error != nil {
+		return fmt.Errorf("failed to update user handicap: %v", result.Error)
+	}
+
+	return nil
 }
 
 // Course operations

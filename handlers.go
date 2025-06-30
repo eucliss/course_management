@@ -57,14 +57,71 @@ func (h *Handlers) Profile(c echo.Context) error {
 		})
 	}
 
+	// Get user's handicap from database if available
+	var handicap *float64
+	dbUserID := sessionService.GetDatabaseUserID(c)
+	log.Printf("🔍 Profile request for user: %s, DB User ID: %v, DB available: %t",
+		user.Email, dbUserID, DB != nil)
+
+	if DB != nil {
+		dbService := NewDatabaseService()
+		var dbUser *User
+		var err error
+
+		if dbUserID != nil {
+			// Try to get user by database ID first
+			dbUser, err = dbService.GetUserByID(*dbUserID)
+			if err != nil {
+				log.Printf("❌ Error fetching user %d from database: %v", *dbUserID, err)
+			}
+		}
+
+		// Fallback: if no dbUserID in session or user not found, try to find by Google ID
+		if dbUser == nil && user != nil {
+			log.Printf("🔄 Fallback: Looking up user by Google ID: %s", user.ID)
+			dbUser, err = dbService.GetUserByGoogleID(user.ID)
+			if err != nil {
+				log.Printf("❌ Error fetching user by Google ID %s: %v", user.ID, err)
+			}
+		}
+
+		if dbUser != nil {
+			handicap = dbUser.Handicap
+			if handicap != nil {
+				log.Printf("✅ Found user in database - ID: %d, Handicap: %.1f", dbUser.ID, *handicap)
+			} else {
+				log.Printf("✅ Found user in database - ID: %d, Handicap: nil", dbUser.ID)
+			}
+
+			// Update session with database user ID if it was missing
+			if dbUserID == nil {
+				log.Printf("🔄 Updating session with missing DB User ID: %d", dbUser.ID)
+				if err := sessionService.SetDatabaseUser(c, user, dbUser.ID); err != nil {
+					log.Printf("⚠️ Failed to update session with DB User ID: %v", err)
+				}
+			}
+		} else {
+			log.Printf("⚠️ User not found in database")
+		}
+	} else {
+		log.Printf("⚠️ Database not available")
+	}
+
 	data := struct {
 		*GoogleUser
-		Courses []Course
+		Courses  []Course
+		Handicap *float64
 	}{
 		GoogleUser: user,
 		Courses:    *h.courses,
+		Handicap:   handicap,
 	}
 
+	if handicap != nil {
+		log.Printf("📊 Rendering profile with handicap: %.1f", *handicap)
+	} else {
+		log.Printf("📊 Rendering profile with handicap: nil")
+	}
 	return c.Render(http.StatusOK, "user-profile", data)
 }
 
@@ -180,6 +237,50 @@ func (h *Handlers) Map(c echo.Context) error {
 	}
 
 	return c.Render(http.StatusOK, "map", data)
+}
+
+func (h *Handlers) UpdateHandicap(c echo.Context) error {
+	sessionService := NewSessionService()
+	dbUserID := sessionService.GetDatabaseUserID(c)
+
+	if dbUserID == nil {
+		return c.String(http.StatusUnauthorized, "User not authenticated with database")
+	}
+
+	if DB == nil {
+		return c.String(http.StatusServiceUnavailable, "Database not available")
+	}
+
+	// Parse handicap from form
+	handicapStr := c.FormValue("handicap")
+	if handicapStr == "" {
+		return c.String(http.StatusBadRequest, "Handicap value required")
+	}
+
+	handicap, err := strconv.ParseFloat(handicapStr, 64)
+	if err != nil {
+		return c.String(http.StatusBadRequest, "Invalid handicap value")
+	}
+
+	if handicap < 0 || handicap > 54 {
+		return c.String(http.StatusBadRequest, "Handicap must be between 0 and 54")
+	}
+
+	// Update handicap in database
+	dbService := NewDatabaseService()
+	if err := dbService.UpdateUserHandicap(*dbUserID, handicap); err != nil {
+		log.Printf("Failed to update handicap for user %d: %v", *dbUserID, err)
+		return c.String(http.StatusInternalServerError, "Failed to update handicap")
+	}
+
+	log.Printf("✅ Updated handicap to %.1f for user ID %d", handicap, *dbUserID)
+
+	// Return success response
+	return c.HTML(http.StatusOK, fmt.Sprintf(`
+		<div style="color: #204606; padding: 10px; text-align: center; font-weight: bold;">
+			Handicap updated to %.1f!
+		</div>
+	`, handicap))
 }
 
 // Helper methods

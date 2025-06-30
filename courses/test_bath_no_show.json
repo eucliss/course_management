@@ -1,0 +1,27 @@
+{
+  "name": "🚨 CANARY TEST COURSE - Should NOT Appear 🚨",
+  "ID": 999,
+  "description": "🔥 THIS IS A TEST CANARY FILE 🔥 If you can see this course in your application, it means the app is reading from JSON files instead of the database! This course should NEVER appear when the database is working correctly.",
+  "ranks": {
+    "price": "F",
+    "handicapDifficulty": 20,
+    "hazardDifficulty": 20,
+    "merch": "F",
+    "condition": "F",
+    "enjoymentRating": "F",
+    "vibe": "F", 
+    "range": "F",
+    "amenities": "F",
+    "glizzies": "F"
+  },
+  "overallRating": "F",
+  "review": "🚨 CANARY TEST FILE 🚨\n\nThis is a test file to verify the application is reading from the database and NOT from JSON files.\n\nIf you can see this course:\n- ❌ The app is reading from JSON files\n- ❌ Database connection may be broken\n- ❌ Check your database configuration\n\nIf you CANNOT see this course:\n- ✅ The app is reading from the database\n- ✅ Database is working correctly\n- ✅ JSON files are being ignored",
+  "holes": [],
+  "scores": [
+    {
+      "score": 999,
+      "handicap": 99
+    }
+  ],
+  "address": "🚨 TEST ADDRESS - Database Test Canary 🚨"
+}

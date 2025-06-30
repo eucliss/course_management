@@ -1,7 +1,7 @@
 # Golf Course Management App - Features To-Do List
 
 ## 🗄️ Database Migration
-- [ ] **Migrate from JSON files to PostgreSQL**
+- [x] **Migrate from JSON files to PostgreSQL**
   - Set up PostgreSQL database with proper schema
   - Import existing course JSON data into JSONB columns
   - Update Go models to work with database
