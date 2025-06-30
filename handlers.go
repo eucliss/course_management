@@ -59,6 +59,7 @@ func (h *Handlers) Profile(c echo.Context) error {
 
 	// Get user's handicap from database if available
 	var handicap *float64
+	var displayName *string
 	dbUserID := sessionService.GetDatabaseUserID(c)
 	log.Printf("🔍 Profile request for user: %s, DB User ID: %v, DB available: %t",
 		user.Email, dbUserID, DB != nil)
@@ -87,10 +88,16 @@ func (h *Handlers) Profile(c echo.Context) error {
 
 		if dbUser != nil {
 			handicap = dbUser.Handicap
+			displayName = dbUser.DisplayName
 			if handicap != nil {
 				log.Printf("✅ Found user in database - ID: %d, Handicap: %.1f", dbUser.ID, *handicap)
 			} else {
 				log.Printf("✅ Found user in database - ID: %d, Handicap: nil", dbUser.ID)
+			}
+			if displayName != nil {
+				log.Printf("✅ Display name: %s", *displayName)
+			} else {
+				log.Printf("✅ No display name set")
 			}
 
 			// Update session with database user ID if it was missing
@@ -109,12 +116,14 @@ func (h *Handlers) Profile(c echo.Context) error {
 
 	data := struct {
 		*GoogleUser
-		Courses  []Course
-		Handicap *float64
+		Courses     []Course
+		Handicap    *float64
+		DisplayName *string
 	}{
-		GoogleUser: user,
-		Courses:    *h.courses,
-		Handicap:   handicap,
+		GoogleUser:  user,
+		Courses:     *h.courses,
+		Handicap:    handicap,
+		DisplayName: displayName,
 	}
 
 	if handicap != nil {
@@ -281,6 +290,47 @@ func (h *Handlers) UpdateHandicap(c echo.Context) error {
 			Handicap updated to %.1f!
 		</div>
 	`, handicap))
+}
+
+func (h *Handlers) UpdateDisplayName(c echo.Context) error {
+	sessionService := NewSessionService()
+	dbUserID := sessionService.GetDatabaseUserID(c)
+
+	if dbUserID == nil {
+		return c.String(http.StatusUnauthorized, "User not authenticated with database")
+	}
+
+	if DB == nil {
+		return c.String(http.StatusServiceUnavailable, "Database not available")
+	}
+
+	// Parse display name from form
+	displayName := c.FormValue("display_name")
+	// Allow empty display name to clear it
+
+	// Update display name in database
+	dbService := NewDatabaseService()
+	if err := dbService.UpdateUserDisplayName(*dbUserID, displayName); err != nil {
+		log.Printf("Failed to update display name for user %d: %v", *dbUserID, err)
+		return c.String(http.StatusInternalServerError, "Failed to update display name")
+	}
+
+	log.Printf("✅ Updated display name to '%s' for user ID %d", displayName, *dbUserID)
+
+	// Return success response
+	if displayName == "" {
+		return c.HTML(http.StatusOK, `
+			<div style="color: #204606; padding: 10px; text-align: center; font-weight: bold;">
+				Display name cleared!
+			</div>
+		`)
+	} else {
+		return c.HTML(http.StatusOK, fmt.Sprintf(`
+			<div style="color: #204606; padding: 10px; text-align: center; font-weight: bold;">
+				Display name updated to %s!
+			</div>
+		`, displayName))
+	}
 }
 
 // Helper methods

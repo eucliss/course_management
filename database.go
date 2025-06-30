@@ -14,14 +14,15 @@ var DB *gorm.DB
 
 // Database models for GORM
 type User struct {
-	ID        uint     `gorm:"primaryKey" json:"id"`
-	GoogleID  string   `gorm:"uniqueIndex" json:"google_id"`
-	Email     string   `gorm:"uniqueIndex" json:"email"`
-	Name      string   `json:"name"`
-	Picture   string   `json:"picture"`
-	Handicap  *float64 `json:"handicap,omitempty"`
-	CreatedAt int64    `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt int64    `gorm:"autoUpdateTime" json:"updated_at"`
+	ID          uint     `gorm:"primaryKey" json:"id"`
+	GoogleID    string   `gorm:"uniqueIndex" json:"google_id"`
+	Email       string   `gorm:"uniqueIndex" json:"email"`
+	Name        string   `json:"name"`         // Google name
+	DisplayName *string  `json:"display_name"` // Custom display name
+	Picture     string   `json:"picture"`
+	Handicap    *float64 `json:"handicap,omitempty"`
+	CreatedAt   int64    `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt   int64    `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
 type CourseDB struct {

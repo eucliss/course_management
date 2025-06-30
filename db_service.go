@@ -106,6 +106,10 @@ func (ds *DatabaseService) UpdateUser(userID uint, googleUser *GoogleUser) error
 }
 
 func (ds *DatabaseService) UpdateUserHandicap(userID uint, handicap float64) error {
+	if ds.db == nil {
+		return fmt.Errorf("database not connected")
+	}
+
 	var user User
 	result := ds.db.First(&user, userID)
 	if result.Error != nil {
@@ -117,6 +121,31 @@ func (ds *DatabaseService) UpdateUserHandicap(userID uint, handicap float64) err
 	result = ds.db.Save(&user)
 	if result.Error != nil {
 		return fmt.Errorf("failed to update user handicap: %v", result.Error)
+	}
+
+	return nil
+}
+
+func (ds *DatabaseService) UpdateUserDisplayName(userID uint, displayName string) error {
+	if ds.db == nil {
+		return fmt.Errorf("database not connected")
+	}
+
+	var user User
+	result := ds.db.First(&user, userID)
+	if result.Error != nil {
+		return fmt.Errorf("failed to find user: %v", result.Error)
+	}
+
+	if displayName == "" {
+		user.DisplayName = nil
+	} else {
+		user.DisplayName = &displayName
+	}
+
+	result = ds.db.Save(&user)
+	if result.Error != nil {
+		return fmt.Errorf("failed to update user display name: %v", result.Error)
 	}
 
 	return nil
