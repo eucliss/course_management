@@ -12,13 +12,58 @@ import (
 	"strings"
 )
 
-type CourseService struct{}
+type CourseService struct {
+	dbService *DatabaseService
+	useDB     bool
+}
 
 func NewCourseService() *CourseService {
-	return &CourseService{}
+	// Check if database is available
+	useDB := true
+	var dbService *DatabaseService
+
+	if GetDB() != nil {
+		dbService = NewDatabaseService()
+	} else {
+		useDB = false
+		log.Printf("Warning: Database not available, using JSON files only")
+	}
+
+	return &CourseService{
+		dbService: dbService,
+		useDB:     useDB,
+	}
 }
 
 func (cs *CourseService) LoadCourses() ([]Course, error) {
+	// Try to load from database first if available
+	if cs.useDB && cs.dbService != nil {
+		dbCourses, err := cs.dbService.GetAllCoursesFromDatabase()
+		if err == nil && len(dbCourses) > 0 {
+			log.Printf("✅ Loaded %d courses from database", len(dbCourses))
+			return dbCourses, nil
+		}
+		log.Printf("Warning: failed to load from database or no courses found: %v", err)
+	}
+
+	// Fallback to JSON files
+	courses, err := cs.LoadCoursesFromJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	// If database is available and we loaded from JSON, migrate the data
+	if cs.useDB && cs.dbService != nil && len(courses) > 0 {
+		log.Printf("📤 Migrating courses from JSON files to database...")
+		if err := cs.dbService.MigrateJSONFilesToDatabase(courses); err != nil {
+			log.Printf("Warning: failed to migrate courses to database: %v", err)
+		}
+	}
+
+	return courses, nil
+}
+
+func (cs *CourseService) LoadCoursesFromJSON() ([]Course, error) {
 	var courses []Course
 
 	// Read all files from courses directory
@@ -62,10 +107,22 @@ func (cs *CourseService) LoadCourses() ([]Course, error) {
 		return nil, fmt.Errorf("no course files found in courses directory")
 	}
 
+	log.Printf("✅ Loaded %d courses from JSON files", len(courses))
 	return courses, nil
 }
 
 func (cs *CourseService) SaveCourse(course Course) error {
+	// Save to database if available
+	if cs.useDB && cs.dbService != nil {
+		if err := cs.dbService.SaveCourseToDatabase(course, nil); err != nil {
+			log.Printf("Warning: failed to save to database: %v", err)
+			// Continue to save to file as backup
+		} else {
+			log.Printf("✅ Course saved to database")
+		}
+	}
+
+	// Also save to JSON file for backup/compatibility
 	filename := cs.sanitizeFilename(course.Name) + ".json"
 	filepath := filepath.Join("courses", filename)
 
@@ -79,10 +136,26 @@ func (cs *CourseService) SaveCourse(course Course) error {
 		return fmt.Errorf("failed to create course JSON: %v", err)
 	}
 
-	return os.WriteFile(filepath, courseJSON, 0644)
+	if err := os.WriteFile(filepath, courseJSON, 0644); err != nil {
+		return fmt.Errorf("failed to save course file: %v", err)
+	}
+
+	log.Printf("✅ Course saved to JSON file")
+	return nil
 }
 
 func (cs *CourseService) UpdateCourse(course Course) error {
+	// Update in database if available
+	if cs.useDB && cs.dbService != nil {
+		if err := cs.dbService.UpdateCourseInDatabase(course); err != nil {
+			log.Printf("Warning: failed to update in database: %v", err)
+			// Continue to update file as backup
+		} else {
+			log.Printf("✅ Course updated in database")
+		}
+	}
+
+	// Also update JSON file for backup/compatibility
 	filename := cs.sanitizeFilename(course.Name) + ".json"
 	filepath := filepath.Join("courses", filename)
 
@@ -91,7 +164,12 @@ func (cs *CourseService) UpdateCourse(course Course) error {
 		return fmt.Errorf("failed to create course JSON: %v", err)
 	}
 
-	return os.WriteFile(filepath, courseJSON, 0644)
+	if err := os.WriteFile(filepath, courseJSON, 0644); err != nil {
+		return fmt.Errorf("failed to update course file: %v", err)
+	}
+
+	log.Printf("✅ Course updated in JSON file")
+	return nil
 }
 
 func (cs *CourseService) sanitizeFilename(name string) string {

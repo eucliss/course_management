@@ -257,3 +257,69 @@ func (h *Handlers) reloadCourses() error {
 	*h.courses = courses
 	return nil
 }
+
+func (h *Handlers) DatabaseStatus(c echo.Context) error {
+	status := map[string]interface{}{
+		"database_connected": false,
+		"message":            "Database not available",
+	}
+
+	if GetDB() != nil {
+		dbService := NewDatabaseService()
+		stats, err := dbService.GetDatabaseStats()
+		if err != nil {
+			status["message"] = fmt.Sprintf("Database error: %v", err)
+		} else {
+			status["database_connected"] = true
+			status["message"] = "Database connected successfully"
+			status["stats"] = stats
+		}
+	}
+
+	return c.JSON(http.StatusOK, status)
+}
+
+func (h *Handlers) MigrateCourses(c echo.Context) error {
+	if GetDB() == nil {
+		return c.JSON(http.StatusServiceUnavailable, map[string]string{
+			"error": "Database not available",
+		})
+	}
+
+	dbService := NewDatabaseService()
+
+	// Load courses from JSON files
+	courses, err := h.courseService.LoadCoursesFromJSON()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": fmt.Sprintf("Failed to load courses from JSON: %v", err),
+		})
+	}
+
+	log.Printf("🔄 Starting migration of %d courses to database...", len(courses))
+
+	// Migrate courses to database
+	if err := dbService.MigrateJSONFilesToDatabase(courses); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": fmt.Sprintf("Migration failed: %v", err),
+		})
+	}
+
+	// Get updated stats
+	stats, err := dbService.GetDatabaseStats()
+	if err != nil {
+		log.Printf("Warning: failed to get stats after migration: %v", err)
+		stats = map[string]int{"courses": len(courses)}
+	}
+
+	// Reload courses in memory from database
+	if err := h.reloadCourses(); err != nil {
+		log.Printf("Warning: failed to reload courses after migration: %v", err)
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"message":          "Migration completed successfully",
+		"migrated_courses": len(courses),
+		"database_stats":   stats,
+	})
+}

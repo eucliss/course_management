@@ -93,6 +93,13 @@ func RequireAuth(sessionService *SessionService) echo.MiddlewareFunc {
 
 func main() {
 	config := LoadConfig()
+
+	// Initialize database connection (optional)
+	if err := InitDatabase(); err != nil {
+		log.Printf("⚠️ Database initialization failed: %v", err)
+		log.Printf("📁 Continuing with JSON file storage")
+	}
+
 	courseService := NewCourseService()
 	sessionService := NewSessionService()
 
@@ -139,6 +146,8 @@ func main() {
 	e.GET("/map", handlers.Map)
 	e.GET("/edit-course/:id", handlers.EditCourseForm)
 	e.POST("/edit-course/:id", handlers.UpdateCourse)
+	e.GET("/api/status/database", handlers.DatabaseStatus)
+	e.POST("/api/migrate/courses", handlers.MigrateCourses)
 	e.Static("/favicon.ico", "static/favicon.ico")
 
 	log.Printf("Server starting on port %s", config.Port)
