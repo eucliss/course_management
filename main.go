@@ -121,7 +121,7 @@ func RequireOwnership(sessionService *SessionService, courseService *CourseServi
 
 			// Check ownership using database service
 			dbService := NewDatabaseService()
-			canEdit, err := dbService.CanEditCourseByIndex(courseIndex, *userID)
+			canEdit, _, err := dbService.CanEditCourseByIndex(courseIndex, *userID)
 			if err != nil {
 				log.Printf("❌ Error checking course ownership: %v", err)
 				return c.String(http.StatusInternalServerError, "Error checking permissions")

@@ -338,14 +338,36 @@ func (h *Handlers) Map(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Failed to marshal courses to JSON: "+err.Error())
 	}
 
+	// Get user information for ownership context
+	sessionService := NewSessionService()
+	user := sessionService.GetUser(c)
+
+	// Get user ID from middleware context if available
+	var userID *uint
+	if uid, ok := c.Get("userID").(uint); ok {
+		userID = &uid
+	}
+
+	// Check which courses the user can edit
+	editPermissions := make(map[int]bool)
+	if userID != nil {
+		for i := range *h.courses {
+			editPermissions[i] = h.CanEditCourse(i, userID)
+		}
+	}
+
 	data := struct {
-		Courses     []Course
-		CoursesJSON template.JS
-		MapboxToken string
+		Courses         []Course
+		CoursesJSON     template.JS
+		MapboxToken     string
+		User            *GoogleUser
+		EditPermissions map[int]bool
 	}{
-		Courses:     *h.courses,
-		CoursesJSON: template.JS(coursesJSON),
-		MapboxToken: os.Getenv("MAPBOX_ACCESS_TOKEN"),
+		Courses:         *h.courses,
+		CoursesJSON:     template.JS(coursesJSON),
+		MapboxToken:     os.Getenv("MAPBOX_ACCESS_TOKEN"),
+		User:            user,
+		EditPermissions: editPermissions,
 	}
 
 	return c.Render(http.StatusOK, "map", data)

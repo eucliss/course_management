@@ -7,15 +7,40 @@
   - Update Go models to work with database
 
 ## 👥 User Management System
-- [ ] **User Registration & Authentication**
+- [x] **User Registration & Authentication**
   - Extend current Google OAuth to full user profiles
   - Create user table with handicap tracking
   - Add user profile pages and settings
 
-- [ ] **User Course Ownership**
+- [x] **User Course Ownership**
   - Allow users to add new courses to the platform
   - Track which user created each course
   - Enable users to edit their own course submissions
+
+1. Database Schema Updates
+Add CreatedBy field to Course model (foreign key to User)
+Add UpdatedBy field to Course model (optional, for tracking edits)
+Run database migration to add these columns
+2. Course Creation Updates
+Modify CreateCourse handler to capture authenticated user ID
+Update course creation form to associate new courses with current user
+Add validation to ensure only authenticated users can create courses
+3. Course Edit Authorization
+Add CanEditCourse() method to check if user owns the course
+Modify EditCourse handler to verify ownership before allowing edits
+Update edit buttons in UI to only show for course owners
+4. Database Service Methods
+Add GetCoursesByUser(userID) method for user's course listings
+Add GetCourseOwner(courseID) method for ownership verification
+Update existing course methods to handle ownership
+5. UI/Template Updates
+Add "My Courses" vs "All Courses" sections on profile page
+Show ownership indicators (e.g., "Created by you" badge)
+Hide/show edit buttons based on ownership
+Add user attribution on course detail pages
+6. Route Protection
+Add middleware to protect edit routes with ownership checks
+Update existing course routes to pass ownership context
 
 ## 🤝 Social Features
 - [ ] **User Following System**

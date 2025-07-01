@@ -1,13 +1,23 @@
 {{ define "map" }}
 <div class="map-content-container">
-  <div class="map-search-container">
-    <div class="map-search-wrapper">
-      <input type="text" id="map-course-search" placeholder="Search courses..." class="map-search-input">
-      <div class="map-search-icon">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"></circle>
-          <path d="m21 21-4.35-4.35"></path>
-        </svg>
+  <div class="map-controls-container">
+    {{ if .User }}
+    <div class="map-toggle-container">
+      <div class="map-course-toggle">
+        <button id="map-all-courses-btn" class="map-toggle-btn active" data-filter="all">All Courses</button>
+        <button id="map-my-courses-btn" class="map-toggle-btn" data-filter="my">My Courses</button>
+      </div>
+    </div>
+    {{ end }}
+    <div class="map-search-container">
+      <div class="map-search-wrapper">
+        <input type="text" id="map-course-search" placeholder="Search courses..." class="map-search-input">
+        <div class="map-search-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+        </div>
       </div>
     </div>
   </div>
@@ -88,14 +98,67 @@
         box-shadow: 0 1px 2px rgba(0,0,0,0.1);
       }
 
-      .map-search-container {
+      .map-controls-container {
         position: absolute;
         top: 15px;
         left: 50%;
         transform: translateX(-50%);
         z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
         width: 280px;
         max-width: calc(100% - 30px);
+      }
+
+      .map-toggle-container {
+        width: 100%;
+      }
+
+      .map-course-toggle {
+        display: flex;
+        gap: 4px;
+        background-color: rgba(255, 255, 255, 0.95);
+        border-radius: 25px;
+        padding: 4px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(32, 70, 6, 0.2);
+      }
+
+      .map-toggle-btn {
+        flex: 1;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 21px;
+        background: transparent;
+        color: rgba(32, 70, 6, 0.7);
+        font-size: 0.85em;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: center;
+      }
+
+      .map-toggle-btn:hover {
+        color: #204606;
+        background-color: rgba(32, 70, 6, 0.05);
+      }
+
+      .map-toggle-btn.active {
+        background-color: #204606;
+        color: #FFFCE7;
+        font-weight: 600;
+      }
+
+      .map-toggle-btn.active:hover {
+        background-color: #1a3a05;
+        color: #FFFCE7;
+      }
+
+      .map-search-container {
+        width: 100%;
       }
 
       .map-search-wrapper {
@@ -145,9 +208,14 @@
       }
 
       @media (max-width: 768px) {
-        .map-search-container {
+        .map-controls-container {
           width: calc(100% - 20px);
           top: 10px;
+        }
+
+        .map-toggle-btn {
+          padding: 7px 12px;
+          font-size: 0.8em;
         }
         
         .map-search-input {
@@ -179,7 +247,7 @@
           alert('Mapbox token not configured');
       }
 
-      // Store markers for search functionality - avoid redeclaration
+      // Store markers for search and filter functionality - avoid redeclaration
       if (typeof window.allMarkers === 'undefined') {
         window.allMarkers = [];
       } else {
@@ -190,6 +258,16 @@
           }
         });
         window.allMarkers = [];
+      }
+
+      // Current filter state for map - avoid redeclaration
+      if (typeof window.mapCurrentFilter === 'undefined') {
+        window.mapCurrentFilter = 'all';
+      }
+
+      // Edit permissions from server - avoid redeclaration
+      if (typeof window.editPermissions === 'undefined') {
+        window.editPermissions = {{ .EditPermissions }};
       }
       
       // Clean up any existing map to avoid conflicts
@@ -221,9 +299,10 @@
           console.log('Dedicated map loaded successfully');
           loadCourses(dedicatedCourseMap);
           initializeMapSearch();
+          initializeMapToggle();
       });
 
-      function addPinFromAddress(courseMap, address, courseName, rating, courseId, color = '#204606') {
+      function addPinFromAddress(courseMap, address, courseName, rating, courseId, courseIndex, color = '#204606') {
         if (!address || address.trim() === '') {
           console.log('No address provided for course:', courseName);
           return;
@@ -268,10 +347,13 @@
               )
               .addTo(courseMap);
 
-              // Store marker with course name for search functionality
+              // Store marker with course name and ownership info for search and filter functionality
+              const canEdit = window.editPermissions && window.editPermissions[courseIndex] === true;
               window.allMarkers.push({
                 marker: marker,
                 courseName: courseName.toLowerCase(),
+                canEdit: canEdit,
+                courseIndex: courseIndex,
                 visible: true
               });
 
@@ -301,10 +383,10 @@
         console.log('Map loaded, courses:', courses);
         
         if (courses && courses.length > 0) {
-          courses.forEach(course => {
+          courses.forEach((course, index) => {
             console.log('Processing course:', course.name, 'Address:', course.address, 'Rating:', course.overallRating);
             if (course.address && course.address.trim() !== '') {
-              addPinFromAddress(courseMap, course.address, course.name, course.overallRating, course.ID, '#204606');
+              addPinFromAddress(courseMap, course.address, course.name, course.overallRating, course.ID, index, '#204606');
             } else {
               console.log('Skipping course without address:', course.name);
             }
@@ -314,27 +396,64 @@
         }
       }
 
+      function initializeMapToggle() {
+        const allCoursesBtn = document.getElementById('map-all-courses-btn');
+        const myCoursesBtn = document.getElementById('map-my-courses-btn');
+        
+        if (allCoursesBtn && myCoursesBtn) {
+          allCoursesBtn.addEventListener('click', function() {
+            setMapActiveFilter('all');
+            filterMapMarkers();
+          });
+          
+          myCoursesBtn.addEventListener('click', function() {
+            setMapActiveFilter('my');
+            filterMapMarkers();
+          });
+        }
+      }
+
+      function setMapActiveFilter(filter) {
+        window.mapCurrentFilter = filter;
+        const allBtn = document.getElementById('map-all-courses-btn');
+        const myBtn = document.getElementById('map-my-courses-btn');
+        
+        if (allBtn && myBtn) {
+          allBtn.classList.toggle('active', filter === 'all');
+          myBtn.classList.toggle('active', filter === 'my');
+        }
+      }
+
+      function filterMapMarkers() {
+        const searchTerm = document.getElementById('map-course-search')?.value.toLowerCase().trim() || '';
+        
+        window.allMarkers.forEach(markerData => {
+          const matchesSearch = searchTerm === '' || markerData.courseName.includes(searchTerm);
+          const matchesFilter = window.mapCurrentFilter === 'all' || (window.mapCurrentFilter === 'my' && markerData.canEdit);
+          
+          if (matchesSearch && matchesFilter) {
+            // Show marker
+            if (!markerData.visible) {
+              markerData.marker.addTo(dedicatedCourseMap);
+              markerData.visible = true;
+            }
+          } else {
+            // Hide marker
+            if (markerData.visible) {
+              markerData.marker.remove();
+              markerData.visible = false;
+            }
+          }
+        });
+        
+        console.log(`🗺️ Filtered map markers: ${window.mapCurrentFilter} filter, search: "${searchTerm}"`);
+      }
+
       function initializeMapSearch() {
         const searchInput = document.getElementById('map-course-search');
         if (searchInput) {
           searchInput.addEventListener('input', function(e) {
-            const searchTerm = e.target.value.toLowerCase().trim();
-            
-                           window.allMarkers.forEach(markerData => {
-                 if (searchTerm === '' || markerData.courseName.includes(searchTerm)) {
-                   // Show marker
-                   if (!markerData.visible) {
-                     markerData.marker.addTo(dedicatedCourseMap);
-                     markerData.visible = true;
-                   }
-                 } else {
-                   // Hide marker
-                   if (markerData.visible) {
-                     markerData.marker.remove();
-                     markerData.visible = false;
-                   }
-                 }
-               });
+            filterMapMarkers();
           });
         }
       }
