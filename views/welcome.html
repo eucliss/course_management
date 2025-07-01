@@ -338,6 +338,46 @@
             .course-item.hidden {
                 display: none;
             }
+
+            /* Course Toggle Styles */
+            .course-toggle {
+                display: flex;
+                gap: 4px;
+                margin-top: 8px;
+                background-color: rgba(32, 70, 6, 0.1);
+                border-radius: 8px;
+                padding: 4px;
+            }
+
+            .toggle-btn {
+                flex: 1;
+                padding: 8px 12px;
+                border: none;
+                border-radius: 6px;
+                background: transparent;
+                color: rgba(32, 70, 6, 0.7);
+                font-size: 0.85em;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                text-align: center;
+            }
+
+            .toggle-btn:hover {
+                color: #204606;
+                background-color: rgba(32, 70, 6, 0.05);
+            }
+
+            .toggle-btn.active {
+                background-color: #204606;
+                color: #FFFCE7;
+                font-weight: 600;
+            }
+
+            .toggle-btn.active:hover {
+                background-color: #1a3a05;
+                color: #FFFCE7;
+            }
         </style>
     </head>
     <body>
@@ -351,31 +391,81 @@
         <script>
             console.log('🏠 Welcome page loaded');
             
+            // Current filter state
+            let currentFilter = 'all';
+
+            // Course toggle functionality
+            function initializeCourseToggle() {
+                const allCoursesBtn = document.getElementById('all-courses-btn');
+                const myCoursesBtn = document.getElementById('my-courses-btn');
+                
+                if (allCoursesBtn && myCoursesBtn) {
+                    allCoursesBtn.addEventListener('click', function() {
+                        setActiveFilter('all');
+                        filterCourses();
+                    });
+                    
+                    myCoursesBtn.addEventListener('click', function() {
+                        setActiveFilter('my');
+                        filterCourses();
+                    });
+                }
+            }
+
+            function setActiveFilter(filter) {
+                currentFilter = filter;
+                const allBtn = document.getElementById('all-courses-btn');
+                const myBtn = document.getElementById('my-courses-btn');
+                
+                if (allBtn && myBtn) {
+                    allBtn.classList.toggle('active', filter === 'all');
+                    myBtn.classList.toggle('active', filter === 'my');
+                }
+            }
+
+            function filterCourses() {
+                const courseItems = document.querySelectorAll('.course-item');
+                const searchTerm = document.getElementById('course-search')?.value.toLowerCase().trim() || '';
+                
+                courseItems.forEach(item => {
+                    const courseName = item.querySelector('h4');
+                    const canEdit = item.getAttribute('data-can-edit') === 'true';
+                    
+                    if (courseName) {
+                        const courseText = courseName.textContent.toLowerCase();
+                        const matchesSearch = courseText.includes(searchTerm) || searchTerm === '';
+                        const matchesFilter = currentFilter === 'all' || (currentFilter === 'my' && canEdit);
+                        
+                        if (matchesSearch && matchesFilter) {
+                            item.classList.remove('hidden');
+                        } else {
+                            item.classList.add('hidden');
+                        }
+                    }
+                });
+                
+                console.log(`🔍 Filtered courses: ${currentFilter} filter, search: "${searchTerm}"`);
+            }
+
             // Course search functionality
             function initializeCourseSearch() {
                 const searchInput = document.getElementById('course-search');
                 if (searchInput) {
                     searchInput.addEventListener('input', function(e) {
-                        const searchTerm = e.target.value.toLowerCase().trim();
-                        const courseItems = document.querySelectorAll('.course-item');
-                        
-                        courseItems.forEach(item => {
-                            const courseName = item.querySelector('h4');
-                            if (courseName) {
-                                const courseText = courseName.textContent.toLowerCase();
-                                if (courseText.includes(searchTerm) || searchTerm === '') {
-                                    item.classList.remove('hidden');
-                                } else {
-                                    item.classList.add('hidden');
-                                }
-                            }
-                        });
+                        filterCourses();
                     });
                 }
             }
 
-            // Initialize search on page load
-            initializeCourseSearch();
+            // Initialize components on page load
+            function initializeComponents() {
+                initializeCourseSearch();
+                initializeCourseToggle();
+                filterCourses(); // Apply initial filter
+            }
+
+            // Initialize components
+            initializeComponents();
 
             // HTMX event logging
             htmx.on('htmx:beforeRequest', function(e) {
@@ -389,8 +479,8 @@
                     console.log('✅ HTMX Response:', e.detail.xhr.status);
                 }
                 
-                // Re-initialize search after HTMX content updates
-                setTimeout(initializeCourseSearch, 100);
+                // Re-initialize components after HTMX content updates
+                setTimeout(initializeComponents, 100);
             });
             
             // Mapbox initialization (only if not already loaded)

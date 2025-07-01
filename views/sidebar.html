@@ -13,7 +13,12 @@
         </div>
         <div class="courses-section">
             <div class="courses-section-header">
-                <h3>Courses</h3>
+                {{ if .User }}
+                <div class="course-toggle">
+                    <button id="all-courses-btn" class="toggle-btn active" data-filter="all">All Courses</button>
+                    <button id="my-courses-btn" class="toggle-btn" data-filter="my">My Courses</button>
+                </div>
+                {{ end }}
             </div>
             <div class="search-container">
                 <input type="text" id="course-search" placeholder="Search courses..." class="search-input">
@@ -41,7 +46,7 @@
 
 {{ block "courses-map" . }}
 {{ range $index, $course := .Courses }}
-<div class="course-item">
+<div class="course-item" data-can-edit="{{ if index $.EditPermissions $index }}true{{ else }}false{{ end }}">
     <div class="course-content" hx-get="/course/{{ $course.ID }}" hx-target="#main-content">
         <h4>{{ $course.Name }}</h4>
     </div>

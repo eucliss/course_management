@@ -27,13 +27,18 @@ func NewHandlers(courses *[]Course, courseService *CourseService) *Handlers {
 func (h *Handlers) Home(c echo.Context) error {
 	sessionService := NewSessionService()
 	user := sessionService.GetUser(c)
-	dbUserID := sessionService.GetDatabaseUserID(c)
+
+	// Get user ID from middleware context if available
+	var userID *uint
+	if uid, ok := c.Get("userID").(uint); ok {
+		userID = &uid
+	}
 
 	// Check which courses the user can edit
 	editPermissions := make(map[int]bool)
-	if dbUserID != nil {
+	if userID != nil {
 		for i := range *h.courses {
-			editPermissions[i] = h.CanEditCourse(i, dbUserID)
+			editPermissions[i] = h.CanEditCourse(i, userID)
 		}
 	}
 
@@ -68,10 +73,15 @@ func (h *Handlers) Profile(c echo.Context) error {
 		})
 	}
 
+	// Get user ID from middleware context if available
+	var dbUserID *uint
+	if uid, ok := c.Get("userID").(uint); ok {
+		dbUserID = &uid
+	}
+
 	// Get user's handicap from database if available
 	var handicap *float64
 	var displayName *string
-	dbUserID := sessionService.GetDatabaseUserID(c)
 	log.Printf("🔍 Profile request for user: %s, DB User ID: %v, DB available: %t",
 		user.Email, dbUserID, DB != nil)
 
@@ -167,7 +177,23 @@ func (h *Handlers) GetCourse(c echo.Context) error {
 	if err != nil || idInt >= len(*h.courses) {
 		return c.String(http.StatusNotFound, "Course not found")
 	}
-	return c.Render(http.StatusOK, "course", (*h.courses)[idInt])
+
+	// Get ownership context from middleware if available
+	var canEdit bool
+	if userID, ok := c.Get("userID").(uint); ok {
+		canEdit = h.CanEditCourse(idInt, &userID)
+	}
+
+	// Add ownership context to course data
+	courseData := struct {
+		Course
+		CanEdit bool
+	}{
+		Course:  (*h.courses)[idInt],
+		CanEdit: canEdit,
+	}
+
+	return c.Render(http.StatusOK, "course", courseData)
 }
 
 func (h *Handlers) CreateCourseForm(c echo.Context) error {
@@ -185,36 +211,22 @@ func (h *Handlers) CreateCourseForm(c echo.Context) error {
 }
 
 func (h *Handlers) EditCourseForm(c echo.Context) error {
-	id := c.Param("id")
-	idInt, err := strconv.Atoi(id)
-	if err != nil || idInt >= len(*h.courses) {
-		return c.String(http.StatusNotFound, "Course not found")
+	// Get course index from middleware context (already validated)
+	courseIndex, ok := c.Get("courseIndex").(int)
+	if !ok {
+		return c.String(http.StatusInternalServerError, "Course index not found in context")
 	}
 
-	// Get authenticated user ID
-	sessionService := NewSessionService()
-	userID := sessionService.GetDatabaseUserID(c)
-	if userID == nil {
-		return c.String(http.StatusUnauthorized, "You must be logged in to edit a course")
+	// Get user ID from middleware context (already validated)
+	userID, ok := c.Get("userID").(uint)
+	if !ok {
+		return c.String(http.StatusInternalServerError, "User ID not found in context")
 	}
 
-	// Check ownership if database is available
-	if DB != nil {
-		dbService := NewDatabaseService()
-		canEdit, courseDB, err := dbService.CanEditCourseByIndex(idInt, *userID)
-		if err != nil {
-			log.Printf("Error checking course ownership: %v", err)
-			return c.String(http.StatusInternalServerError, "Error verifying course ownership")
-		}
+	// Ownership already verified by middleware
+	log.Printf("✅ User %d authorized to edit course at index %d", userID, courseIndex)
 
-		if !canEdit {
-			return c.String(http.StatusForbidden, "You don't have permission to edit this course")
-		}
-
-		log.Printf("✅ User %d authorized to edit course at index %d (DB ID: %d)", *userID, idInt, courseDB.ID)
-	}
-
-	course := (*h.courses)[idInt]
+	course := (*h.courses)[courseIndex]
 
 	data := struct {
 		Course  Course
@@ -230,53 +242,47 @@ func (h *Handlers) EditCourseForm(c echo.Context) error {
 }
 
 func (h *Handlers) UpdateCourse(c echo.Context) error {
-	id := c.Param("id")
-	idInt, err := strconv.Atoi(id)
-	if err != nil || idInt >= len(*h.courses) {
-		return c.String(http.StatusNotFound, "Course not found")
+	// Get course index from middleware context (already validated)
+	courseIndex, ok := c.Get("courseIndex").(int)
+	if !ok {
+		return c.String(http.StatusInternalServerError, "Course index not found in context")
 	}
 
-	// Get authenticated user ID
-	sessionService := NewSessionService()
-	userID := sessionService.GetDatabaseUserID(c)
-	if userID == nil {
-		return c.String(http.StatusUnauthorized, "You must be logged in to edit a course")
+	// Get user ID from middleware context (already validated)
+	userID, ok := c.Get("userID").(uint)
+	if !ok {
+		return c.String(http.StatusInternalServerError, "User ID not found in context")
 	}
 
-	// Check ownership and get course from database if available
+	// Ownership already verified by middleware, get course from database if available
 	var courseDB *CourseDB
 	if DB != nil {
 		dbService := NewDatabaseService()
-		canEdit, dbCourse, err := dbService.CanEditCourseByIndex(idInt, *userID)
+		_, dbCourse, err := dbService.CanEditCourseByIndex(courseIndex, userID)
 		if err != nil {
-			log.Printf("Error checking course ownership: %v", err)
-			return c.String(http.StatusInternalServerError, "Error verifying course ownership")
+			log.Printf("Error getting course from database: %v", err)
+			return c.String(http.StatusInternalServerError, "Error accessing course data")
 		}
-
-		if !canEdit {
-			return c.String(http.StatusForbidden, "You don't have permission to edit this course")
-		}
-
 		courseDB = dbCourse
-		log.Printf("✅ User %d authorized to update course at index %d (DB ID: %d)", *userID, idInt, courseDB.ID)
+		log.Printf("✅ User %d authorized to update course at index %d (DB ID: %d)", userID, courseIndex, courseDB.ID)
 	}
 
 	if err := c.Request().ParseForm(); err != nil {
 		return c.String(http.StatusBadRequest, "Failed to parse form data: "+err.Error())
 	}
 
-	course, err := h.parseFormToCourse(c, idInt)
+	course, err := h.parseFormToCourse(c, courseIndex)
 	if err != nil {
 		return c.String(http.StatusBadRequest, err.Error())
 	}
 
 	// Update in memory array
-	(*h.courses)[idInt] = course
+	(*h.courses)[courseIndex] = course
 
 	// Update in database with ownership tracking if available
 	if DB != nil && courseDB != nil {
 		dbService := NewDatabaseService()
-		if err := dbService.UpdateCourseWithOwnership(courseDB, course, *userID); err != nil {
+		if err := dbService.UpdateCourseWithOwnership(courseDB, course, userID); err != nil {
 			log.Printf("Failed to update course in database: %v", err)
 			return c.String(http.StatusInternalServerError, "Failed to update course in database: "+err.Error())
 		}
@@ -585,4 +591,12 @@ func (h *Handlers) MigrateCourses(c echo.Context) error {
 		"migrated_courses": len(courses),
 		"database_stats":   stats,
 	})
+}
+
+// Helper method to get ownership context from middleware
+func (h *Handlers) getOwnershipContext(c echo.Context) (userID *uint, authenticated bool) {
+	if uid, ok := c.Get("userID").(uint); ok {
+		return &uid, true
+	}
+	return nil, c.Get("authenticated").(bool)
 }

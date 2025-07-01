@@ -383,3 +383,119 @@ func (ds *DatabaseService) UpdateCourseWithOwnership(courseDB *CourseDB, updated
 	log.Printf("✅ Course '%s' updated in database by user ID %d", updatedCourse.Name, updatedBy)
 	return nil
 }
+
+// User course listing and ownership methods
+func (ds *DatabaseService) GetCoursesByUser(userID uint) ([]CourseDB, error) {
+	if ds.db == nil {
+		return nil, fmt.Errorf("database not connected")
+	}
+
+	var courses []CourseDB
+	result := ds.db.Preload("Creator").Preload("Updater").Where("created_by = ?", userID).Find(&courses)
+
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed to fetch user courses: %v", result.Error)
+	}
+
+	log.Printf("✅ Found %d courses for user ID %d", len(courses), userID)
+	return courses, nil
+}
+
+func (ds *DatabaseService) GetCourseOwner(courseID uint) (*User, error) {
+	if ds.db == nil {
+		return nil, fmt.Errorf("database not connected")
+	}
+
+	var courseDB CourseDB
+	result := ds.db.Preload("Creator").First(&courseDB, courseID)
+
+	if result.Error != nil {
+		if result.Error.Error() == "record not found" {
+			return nil, nil // Course not found
+		}
+		return nil, fmt.Errorf("failed to find course: %v", result.Error)
+	}
+
+	if courseDB.Creator == nil {
+		return nil, nil // Course has no owner
+	}
+
+	return courseDB.Creator, nil
+}
+
+func (ds *DatabaseService) GetCoursesWithOwnership() ([]CourseDB, error) {
+	if ds.db == nil {
+		return nil, fmt.Errorf("database not connected")
+	}
+
+	var courses []CourseDB
+	result := ds.db.Preload("Creator").Preload("Updater").Find(&courses)
+
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed to fetch courses with ownership: %v", result.Error)
+	}
+
+	return courses, nil
+}
+
+func (ds *DatabaseService) GetUserCoursesAsJSONArray(userID uint) ([]Course, error) {
+	if ds.db == nil {
+		return nil, fmt.Errorf("database not connected")
+	}
+
+	coursesDB, err := ds.GetCoursesByUser(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	var courses []Course
+	for i, courseDB := range coursesDB {
+		var course Course
+		if err := json.Unmarshal([]byte(courseDB.CourseData), &course); err != nil {
+			log.Printf("Warning: failed to unmarshal course %d: %v", courseDB.ID, err)
+			continue
+		}
+
+		// Set the ID to match the array index for backward compatibility
+		course.ID = i
+		courses = append(courses, course)
+	}
+
+	return courses, nil
+}
+
+func (ds *DatabaseService) IsUserCourseOwner(userID uint, courseName string) (bool, error) {
+	if ds.db == nil {
+		return false, fmt.Errorf("database not connected")
+	}
+
+	var courseDB CourseDB
+	result := ds.db.Where("name = ? AND created_by = ?", courseName, userID).First(&courseDB)
+
+	if result.Error != nil {
+		if result.Error.Error() == "record not found" {
+			return false, nil // User doesn't own this course
+		}
+		return false, fmt.Errorf("failed to check course ownership: %v", result.Error)
+	}
+
+	return true, nil
+}
+
+func (ds *DatabaseService) GetCourseWithOwnershipByName(courseName string) (*CourseDB, error) {
+	if ds.db == nil {
+		return nil, fmt.Errorf("database not connected")
+	}
+
+	var courseDB CourseDB
+	result := ds.db.Preload("Creator").Preload("Updater").Where("name = ?", courseName).First(&courseDB)
+
+	if result.Error != nil {
+		if result.Error.Error() == "record not found" {
+			return nil, nil // Course not found
+		}
+		return nil, fmt.Errorf("failed to find course: %v", result.Error)
+	}
+
+	return &courseDB, nil
+}

@@ -1,0 +1,22 @@
+{
+  "name": "my only course",
+  "ID": 0,
+  "description": "test",
+  "ranks": {
+    "price": "",
+    "handicapDifficulty": 0,
+    "hazardDifficulty": 0,
+    "merch": "",
+    "condition": "",
+    "enjoymentRating": "",
+    "vibe": "",
+    "range": "",
+    "amenities": "",
+    "glizzies": ""
+  },
+  "overallRating": "A",
+  "review": "test",
+  "holes": [],
+  "scores": [],
+  "address": "1600 Pennsylvania Ave NW, Washington, DC 20500"
+}

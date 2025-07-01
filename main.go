@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/sessions"
@@ -91,6 +92,73 @@ func RequireAuth(sessionService *SessionService) echo.MiddlewareFunc {
 	}
 }
 
+// RequireOwnership middleware checks if user owns the course they're trying to edit
+func RequireOwnership(sessionService *SessionService, courseService *CourseService) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			// First check authentication
+			if !sessionService.IsAuthenticated(c) {
+				return c.Redirect(http.StatusTemporaryRedirect, "/login")
+			}
+
+			// Get course ID from URL parameter
+			courseIDParam := c.Param("id")
+			courseIndex, err := strconv.Atoi(courseIDParam)
+			if err != nil {
+				return c.String(http.StatusBadRequest, "Invalid course ID")
+			}
+
+			// Get user ID from session
+			userID := sessionService.GetDatabaseUserID(c)
+			if userID == nil {
+				return c.String(http.StatusUnauthorized, "User not found in database")
+			}
+
+			// Check if database is available
+			if DB == nil {
+				return c.String(http.StatusServiceUnavailable, "Database not available")
+			}
+
+			// Check ownership using database service
+			dbService := NewDatabaseService()
+			canEdit, err := dbService.CanEditCourseByIndex(courseIndex, *userID)
+			if err != nil {
+				log.Printf("❌ Error checking course ownership: %v", err)
+				return c.String(http.StatusInternalServerError, "Error checking permissions")
+			}
+
+			if !canEdit {
+				return c.String(http.StatusForbidden, "You don't have permission to edit this course")
+			}
+
+			// Store ownership info in context for handlers to use
+			c.Set("userID", *userID)
+			c.Set("courseIndex", courseIndex)
+			c.Set("canEdit", true)
+
+			return next(c)
+		}
+	}
+}
+
+// AddOwnershipContext middleware adds ownership information to all course-related routes
+func AddOwnershipContext(sessionService *SessionService) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			// Get user ID from session if available
+			userID := sessionService.GetDatabaseUserID(c)
+			if userID != nil {
+				c.Set("userID", *userID)
+				c.Set("authenticated", true)
+			} else {
+				c.Set("authenticated", false)
+			}
+
+			return next(c)
+		}
+	}
+}
+
 func main() {
 	config := LoadConfig()
 
@@ -136,18 +204,22 @@ func main() {
 	e.POST("/auth/logout", authHandlers.Logout)
 	e.GET("/login", authHandlers.GetAuthStatus)
 
-	// Application routes
-	e.GET("/", handlers.Home)
-	e.GET("/introduction", handlers.Introduction)
-	e.GET("/profile", handlers.Profile)
-	e.POST("/profile/handicap", handlers.UpdateHandicap)
-	e.POST("/profile/display-name", handlers.UpdateDisplayName)
-	e.GET("/course/:id", handlers.GetCourse)
+	// Application routes with ownership context
+	e.GET("/", handlers.Home, AddOwnershipContext(sessionService))
+	e.GET("/introduction", handlers.Introduction, AddOwnershipContext(sessionService))
+	e.GET("/profile", handlers.Profile, AddOwnershipContext(sessionService))
+	e.POST("/profile/handicap", handlers.UpdateHandicap, RequireAuth(sessionService))
+	e.POST("/profile/display-name", handlers.UpdateDisplayName, RequireAuth(sessionService))
+	e.GET("/course/:id", handlers.GetCourse, AddOwnershipContext(sessionService))
 	e.GET("/create-course", handlers.CreateCourseForm, RequireAuth(sessionService))
 	e.POST("/create-course", handlers.CreateCourse, RequireAuth(sessionService))
-	e.GET("/map", handlers.Map)
-	e.GET("/edit-course/:id", handlers.EditCourseForm, RequireAuth(sessionService))
-	e.POST("/edit-course/:id", handlers.UpdateCourse, RequireAuth(sessionService))
+	e.GET("/map", handlers.Map, AddOwnershipContext(sessionService))
+
+	// Protected edit routes with ownership verification
+	e.GET("/edit-course/:id", handlers.EditCourseForm, RequireOwnership(sessionService, courseService))
+	e.POST("/edit-course/:id", handlers.UpdateCourse, RequireOwnership(sessionService, courseService))
+
+	// API routes
 	e.GET("/api/status/database", handlers.DatabaseStatus)
 	e.POST("/api/migrate/courses", handlers.MigrateCourses)
 	e.Static("/favicon.ico", "static/favicon.ico")
