@@ -144,15 +144,50 @@ window.addEventListener('load', function() {
     <div class="user-profile-header">
         <img src="{{.Picture}}" alt="{{.Name}}" class="profile-picture">
         <div class="user-info">
-            <h2>{{.Name}}</h2>
+            <h2>
+                {{.Name}}
+                <span class="display-name-container">
+                    <span class="display-name-display" id="display-name-display" onclick="editDisplayName()">
+                        {{if .DisplayName}}({{.DisplayName}}){{else}}(click to set display name){{end}}
+                    </span>
+                    <form class="display-name-edit" id="display-name-edit" style="display: none;" 
+                          hx-post="/profile/display-name" hx-target="#display-name-status" hx-swap="innerHTML">
+                        <input type="text" name="display_name" class="display-name-input" 
+                               placeholder="Enter display name" maxlength="50"
+                               value="{{if .DisplayName}}{{.DisplayName}}{{end}}"
+                               onblur="cancelDisplayNameEdit()" onkeypress="handleDisplayNameKeypress(event)">
+                        <div class="display-name-buttons">
+                            <button type="submit" class="save-display-name-btn">Save</button>
+                            <button type="button" class="cancel-display-name-btn" onclick="cancelDisplayNameEdit()">Cancel</button>
+                        </div>
+                    </form>
+                </span>
+            </h2>
+            <div id="display-name-status"></div>
             <p>{{.Email}}</p>
             <button hx-post="/auth/logout" hx-target="#main-content" class="logout-btn">
                 Sign Out
             </button>
         </div>
         <div class="handicap-box">
-            <input type="number" class="handicap-input" placeholder="0.0" step="0.1" min="0" max="54">
-            <div class="handicap-label">HANDICAP</div>
+            <div class="handicap-display" id="handicap-display">
+                <div class="handicap-value" onclick="editHandicap()">
+                    {{if .Handicap}}{{.Handicap}}{{else}}--{{end}}
+                </div>
+                <div class="handicap-label">HANDICAP</div>
+            </div>
+            <form class="handicap-edit" id="handicap-edit" style="display: none;" 
+                  hx-post="/profile/handicap" hx-target="#handicap-status" hx-swap="innerHTML">
+                <input type="number" name="handicap" class="handicap-input" 
+                       placeholder="0.0" step="0.1" min="0" max="54" 
+                       value="{{if .Handicap}}{{.Handicap}}{{end}}"
+                       onblur="cancelHandicapEdit()" onkeypress="handleHandicapKeypress(event)">
+                <div class="handicap-edit-buttons">
+                    <button type="submit" class="save-handicap-btn">Save</button>
+                    <button type="button" class="cancel-handicap-btn" onclick="cancelHandicapEdit()">Cancel</button>
+                </div>
+            </form>
+            <div id="handicap-status"></div>
         </div>
     </div>
 
@@ -165,20 +200,22 @@ window.addEventListener('load', function() {
         </div>
         {{ if gt (len .Courses) 0 }}
             <div class="courses-table-container">
-                {{ range .Courses }}
+                {{ range $index, $course := .Courses }}
                 <div class="course-review-card">
                     <div class="course-header">
                         <div class="course-basic-info">
                             <div class="course-title-row">
-                                <h4 class="course-name" hx-get="/course/{{ .ID }}" hx-target="#main-content" style="cursor: pointer;">{{ .Name }}</h4>
-                                <button hx-get="/edit-course/{{ .ID }}" hx-target="#main-content" class="edit-course-btn">
+                                <h4 class="course-name" hx-get="/course/{{ $course.ID }}" hx-target="#main-content" style="cursor: pointer;">{{ $course.Name }}</h4>
+                                {{ if index $.EditPermissions $index }}
+                                <button hx-get="/edit-course/{{ $course.ID }}" hx-target="#main-content" class="edit-course-btn">
                                     Edit
                                 </button>
+                                {{ end }}
                             </div>
-                            <p class="course-description">{{ .Description }}</p>
+                            <p class="course-description">{{ $course.Description }}</p>
                         </div>
                         <div class="overall-rating-badge">
-                            <span class="rating-value">{{ .OverallRating }}</span>
+                            <span class="rating-value">{{ $course.OverallRating }}</span>
                             <span class="rating-label">TIER</span>
                         </div>
                     </div>
@@ -186,43 +223,43 @@ window.addEventListener('load', function() {
                     <div class="rankings-grid">
                         <div class="ranking-item">
                             <span class="ranking-label">Price</span>
-                            <span class="ranking-value price-{{ len .Ranks.Price }}">{{ .Ranks.Price }}</span>
+                            <span class="ranking-value price-{{ len $course.Ranks.Price }}">{{ $course.Ranks.Price }}</span>
                         </div>
                         <div class="ranking-item">
                             <span class="ranking-label">Handicap Difficulty</span>
-                            <span class="ranking-value handicap-{{ .Ranks.HandicapDifficulty }}">{{ .Ranks.HandicapDifficulty }}</span>
+                            <span class="ranking-value handicap-{{ $course.Ranks.HandicapDifficulty }}">{{ $course.Ranks.HandicapDifficulty }}</span>
                         </div>
                         <div class="ranking-item">
                             <span class="ranking-label">Hazard Difficulty</span>
-                            <span class="ranking-value hazard-{{ .Ranks.HazardDifficulty }}">{{ .Ranks.HazardDifficulty }}</span>
+                            <span class="ranking-value hazard-{{ $course.Ranks.HazardDifficulty }}">{{ $course.Ranks.HazardDifficulty }}</span>
                         </div>
                         <div class="ranking-item">
                             <span class="ranking-label">Condition</span>
-                            <span class="ranking-value rating-{{ .Ranks.Condition }}">{{ .Ranks.Condition }}</span>
+                            <span class="ranking-value rating-{{ $course.Ranks.Condition }}">{{ $course.Ranks.Condition }}</span>
                         </div>
                         <div class="ranking-item">
                             <span class="ranking-label">Enjoyment</span>
-                            <span class="ranking-value rating-{{ .Ranks.EnjoymentRating }}">{{ .Ranks.EnjoymentRating }}</span>
+                            <span class="ranking-value rating-{{ $course.Ranks.EnjoymentRating }}">{{ $course.Ranks.EnjoymentRating }}</span>
                         </div>
                         <div class="ranking-item">
                             <span class="ranking-label">Vibe</span>
-                            <span class="ranking-value rating-{{ .Ranks.Vibe }}">{{ .Ranks.Vibe }}</span>
+                            <span class="ranking-value rating-{{ $course.Ranks.Vibe }}">{{ $course.Ranks.Vibe }}</span>
                         </div>
                         <div class="ranking-item">
                             <span class="ranking-label">Range</span>
-                            <span class="ranking-value rating-{{ .Ranks.Range }}">{{ .Ranks.Range }}</span>
+                            <span class="ranking-value rating-{{ $course.Ranks.Range }}">{{ $course.Ranks.Range }}</span>
                         </div>
                         <div class="ranking-item">
                             <span class="ranking-label">Amenities</span>
-                            <span class="ranking-value rating-{{ .Ranks.Amenities }}">{{ .Ranks.Amenities }}</span>
+                            <span class="ranking-value rating-{{ $course.Ranks.Amenities }}">{{ $course.Ranks.Amenities }}</span>
                         </div>
                         <div class="ranking-item">
                             <span class="ranking-label">Turn Dog</span>
-                            <span class="ranking-value rating-{{ .Ranks.Glizzies }}">{{ .Ranks.Glizzies }}</span>
+                            <span class="ranking-value rating-{{ $course.Ranks.Glizzies }}">{{ $course.Ranks.Glizzies }}</span>
                         </div>
                         <div class="ranking-item">
                             <span class="ranking-label">Merch</span>
-                            <span class="ranking-value rating-{{ .Ranks.Merch }}">{{ .Ranks.Merch }}</span>
+                            <span class="ranking-value rating-{{ $course.Ranks.Merch }}">{{ $course.Ranks.Merch }}</span>
                         </div>
                     </div>
                     
@@ -232,8 +269,9 @@ window.addEventListener('load', function() {
                             <input type="number" class="score-input" placeholder="Out" min="18" max="90">
                             <input type="number" class="score-input" placeholder="In" min="18" max="90">
                             <input type="number" class="score-input" placeholder="Total" min="36" max="180" readonly>
-                            <input type="number" class="score-input" placeholder="Handicap" min="0" max="54">
-                            <button class="add-score-btn" onclick="addScore({{ .ID }})">Add Score</button>
+                            <input type="number" class="score-input" placeholder="Handicap" min="0" max="54" 
+                                   value="{{if $.Handicap}}{{$.Handicap}}{{end}}">
+                            <button class="add-score-btn" onclick="addScore({{ $course.ID }})">Add Score</button>
                         </div>
                     </div>
                 </div>
@@ -241,7 +279,13 @@ window.addEventListener('load', function() {
             </div>
         {{ else }}
             <div class="no-courses">
-                <p>No courses reviewed yet. <a hx-get="/create-course" hx-target="#main-content" style="color: #204606; text-decoration: underline; cursor: pointer;">Add your first course review!</a></p>
+                <div class="no-courses-message">
+                    <h3>Add a course review to see it here...</h3>
+                    <p>You haven't reviewed any courses yet. Start building your golf course portfolio!</p>
+                    <button hx-get="/create-course" hx-target="#main-content" class="add-course-btn">
+                        Add Your First Course Review
+                    </button>
+                </div>
             </div>
         {{ end }}
     </div>
@@ -283,7 +327,84 @@ window.addEventListener('load', function() {
         font-size: 1.8em;
         font-weight: 600;
     }
-    
+
+    .display-name-container {
+        margin: 8px 0 15px 0;
+        display: inline;
+    }
+
+    .display-name-display {
+        color: #777;
+        font-size: 0.7em;
+        font-weight: 400;
+        cursor: pointer;
+        padding: 2px 6px;
+        border-radius: 4px;
+        transition: background-color 0.2s;
+        display: inline;
+        margin-left: 8px;
+    }
+
+    .display-name-display:hover {
+        background-color: rgba(181, 216, 68, 0.3);
+    }
+
+    .display-name-edit {
+        display: none;
+        position: absolute;
+        background: white;
+        border: 2px solid #204606;
+        border-radius: 8px;
+        padding: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 1000;
+        margin-top: 8px;
+        margin-left: -20px;
+    }
+
+    .display-name-input {
+        padding: 8px 12px;
+        border: 2px solid #204606;
+        border-radius: 4px;
+        font-size: 1.1em;
+        width: 200px;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .display-name-buttons {
+        display: flex;
+        gap: 8px;
+    }
+
+    .save-display-name-btn, .cancel-display-name-btn {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9em;
+        transition: all 0.2s;
+        flex: 1;
+    }
+
+    .save-display-name-btn {
+        background-color: #204606;
+        color: white;
+    }
+
+    .save-display-name-btn:hover {
+        background-color: #2d6509;
+    }
+
+    .cancel-display-name-btn {
+        background-color: #ccc;
+        color: #333;
+    }
+
+    .cancel-display-name-btn:hover {
+        background-color: #bbb;
+    }
+
     .user-info p {
         margin: 0 0 15px 0;
         color: #666;
@@ -312,35 +433,37 @@ window.addEventListener('load', function() {
     .handicap-box {
         background-color: #204606;
         color: white;
-        padding: 15px 30px;
+        padding: 15px 25px;
         border-radius: 8px;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 5px;
+        justify-content: center;
         flex-shrink: 0;
-        min-width: 100px;
+        min-width: 120px;
+        min-height: 80px;
+        cursor: pointer;
+        transition: all 0.2s;
     }
 
-    .handicap-input {
-        font-size: 2em;
+    .handicap-box:hover {
+        background-color: #2d6509;
+        transform: translateY(-1px);
+    }
+
+    .handicap-display {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        width: 100%;
+    }
+
+    .handicap-value {
+        font-size: 2.2em;
         font-weight: bold;
-        background: transparent;
-        border: none;
-        color: white;
-        text-align: center;
-        width: 80px;
-        padding: 0;
-        outline: none;
-    }
-
-    .handicap-input::placeholder {
-        color: rgba(255, 255, 255, 0.7);
-    }
-
-    .handicap-input:focus {
-        background-color: rgba(255, 255, 255, 0.1);
-        border-radius: 4px;
+        line-height: 1;
+        cursor: pointer;
     }
 
     .handicap-label {
@@ -348,6 +471,58 @@ window.addEventListener('load', function() {
         opacity: 0.9;
         font-weight: 500;
         letter-spacing: 1px;
+    }
+
+    .handicap-edit {
+        width: 100%;
+        text-align: center;
+    }
+
+    .handicap-input {
+        font-size: 2em;
+        font-weight: bold;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        text-align: center;
+        width: 100%;
+        padding: 8px;
+        border-radius: 4px;
+        outline: none;
+        margin-bottom: 8px;
+    }
+
+    .handicap-input::placeholder {
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    .handicap-input:focus {
+        background-color: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.5);
+    }
+
+    .handicap-edit-buttons {
+        display: flex;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .save-handicap-btn, .cancel-handicap-btn {
+        background-color: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.8em;
+        font-weight: 500;
+        transition: all 0.2s;
+        flex: 1;
+    }
+
+    .save-handicap-btn:hover, .cancel-handicap-btn:hover {
+        background-color: rgba(255, 255, 255, 0.3);
+        border-color: rgba(255, 255, 255, 0.5);
     }
 
     .courses-reviewed-header {
@@ -616,9 +791,25 @@ window.addEventListener('load', function() {
 
     .no-courses {
         text-align: center;
-        padding: 40px 20px;
+        padding: 60px 20px;
+        background-color: rgba(181, 216, 68, 0.05);
+        border-radius: 12px;
+        border: 2px dashed rgba(32, 70, 6, 0.2);
+        margin: 20px 0;
+    }
+
+    .no-courses-message h3 {
+        color: #204606;
+        font-size: 1.8em;
+        margin: 0 0 15px 0;
+        font-weight: 600;
+    }
+
+    .no-courses-message p {
         color: #666;
         font-size: 1.1em;
+        margin: 0 0 25px 0;
+        line-height: 1.4;
     }
 
     @media (max-width: 768px) {
@@ -676,6 +867,13 @@ window.addEventListener('load', function() {
             text-align: center;
         }
     }
+
+    #handicap-status {
+        margin-top: 8px;
+        font-size: 0.8em;
+        text-align: center;
+        min-height: 0;
+    }
 </style>
 
 <script>
@@ -729,6 +927,108 @@ window.addEventListener('load', function() {
         scoreSection.querySelector('input[placeholder="Handicap"]').value = '';
         
         alert('Score added successfully!');
+    }
+
+    function editHandicap() {
+        document.getElementById('handicap-display').style.display = 'none';
+        document.getElementById('handicap-edit').style.display = 'block';
+        document.querySelector('#handicap-edit input').focus();
+        document.querySelector('#handicap-edit input').select();
+    }
+
+    function cancelHandicapEdit() {
+        // Small delay to prevent immediate trigger when clicking save
+        setTimeout(() => {
+            document.getElementById('handicap-display').style.display = 'block';
+            document.getElementById('handicap-edit').style.display = 'none';
+            document.getElementById('handicap-status').innerHTML = '';
+        }, 100);
+    }
+
+    function handleHandicapKeypress(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            document.querySelector('.save-handicap-btn').click();
+        } else if (event.key === 'Escape') {
+            cancelHandicapEdit();
+        }
+    }
+
+    // Handle successful save
+    document.body.addEventListener('htmx:afterRequest', function(event) {
+        if (event.detail.xhr.status === 200 && event.detail.pathInfo.requestPath === '/profile/handicap') {
+            // Update the display value
+            const form = document.getElementById('handicap-edit');
+            const input = form.querySelector('input[name="handicap"]');
+            const displayValue = document.querySelector('.handicap-value');
+            
+            if (input.value) {
+                const newHandicap = parseFloat(input.value);
+                displayValue.textContent = newHandicap.toFixed(1);
+                
+                // Update all handicap inputs in score sections
+                const scoreHandicapInputs = document.querySelectorAll('.score-input[placeholder="Handicap"]');
+                scoreHandicapInputs.forEach(scoreInput => {
+                    scoreInput.value = newHandicap.toFixed(1);
+                });
+            } else {
+                displayValue.textContent = '--';
+                
+                // Clear all handicap inputs in score sections
+                const scoreHandicapInputs = document.querySelectorAll('.score-input[placeholder="Handicap"]');
+                scoreHandicapInputs.forEach(scoreInput => {
+                    scoreInput.value = '';
+                });
+            }
+            
+            // Hide edit form after successful save
+            setTimeout(() => {
+                cancelHandicapEdit();
+            }, 1500);
+        }
+        
+        if (event.detail.xhr.status === 200 && event.detail.pathInfo.requestPath === '/profile/display-name') {
+            // Update the display value
+            const form = document.getElementById('display-name-edit');
+            const input = form.querySelector('input[name="display_name"]');
+            const displayValue = document.getElementById('display-name-display');
+            
+            if (input.value.trim()) {
+                displayValue.textContent = `(${input.value.trim()})`;
+            } else {
+                displayValue.textContent = '(click to set display name)';
+            }
+            
+            // Hide edit form after successful save
+            setTimeout(() => {
+                cancelDisplayNameEdit();
+            }, 1500);
+        }
+    });
+
+    function editDisplayName() {
+        document.getElementById('display-name-display').style.display = 'none';
+        document.getElementById('display-name-edit').style.display = 'block';
+        document.querySelector('#display-name-edit input').focus();
+        document.querySelector('#display-name-edit input').select();
+    }
+
+    function cancelDisplayNameEdit() {
+        // Small delay to prevent immediate trigger when clicking save
+        setTimeout(() => {
+            document.getElementById('display-name-display').style.display = 'block';
+            document.getElementById('display-name-edit').style.display = 'none';
+            document.getElementById('display-name-status').innerHTML = '';
+        }, 100);
+    }
+
+    function handleDisplayNameKeypress(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            document.querySelector('.save-display-name-btn').click();
+        } else if (event.key === 'Escape') {
+            cancelDisplayNameEdit();
+        }
     }
 </script>
 

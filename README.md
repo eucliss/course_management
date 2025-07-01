@@ -7,7 +7,16 @@ A golf course management system that tracks course ratings, reviews, and scores.
 1. Clone the repository
 2. Copy `.env.example` to `.env` and fill in your environment variables
 3. Run `go mod download` to install dependencies
-4. Run `go run main.go` to start the server
+4. **Optional:** Set up PostgreSQL database (see [DATABASE_SETUP.md](DATABASE_SETUP.md))
+5. Run `go run .` to start the server
+
+### Database Setup (Optional)
+
+The application supports both JSON files and PostgreSQL:
+- **Without database:** Uses JSON files (current behavior)
+- **With database:** Automatically migrates JSON data and uses PostgreSQL
+
+For PostgreSQL setup, see detailed instructions in [DATABASE_SETUP.md](DATABASE_SETUP.md)
 
 ## Deployment
 
@@ -35,15 +44,86 @@ air
 ```
 
 
-Dont make any changes to my code right now.
-What do you think the best database choice would be for this particular app? Here is some information to consider:
-The course structure in courses allows for long text
-The users will need their own table
-each user will be able to add courses and see other users courses
-the users will be able to follow other golfers
-we will need an activity feed based on what other golfers have done that are on their friends lists
-Each course will need to consolidate reviews for an average rating across all golfers and handicap
-advanced filters for all information
+# Golf Course Management App - Features To-Do List
+
+## 🗄️ Database Migration
+- [ ] **Migrate from JSON files to PostgreSQL**
+  - Set up PostgreSQL database with proper schema
+  - Import existing course JSON data into JSONB columns
+  - Update Go models to work with database
+
+## 👥 User Management System
+- [ ] **User Registration & Authentication**
+  - Extend current Google OAuth to full user profiles
+  - Create user table with handicap tracking
+  - Add user profile pages and settings
+
+- [ ] **User Course Ownership**
+  - Allow users to add new courses to the platform
+  - Track which user created each course
+  - Enable users to edit their own course submissions
+
+## 🤝 Social Features
+- [ ] **User Following System**
+  - Allow users to follow other golfers
+  - Create friends/following lists
+  - Add follow/unfollow functionality
+
+- [ ] **Activity Feed**
+  - Show recent activity from followed users
+  - Include course reviews, new scores, course additions
+  - Real-time or near-real-time updates
+
+## ⭐ Course Review & Rating System
+- [ ] **Multi-User Course Reviews**
+  - Allow multiple users to review each course
+  - Store individual ratings for all course aspects
+  - Add photo upload capability for course reviews
+
+- [ ] **Aggregated Rating System**
+  - Calculate average ratings across all users
+  - Segment ratings by handicap level ranges
+  - Display consolidated scores on course pages
+
+## 🔍 Advanced Filtering & Search
+- [ ] **Course Filtering**
+  - Filter by price range, difficulty, ratings
+  - Location-based filtering
+  - Filter by specific amenities (range, merch, etc.)
+
+- [ ] **User & Activity Filtering**
+  - Filter activity feed by activity type
+  - Search for users by name or handicap
+  - Filter reviews by handicap level
+
+## 📸 Photo Management
+- [ ] **Course Photo System**
+  - File upload handling for course images
+  - Photo storage strategy (local or cloud)
+  - Display photos in course reviews and galleries
+
+## 🎯 Enhanced Course Data
+- [ ] **Long-Form Content Support**
+  - Expand course descriptions with rich text
+  - Support for detailed hole-by-hole descriptions
+  - Course history and additional metadata
+
+## 📊 Analytics & Insights
+- [ ] **Rating Analytics**
+  - Trending courses by rating improvements
+  - Handicap-based course difficulty insights
+  - User engagement metrics
+
+---
+
+**Priority Order:**
+1. Database Migration (foundation for everything else)
+2. User Management System (enables social features)
+3. Social Features (core differentiator)
+4. Review & Rating System (main value proposition)
+5. Advanced Filtering (user experience enhancement)
+6. Photo Management (content richness)
+7. Analytics & Insights (future growth features) 
 
 -- Users table
 users (id, username, email, handicap, created_at, updated_at)

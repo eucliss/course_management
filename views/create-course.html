@@ -188,6 +188,11 @@
             </div>
             
             <div class="save-section">
+                {{ if not .IsEdit }}
+                <div class="ownership-notice">
+                    <small>📝 This course will be associated with your account and you'll be able to edit it later.</small>
+                </div>
+                {{ end }}
                 <button type="button" class="save-course-btn" onclick="saveCourse()">{{ if .IsEdit }}Update Course{{ else }}Save Course{{ end }}</button>
             </div>
         </div>
@@ -526,6 +531,20 @@
         margin-top: 40px;
         padding-top: 20px;
         border-top: 2px solid #204606;
+    }
+
+    .ownership-notice {
+        margin-bottom: 15px;
+        padding: 10px 15px;
+        background-color: rgba(181, 216, 68, 0.2);
+        border: 1px solid rgba(32, 70, 6, 0.3);
+        border-radius: 6px;
+        text-align: center;
+    }
+
+    .ownership-notice small {
+        color: #204606;
+        font-size: 14px;
     }
 
     .hole-by-hole-section {
