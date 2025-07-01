@@ -112,13 +112,21 @@ func (cs *CourseService) LoadCoursesFromJSON() ([]Course, error) {
 }
 
 func (cs *CourseService) SaveCourse(course Course) error {
+	return cs.SaveCourseWithOwner(course, nil)
+}
+
+func (cs *CourseService) SaveCourseWithOwner(course Course, createdBy *uint) error {
 	// Save to database if available
 	if cs.useDB && cs.dbService != nil {
-		if err := cs.dbService.SaveCourseToDatabase(course, nil); err != nil {
+		if err := cs.dbService.SaveCourseToDatabase(course, createdBy); err != nil {
 			log.Printf("Warning: failed to save to database: %v", err)
 			// Continue to save to file as backup
 		} else {
-			log.Printf("✅ Course saved to database")
+			if createdBy != nil {
+				log.Printf("✅ Course saved to database with owner ID %d", *createdBy)
+			} else {
+				log.Printf("✅ Course saved to database")
+			}
 		}
 	}
 

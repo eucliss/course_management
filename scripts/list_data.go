@@ -14,14 +14,15 @@ import (
 
 // Database models (copied from main package)
 type User struct {
-	ID        uint     `gorm:"primaryKey" json:"id"`
-	GoogleID  string   `gorm:"uniqueIndex" json:"google_id"`
-	Email     string   `gorm:"uniqueIndex" json:"email"`
-	Name      string   `json:"name"`
-	Picture   string   `json:"picture"`
-	Handicap  *float64 `json:"handicap,omitempty"`
-	CreatedAt int64    `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt int64    `gorm:"autoUpdateTime" json:"updated_at"`
+	ID          uint     `gorm:"primaryKey" json:"id"`
+	GoogleID    string   `gorm:"uniqueIndex" json:"google_id"`
+	Email       string   `gorm:"uniqueIndex" json:"email"`
+	Name        string   `json:"name"`
+	DisplayName *string  `json:"display_name"`
+	Picture     string   `json:"picture"`
+	Handicap    *float64 `json:"handicap,omitempty"`
+	CreatedAt   int64    `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt   int64    `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
 type CourseDB struct {
@@ -30,11 +31,13 @@ type CourseDB struct {
 	Address    string `json:"address"`
 	CourseData string `gorm:"type:jsonb" json:"course_data"`
 	CreatedBy  *uint  `json:"created_by"`
+	UpdatedBy  *uint  `json:"updated_by"`
 	CreatedAt  int64  `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt  int64  `gorm:"autoUpdateTime" json:"updated_at"`
 
 	// Relationships
 	Creator *User `gorm:"foreignKey:CreatedBy" json:"creator,omitempty"`
+	Updater *User `gorm:"foreignKey:UpdatedBy" json:"updater,omitempty"`
 }
 
 type Course struct {
@@ -141,7 +144,7 @@ func main() {
 	fmt.Println("----------")
 
 	var courses []CourseDB
-	result = db.Preload("Creator").Find(&courses)
+	result = db.Preload("Creator").Preload("Updater").Find(&courses)
 	if result.Error != nil {
 		log.Printf("❌ Failed to fetch courses: %v", result.Error)
 	} else if len(courses) == 0 {
@@ -157,12 +160,25 @@ func main() {
 
 			createdBy := "System"
 			if courseDB.Creator != nil {
-				createdBy = courseDB.Creator.Name
+				displayName := courseDB.Creator.Name
+				if courseDB.Creator.DisplayName != nil && *courseDB.Creator.DisplayName != "" {
+					displayName = *courseDB.Creator.DisplayName
+				}
+				createdBy = displayName
+			}
+
+			updatedBy := ""
+			if courseDB.Updater != nil {
+				displayName := courseDB.Updater.Name
+				if courseDB.Updater.DisplayName != nil && *courseDB.Updater.DisplayName != "" {
+					displayName = *courseDB.Updater.DisplayName
+				}
+				updatedBy = fmt.Sprintf(" | Last edited by: %s", displayName)
 			}
 
 			fmt.Printf("   %d. %s\n", i+1, course.Name)
 			fmt.Printf("      Address: %s\n", course.Address)
-			fmt.Printf("      Rating: %s | Created by: %s\n", course.OverallRating, createdBy)
+			fmt.Printf("      Rating: %s | Created by: %s%s\n", course.OverallRating, createdBy, updatedBy)
 			if course.Review != "" {
 				reviewPreview := course.Review
 				if len(reviewPreview) > 80 {

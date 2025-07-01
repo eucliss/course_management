@@ -25,7 +25,7 @@
                 </div>
             </div>
             <div class="courses-list">
-                {{ template "courses-map" .Courses }}
+                {{ template "courses-map" . }}
             </div>
         </div>
     </div>
@@ -40,17 +40,19 @@
 {{ end }}
 
 {{ block "courses-map" . }}
-{{ range . }}
+{{ range $index, $course := .Courses }}
 <div class="course-item">
-    <div class="course-content" hx-get="/course/{{ .ID }}" hx-target="#main-content">
-        <h4>{{ .Name }}</h4>
+    <div class="course-content" hx-get="/course/{{ $course.ID }}" hx-target="#main-content">
+        <h4>{{ $course.Name }}</h4>
     </div>
-    <button class="edit-btn" hx-get="/edit-course/{{ .ID }}" hx-target="#main-content" title="Edit Course" onclick="event.stopPropagation();">
+    {{ if index $.EditPermissions $index }}
+    <button class="edit-btn" hx-get="/edit-course/{{ $course.ID }}" hx-target="#main-content" title="Edit Course" onclick="event.stopPropagation();">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2-2v-7"></path>
             <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
         </svg>
     </button>
+    {{ end }}
 </div>
 {{ end }}
 {{ end }}

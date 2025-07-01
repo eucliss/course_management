@@ -27,15 +27,26 @@ func NewHandlers(courses *[]Course, courseService *CourseService) *Handlers {
 func (h *Handlers) Home(c echo.Context) error {
 	sessionService := NewSessionService()
 	user := sessionService.GetUser(c)
+	dbUserID := sessionService.GetDatabaseUserID(c)
+
+	// Check which courses the user can edit
+	editPermissions := make(map[int]bool)
+	if dbUserID != nil {
+		for i := range *h.courses {
+			editPermissions[i] = h.CanEditCourse(i, dbUserID)
+		}
+	}
 
 	data := struct {
-		Courses     []Course
-		MapboxToken string
-		User        *GoogleUser
+		Courses         []Course
+		MapboxToken     string
+		User            *GoogleUser
+		EditPermissions map[int]bool
 	}{
-		Courses:     *h.courses,
-		MapboxToken: os.Getenv("MAPBOX_ACCESS_TOKEN"),
-		User:        user,
+		Courses:         *h.courses,
+		MapboxToken:     os.Getenv("MAPBOX_ACCESS_TOKEN"),
+		User:            user,
+		EditPermissions: editPermissions,
 	}
 
 	return c.Render(http.StatusOK, "welcome", data)
@@ -114,16 +125,32 @@ func (h *Handlers) Profile(c echo.Context) error {
 		log.Printf("⚠️ Database not available")
 	}
 
+	// Filter courses to only show ones the user can edit (owns)
+	var userCourses []Course
+	editPermissions := make(map[int]bool)
+	if dbUserID != nil {
+		for i, course := range *h.courses {
+			canEdit := h.CanEditCourse(i, dbUserID)
+			if canEdit {
+				userCourses = append(userCourses, course)
+				// Map the new index to edit permission (always true for user's courses)
+				editPermissions[len(userCourses)-1] = true
+			}
+		}
+	}
+
 	data := struct {
 		*GoogleUser
-		Courses     []Course
-		Handicap    *float64
-		DisplayName *string
+		Courses         []Course
+		Handicap        *float64
+		DisplayName     *string
+		EditPermissions map[int]bool
 	}{
-		GoogleUser:  user,
-		Courses:     *h.courses,
-		Handicap:    handicap,
-		DisplayName: displayName,
+		GoogleUser:      user,
+		Courses:         userCourses,
+		Handicap:        handicap,
+		DisplayName:     displayName,
+		EditPermissions: editPermissions,
 	}
 
 	if handicap != nil {
@@ -164,6 +191,29 @@ func (h *Handlers) EditCourseForm(c echo.Context) error {
 		return c.String(http.StatusNotFound, "Course not found")
 	}
 
+	// Get authenticated user ID
+	sessionService := NewSessionService()
+	userID := sessionService.GetDatabaseUserID(c)
+	if userID == nil {
+		return c.String(http.StatusUnauthorized, "You must be logged in to edit a course")
+	}
+
+	// Check ownership if database is available
+	if DB != nil {
+		dbService := NewDatabaseService()
+		canEdit, courseDB, err := dbService.CanEditCourseByIndex(idInt, *userID)
+		if err != nil {
+			log.Printf("Error checking course ownership: %v", err)
+			return c.String(http.StatusInternalServerError, "Error verifying course ownership")
+		}
+
+		if !canEdit {
+			return c.String(http.StatusForbidden, "You don't have permission to edit this course")
+		}
+
+		log.Printf("✅ User %d authorized to edit course at index %d (DB ID: %d)", *userID, idInt, courseDB.ID)
+	}
+
 	course := (*h.courses)[idInt]
 
 	data := struct {
@@ -186,6 +236,31 @@ func (h *Handlers) UpdateCourse(c echo.Context) error {
 		return c.String(http.StatusNotFound, "Course not found")
 	}
 
+	// Get authenticated user ID
+	sessionService := NewSessionService()
+	userID := sessionService.GetDatabaseUserID(c)
+	if userID == nil {
+		return c.String(http.StatusUnauthorized, "You must be logged in to edit a course")
+	}
+
+	// Check ownership and get course from database if available
+	var courseDB *CourseDB
+	if DB != nil {
+		dbService := NewDatabaseService()
+		canEdit, dbCourse, err := dbService.CanEditCourseByIndex(idInt, *userID)
+		if err != nil {
+			log.Printf("Error checking course ownership: %v", err)
+			return c.String(http.StatusInternalServerError, "Error verifying course ownership")
+		}
+
+		if !canEdit {
+			return c.String(http.StatusForbidden, "You don't have permission to edit this course")
+		}
+
+		courseDB = dbCourse
+		log.Printf("✅ User %d authorized to update course at index %d (DB ID: %d)", *userID, idInt, courseDB.ID)
+	}
+
 	if err := c.Request().ParseForm(); err != nil {
 		return c.String(http.StatusBadRequest, "Failed to parse form data: "+err.Error())
 	}
@@ -195,10 +270,21 @@ func (h *Handlers) UpdateCourse(c echo.Context) error {
 		return c.String(http.StatusBadRequest, err.Error())
 	}
 
+	// Update in memory array
 	(*h.courses)[idInt] = course
 
+	// Update in database with ownership tracking if available
+	if DB != nil && courseDB != nil {
+		dbService := NewDatabaseService()
+		if err := dbService.UpdateCourseWithOwnership(courseDB, course, *userID); err != nil {
+			log.Printf("Failed to update course in database: %v", err)
+			return c.String(http.StatusInternalServerError, "Failed to update course in database: "+err.Error())
+		}
+	}
+
+	// Also update via course service for backward compatibility
 	if err := h.courseService.UpdateCourse(course); err != nil {
-		return c.String(http.StatusInternalServerError, "Failed to update course: "+err.Error())
+		log.Printf("Warning: failed to update via course service: %v", err)
 	}
 
 	return h.renderSuccessMessage(c, "Course Updated Successfully!", "has been updated and saved", course.Name)
@@ -206,6 +292,16 @@ func (h *Handlers) UpdateCourse(c echo.Context) error {
 
 func (h *Handlers) CreateCourse(c echo.Context) error {
 	log.Printf("[CREATE_COURSE] Starting request from %s", c.RealIP())
+
+	// Get authenticated user ID
+	sessionService := NewSessionService()
+	userID := sessionService.GetDatabaseUserID(c)
+	if userID == nil {
+		log.Printf("[CREATE_COURSE] ERROR: User not authenticated")
+		return c.String(http.StatusUnauthorized, "You must be logged in to create a course")
+	}
+
+	log.Printf("[CREATE_COURSE] User ID %d creating course", *userID)
 
 	if err := c.Request().ParseForm(); err != nil {
 		log.Printf("[CREATE_COURSE] ERROR: Failed to parse form: %v", err)
@@ -217,7 +313,8 @@ func (h *Handlers) CreateCourse(c echo.Context) error {
 		return c.String(http.StatusBadRequest, err.Error())
 	}
 
-	if err := h.courseService.SaveCourse(course); err != nil {
+	// Save course with user ownership
+	if err := h.courseService.SaveCourseWithOwner(course, userID); err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to save course: "+err.Error())
 	}
 
@@ -334,6 +431,21 @@ func (h *Handlers) UpdateDisplayName(c echo.Context) error {
 }
 
 // Helper methods
+
+func (h *Handlers) CanEditCourse(courseIndex int, userID *uint) bool {
+	if userID == nil || DB == nil {
+		return false
+	}
+
+	dbService := NewDatabaseService()
+	canEdit, _, err := dbService.CanEditCourseByIndex(courseIndex, *userID)
+	if err != nil {
+		log.Printf("Error checking course edit permission: %v", err)
+		return false
+	}
+
+	return canEdit
+}
 
 func (h *Handlers) parseFormToCourse(c echo.Context, existingID int) (Course, error) {
 	name := c.FormValue("name")

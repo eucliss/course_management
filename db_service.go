@@ -274,3 +274,112 @@ func (ds *DatabaseService) GetDatabaseStats() (map[string]int, error) {
 
 	return stats, nil
 }
+
+// Course ownership and authorization methods
+func (ds *DatabaseService) GetCourseByID(courseID uint) (*CourseDB, error) {
+	if ds.db == nil {
+		return nil, fmt.Errorf("database not connected")
+	}
+
+	var courseDB CourseDB
+	result := ds.db.Preload("Creator").Preload("Updater").First(&courseDB, courseID)
+
+	if result.Error != nil {
+		if result.Error.Error() == "record not found" {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to find course: %v", result.Error)
+	}
+
+	return &courseDB, nil
+}
+
+func (ds *DatabaseService) GetCourseByArrayIndex(index int) (*CourseDB, error) {
+	if ds.db == nil {
+		return nil, fmt.Errorf("database not connected")
+	}
+
+	var courses []CourseDB
+	result := ds.db.Preload("Creator").Preload("Updater").Find(&courses)
+
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed to fetch courses: %v", result.Error)
+	}
+
+	if index < 0 || index >= len(courses) {
+		return nil, nil // Course not found
+	}
+
+	return &courses[index], nil
+}
+
+func (ds *DatabaseService) CanEditCourse(courseID uint, userID uint) (bool, error) {
+	if ds.db == nil {
+		return false, fmt.Errorf("database not connected")
+	}
+
+	courseDB, err := ds.GetCourseByID(courseID)
+	if err != nil {
+		return false, err
+	}
+
+	if courseDB == nil {
+		return false, fmt.Errorf("course not found")
+	}
+
+	// Check if user is the creator
+	if courseDB.CreatedBy != nil && *courseDB.CreatedBy == userID {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func (ds *DatabaseService) CanEditCourseByIndex(index int, userID uint) (bool, *CourseDB, error) {
+	if ds.db == nil {
+		return false, nil, fmt.Errorf("database not connected")
+	}
+
+	courseDB, err := ds.GetCourseByArrayIndex(index)
+	if err != nil {
+		return false, nil, err
+	}
+
+	if courseDB == nil {
+		return false, nil, fmt.Errorf("course not found")
+	}
+
+	// Check if user is the creator
+	canEdit := false
+	if courseDB.CreatedBy != nil && *courseDB.CreatedBy == userID {
+		canEdit = true
+	}
+
+	return canEdit, courseDB, nil
+}
+
+func (ds *DatabaseService) UpdateCourseWithOwnership(courseDB *CourseDB, updatedCourse Course, updatedBy uint) error {
+	if ds.db == nil {
+		return fmt.Errorf("database not connected")
+	}
+
+	// Convert updated course to JSON
+	courseDataJSON, err := json.Marshal(updatedCourse)
+	if err != nil {
+		return fmt.Errorf("failed to marshal course data: %v", err)
+	}
+
+	// Update the course data and set updatedBy
+	courseDB.CourseData = string(courseDataJSON)
+	courseDB.Address = updatedCourse.Address
+	courseDB.Name = updatedCourse.Name
+	courseDB.UpdatedBy = &updatedBy
+
+	result := ds.db.Save(courseDB)
+	if result.Error != nil {
+		return fmt.Errorf("failed to update course: %v", result.Error)
+	}
+
+	log.Printf("✅ Course '%s' updated in database by user ID %d", updatedCourse.Name, updatedBy)
+	return nil
+}

@@ -200,20 +200,22 @@ window.addEventListener('load', function() {
         </div>
         {{ if gt (len .Courses) 0 }}
             <div class="courses-table-container">
-                {{ range .Courses }}
+                {{ range $index, $course := .Courses }}
                 <div class="course-review-card">
                     <div class="course-header">
                         <div class="course-basic-info">
                             <div class="course-title-row">
-                                <h4 class="course-name" hx-get="/course/{{ .ID }}" hx-target="#main-content" style="cursor: pointer;">{{ .Name }}</h4>
-                                <button hx-get="/edit-course/{{ .ID }}" hx-target="#main-content" class="edit-course-btn">
+                                <h4 class="course-name" hx-get="/course/{{ $course.ID }}" hx-target="#main-content" style="cursor: pointer;">{{ $course.Name }}</h4>
+                                {{ if index $.EditPermissions $index }}
+                                <button hx-get="/edit-course/{{ $course.ID }}" hx-target="#main-content" class="edit-course-btn">
                                     Edit
                                 </button>
+                                {{ end }}
                             </div>
-                            <p class="course-description">{{ .Description }}</p>
+                            <p class="course-description">{{ $course.Description }}</p>
                         </div>
                         <div class="overall-rating-badge">
-                            <span class="rating-value">{{ .OverallRating }}</span>
+                            <span class="rating-value">{{ $course.OverallRating }}</span>
                             <span class="rating-label">TIER</span>
                         </div>
                     </div>
@@ -221,43 +223,43 @@ window.addEventListener('load', function() {
                     <div class="rankings-grid">
                         <div class="ranking-item">
                             <span class="ranking-label">Price</span>
-                            <span class="ranking-value price-{{ len .Ranks.Price }}">{{ .Ranks.Price }}</span>
+                            <span class="ranking-value price-{{ len $course.Ranks.Price }}">{{ $course.Ranks.Price }}</span>
                         </div>
                         <div class="ranking-item">
                             <span class="ranking-label">Handicap Difficulty</span>
-                            <span class="ranking-value handicap-{{ .Ranks.HandicapDifficulty }}">{{ .Ranks.HandicapDifficulty }}</span>
+                            <span class="ranking-value handicap-{{ $course.Ranks.HandicapDifficulty }}">{{ $course.Ranks.HandicapDifficulty }}</span>
                         </div>
                         <div class="ranking-item">
                             <span class="ranking-label">Hazard Difficulty</span>
-                            <span class="ranking-value hazard-{{ .Ranks.HazardDifficulty }}">{{ .Ranks.HazardDifficulty }}</span>
+                            <span class="ranking-value hazard-{{ $course.Ranks.HazardDifficulty }}">{{ $course.Ranks.HazardDifficulty }}</span>
                         </div>
                         <div class="ranking-item">
                             <span class="ranking-label">Condition</span>
-                            <span class="ranking-value rating-{{ .Ranks.Condition }}">{{ .Ranks.Condition }}</span>
+                            <span class="ranking-value rating-{{ $course.Ranks.Condition }}">{{ $course.Ranks.Condition }}</span>
                         </div>
                         <div class="ranking-item">
                             <span class="ranking-label">Enjoyment</span>
-                            <span class="ranking-value rating-{{ .Ranks.EnjoymentRating }}">{{ .Ranks.EnjoymentRating }}</span>
+                            <span class="ranking-value rating-{{ $course.Ranks.EnjoymentRating }}">{{ $course.Ranks.EnjoymentRating }}</span>
                         </div>
                         <div class="ranking-item">
                             <span class="ranking-label">Vibe</span>
-                            <span class="ranking-value rating-{{ .Ranks.Vibe }}">{{ .Ranks.Vibe }}</span>
+                            <span class="ranking-value rating-{{ $course.Ranks.Vibe }}">{{ $course.Ranks.Vibe }}</span>
                         </div>
                         <div class="ranking-item">
                             <span class="ranking-label">Range</span>
-                            <span class="ranking-value rating-{{ .Ranks.Range }}">{{ .Ranks.Range }}</span>
+                            <span class="ranking-value rating-{{ $course.Ranks.Range }}">{{ $course.Ranks.Range }}</span>
                         </div>
                         <div class="ranking-item">
                             <span class="ranking-label">Amenities</span>
-                            <span class="ranking-value rating-{{ .Ranks.Amenities }}">{{ .Ranks.Amenities }}</span>
+                            <span class="ranking-value rating-{{ $course.Ranks.Amenities }}">{{ $course.Ranks.Amenities }}</span>
                         </div>
                         <div class="ranking-item">
                             <span class="ranking-label">Turn Dog</span>
-                            <span class="ranking-value rating-{{ .Ranks.Glizzies }}">{{ .Ranks.Glizzies }}</span>
+                            <span class="ranking-value rating-{{ $course.Ranks.Glizzies }}">{{ $course.Ranks.Glizzies }}</span>
                         </div>
                         <div class="ranking-item">
                             <span class="ranking-label">Merch</span>
-                            <span class="ranking-value rating-{{ .Ranks.Merch }}">{{ .Ranks.Merch }}</span>
+                            <span class="ranking-value rating-{{ $course.Ranks.Merch }}">{{ $course.Ranks.Merch }}</span>
                         </div>
                     </div>
                     
@@ -269,7 +271,7 @@ window.addEventListener('load', function() {
                             <input type="number" class="score-input" placeholder="Total" min="36" max="180" readonly>
                             <input type="number" class="score-input" placeholder="Handicap" min="0" max="54" 
                                    value="{{if $.Handicap}}{{$.Handicap}}{{end}}">
-                            <button class="add-score-btn" onclick="addScore({{ .ID }})">Add Score</button>
+                            <button class="add-score-btn" onclick="addScore({{ $course.ID }})">Add Score</button>
                         </div>
                     </div>
                 </div>
@@ -277,7 +279,13 @@ window.addEventListener('load', function() {
             </div>
         {{ else }}
             <div class="no-courses">
-                <p>No courses reviewed yet. <a hx-get="/create-course" hx-target="#main-content" style="color: #204606; text-decoration: underline; cursor: pointer;">Add your first course review!</a></p>
+                <div class="no-courses-message">
+                    <h3>Add a course review to see it here...</h3>
+                    <p>You haven't reviewed any courses yet. Start building your golf course portfolio!</p>
+                    <button hx-get="/create-course" hx-target="#main-content" class="add-course-btn">
+                        Add Your First Course Review
+                    </button>
+                </div>
             </div>
         {{ end }}
     </div>
@@ -783,9 +791,25 @@ window.addEventListener('load', function() {
 
     .no-courses {
         text-align: center;
-        padding: 40px 20px;
+        padding: 60px 20px;
+        background-color: rgba(181, 216, 68, 0.05);
+        border-radius: 12px;
+        border: 2px dashed rgba(32, 70, 6, 0.2);
+        margin: 20px 0;
+    }
+
+    .no-courses-message h3 {
+        color: #204606;
+        font-size: 1.8em;
+        margin: 0 0 15px 0;
+        font-weight: 600;
+    }
+
+    .no-courses-message p {
         color: #666;
         font-size: 1.1em;
+        margin: 0 0 25px 0;
+        line-height: 1.4;
     }
 
     @media (max-width: 768px) {
