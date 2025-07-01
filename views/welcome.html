@@ -246,21 +246,29 @@
                 color: #204606;
             }
 
-            .edit-btn {
+            .course-actions {
+                display: flex;
+                gap: 4px;
+                margin-left: 8px;
+            }
+
+            .edit-btn, .delete-btn {
                 background: none;
                 border: none;
-                color: #204606;
                 cursor: pointer;
                 padding: 4px;
                 border-radius: 4px;
                 transition: all 0.2s ease;
                 opacity: 0.7;
-                margin-left: 8px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 min-width: 24px;
                 height: 24px;
+            }
+
+            .edit-btn {
+                color: #204606;
             }
 
             .edit-btn:hover {
@@ -270,7 +278,18 @@
                 transform: scale(1.1);
             }
 
-            .edit-btn svg {
+            .delete-btn {
+                color: #dc3545;
+            }
+
+            .delete-btn:hover {
+                background-color: #dc3545;
+                color: #FFFCE7;
+                opacity: 1;
+                transform: scale(1.1);
+            }
+
+            .edit-btn svg, .delete-btn svg {
                 width: 16px;
                 height: 16px;
                 stroke: currentColor;

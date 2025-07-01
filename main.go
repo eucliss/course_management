@@ -218,6 +218,7 @@ func main() {
 	// Protected edit routes with ownership verification
 	e.GET("/edit-course/:id", handlers.EditCourseForm, RequireOwnership(sessionService, courseService))
 	e.POST("/edit-course/:id", handlers.UpdateCourse, RequireOwnership(sessionService, courseService))
+	e.DELETE("/delete-course/:id", handlers.DeleteCourse, RequireOwnership(sessionService, courseService))
 
 	// API routes
 	e.GET("/api/status/database", handlers.DatabaseStatus)

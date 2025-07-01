@@ -296,6 +296,56 @@ func (h *Handlers) UpdateCourse(c echo.Context) error {
 	return h.renderSuccessMessage(c, "Course Updated Successfully!", "has been updated and saved", course.Name)
 }
 
+func (h *Handlers) DeleteCourse(c echo.Context) error {
+	// Get course index from middleware context (already validated)
+	courseIndex, ok := c.Get("courseIndex").(int)
+	if !ok {
+		return c.String(http.StatusInternalServerError, "Course index not found in context")
+	}
+
+	// Get user ID from middleware context (already validated)
+	userID, ok := c.Get("userID").(uint)
+	if !ok {
+		return c.String(http.StatusInternalServerError, "User ID not found in context")
+	}
+
+	// Get course name for confirmation message
+	if courseIndex >= len(*h.courses) {
+		return c.String(http.StatusNotFound, "Course not found")
+	}
+	courseName := (*h.courses)[courseIndex].Name
+
+	// Delete from database if available
+	if DB != nil {
+		dbService := NewDatabaseService()
+		_, courseDB, err := dbService.CanEditCourseByIndex(courseIndex, userID)
+		if err != nil {
+			log.Printf("Error getting course from database: %v", err)
+			return c.String(http.StatusInternalServerError, "Error accessing course data")
+		}
+
+		if courseDB != nil {
+			if err := dbService.DeleteCourse(courseDB.ID); err != nil {
+				log.Printf("Failed to delete course from database: %v", err)
+				return c.String(http.StatusInternalServerError, "Failed to delete course from database: "+err.Error())
+			}
+			log.Printf("✅ User %d deleted course '%s' (DB ID: %d)", userID, courseName, courseDB.ID)
+		}
+	}
+
+	// Remove from memory array
+	*h.courses = append((*h.courses)[:courseIndex], (*h.courses)[courseIndex+1:]...)
+
+	// Update course IDs to maintain consistency
+	for i := range *h.courses {
+		(*h.courses)[i].ID = i
+	}
+
+	// Note: Course deleted from database, in-memory array updated
+
+	return h.renderSuccessMessage(c, "Course Deleted Successfully!", "has been deleted", courseName)
+}
+
 func (h *Handlers) CreateCourse(c echo.Context) error {
 	log.Printf("[CREATE_COURSE] Starting request from %s", c.RealIP())
 

@@ -499,3 +499,28 @@ func (ds *DatabaseService) GetCourseWithOwnershipByName(courseName string) (*Cou
 
 	return &courseDB, nil
 }
+
+func (ds *DatabaseService) DeleteCourse(courseID uint) error {
+	if ds.db == nil {
+		return fmt.Errorf("database not connected")
+	}
+
+	// First check if course exists
+	var courseDB CourseDB
+	result := ds.db.First(&courseDB, courseID)
+	if result.Error != nil {
+		if result.Error.Error() == "record not found" {
+			return fmt.Errorf("course not found")
+		}
+		return fmt.Errorf("failed to find course: %v", result.Error)
+	}
+
+	// Delete the course
+	result = ds.db.Delete(&courseDB)
+	if result.Error != nil {
+		return fmt.Errorf("failed to delete course: %v", result.Error)
+	}
+
+	log.Printf("✅ Course '%s' (ID: %d) deleted from database", courseDB.Name, courseID)
+	return nil
+}
