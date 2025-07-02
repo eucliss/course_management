@@ -215,7 +215,7 @@ window.addEventListener('load', function() {
                             <p class="course-description">{{ $course.Description }}</p>
                         </div>
                         <div class="overall-rating-badge">
-                            <span class="rating-value">{{ $course.OverallRating }}</span>
+                            <span class="rating-value">{{ if $course.OverallRating }}{{ $course.OverallRating }}{{ else }}-{{ end }}</span>
                             <span class="rating-label">TIER</span>
                         </div>
                     </div>

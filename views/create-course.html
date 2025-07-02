@@ -9,7 +9,7 @@
         </div>
         <div class="tier-box">
             <select id="overall-rating" class="rating-value-select">
-                <option value="">?</option>
+                <option value="">-</option>
                 <option value="S" {{ if and .IsEdit (eq .Course.OverallRating "S") }}selected{{ end }}>S</option>
                 <option value="A" {{ if and .IsEdit (eq .Course.OverallRating "A") }}selected{{ end }}>A</option>
                 <option value="B" {{ if and .IsEdit (eq .Course.OverallRating "B") }}selected{{ end }}>B</option>

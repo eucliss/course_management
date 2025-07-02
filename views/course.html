@@ -8,7 +8,7 @@
             </div>
         </div>
         <div class="tier-box">
-            <div class="rating-value">{{ .OverallRating }}</div>
+            <div class="rating-value">{{ if .OverallRating }}{{ .OverallRating }}{{ else }}-{{ end }}</div>
             <div class="tier-label">TIER</div>
         </div>
     </div>
