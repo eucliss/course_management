@@ -34,11 +34,27 @@ func (h *Handlers) Home(c echo.Context) error {
 		userID = &uid
 	}
 
-	// Check which courses the user can edit
+	// Check which courses the user can edit - OPTIMIZED BULK QUERY
 	editPermissions := make(map[int]bool)
-	if userID != nil {
-		for i := range *h.courses {
-			editPermissions[i] = h.CanEditCourse(i, userID)
+	if userID != nil && DB != nil {
+		// Get all courses owned by this user in one query
+		dbService := NewDatabaseService()
+		userCourses, err := dbService.GetCoursesByUser(*userID)
+		if err != nil {
+			log.Printf("Warning: failed to get user courses: %v", err)
+		} else {
+			// Create a map of course names to mark as editable
+			userCourseNames := make(map[string]bool)
+			for _, course := range userCourses {
+				userCourseNames[course.Name] = true
+			}
+
+			// Map the edit permissions by checking course names
+			for i, course := range *h.courses {
+				if userCourseNames[course.Name] {
+					editPermissions[i] = true
+				}
+			}
 		}
 	}
 
@@ -138,13 +154,26 @@ func (h *Handlers) Profile(c echo.Context) error {
 	// Filter courses to only show ones the user can edit (owns)
 	var userCourses []Course
 	editPermissions := make(map[int]bool)
-	if dbUserID != nil {
-		for i, course := range *h.courses {
-			canEdit := h.CanEditCourse(i, dbUserID)
-			if canEdit {
-				userCourses = append(userCourses, course)
-				// Map the new index to edit permission (always true for user's courses)
-				editPermissions[len(userCourses)-1] = true
+	if dbUserID != nil && DB != nil {
+		// OPTIMIZED: Get all user's courses in one query instead of checking each course
+		dbService := NewDatabaseService()
+		dbUserCourses, err := dbService.GetCoursesByUser(*dbUserID)
+		if err != nil {
+			log.Printf("Warning: failed to get user courses: %v", err)
+		} else {
+			// Create a map of course names owned by user
+			userCourseNames := make(map[string]bool)
+			for _, course := range dbUserCourses {
+				userCourseNames[course.Name] = true
+			}
+
+			// Filter courses to only show owned ones
+			for _, course := range *h.courses {
+				if userCourseNames[course.Name] {
+					userCourses = append(userCourses, course)
+					// Map the new index to edit permission (always true for user's courses)
+					editPermissions[len(userCourses)-1] = true
+				}
 			}
 		}
 	}
@@ -181,7 +210,17 @@ func (h *Handlers) GetCourse(c echo.Context) error {
 	// Get ownership context from middleware if available
 	var canEdit bool
 	if userID, ok := c.Get("userID").(uint); ok {
-		canEdit = h.CanEditCourse(idInt, &userID)
+		// OPTIMIZED: Check course ownership without calling GetCourseByArrayIndex
+		if DB != nil {
+			dbService := NewDatabaseService()
+			courseName := (*h.courses)[idInt].Name
+			isOwner, err := dbService.IsUserCourseOwner(userID, courseName)
+			if err != nil {
+				log.Printf("Warning: failed to check course ownership: %v", err)
+			} else {
+				canEdit = isOwner
+			}
+		}
 	}
 
 	// Add ownership context to course data
@@ -258,13 +297,17 @@ func (h *Handlers) UpdateCourse(c echo.Context) error {
 	var courseDB *CourseDB
 	if DB != nil {
 		dbService := NewDatabaseService()
-		_, dbCourse, err := dbService.CanEditCourseByIndex(courseIndex, userID)
+		// OPTIMIZED: Get course from database by name instead of index
+		courseName := (*h.courses)[courseIndex].Name
+		dbCourse, err := dbService.GetCourseWithOwnershipByName(courseName)
 		if err != nil {
 			log.Printf("Error getting course from database: %v", err)
 			return c.String(http.StatusInternalServerError, "Error accessing course data")
 		}
 		courseDB = dbCourse
-		log.Printf("✅ User %d authorized to update course at index %d (DB ID: %d)", userID, courseIndex, courseDB.ID)
+		if courseDB != nil {
+			log.Printf("✅ User %d authorized to update course at index %d (DB ID: %d)", userID, courseIndex, courseDB.ID)
+		}
 	}
 
 	if err := c.Request().ParseForm(); err != nil {
@@ -318,18 +361,19 @@ func (h *Handlers) DeleteCourse(c echo.Context) error {
 	// Delete from database if available
 	if DB != nil {
 		dbService := NewDatabaseService()
-		_, courseDB, err := dbService.CanEditCourseByIndex(courseIndex, userID)
+		// OPTIMIZED: Get course from database by name instead of index
+		dbCourse, err := dbService.GetCourseWithOwnershipByName(courseName)
 		if err != nil {
 			log.Printf("Error getting course from database: %v", err)
 			return c.String(http.StatusInternalServerError, "Error accessing course data")
 		}
 
-		if courseDB != nil {
-			if err := dbService.DeleteCourse(courseDB.ID); err != nil {
+		if dbCourse != nil {
+			if err := dbService.DeleteCourse(dbCourse.ID); err != nil {
 				log.Printf("Failed to delete course from database: %v", err)
 				return c.String(http.StatusInternalServerError, "Failed to delete course from database: "+err.Error())
 			}
-			log.Printf("✅ User %d deleted course '%s' (DB ID: %d)", userID, courseName, courseDB.ID)
+			log.Printf("✅ User %d deleted course '%s' (DB ID: %d)", userID, courseName, dbCourse.ID)
 		}
 	}
 
@@ -400,9 +444,25 @@ func (h *Handlers) Map(c echo.Context) error {
 
 	// Check which courses the user can edit
 	editPermissions := make(map[int]bool)
-	if userID != nil {
-		for i := range *h.courses {
-			editPermissions[i] = h.CanEditCourse(i, userID)
+	if userID != nil && DB != nil {
+		// OPTIMIZED: Get all courses owned by this user in one query
+		dbService := NewDatabaseService()
+		userCourses, err := dbService.GetCoursesByUser(*userID)
+		if err != nil {
+			log.Printf("Warning: failed to get user courses: %v", err)
+		} else {
+			// Create a map of course names to mark as editable
+			userCourseNames := make(map[string]bool)
+			for _, course := range userCourses {
+				userCourseNames[course.Name] = true
+			}
+
+			// Map the edit permissions by checking course names
+			for i, course := range *h.courses {
+				if userCourseNames[course.Name] {
+					editPermissions[i] = true
+				}
+			}
 		}
 	}
 
@@ -515,14 +575,20 @@ func (h *Handlers) CanEditCourse(courseIndex int, userID *uint) bool {
 		return false
 	}
 
+	// OPTIMIZED: Check course ownership by name instead of loading all courses
+	if courseIndex < 0 || courseIndex >= len(*h.courses) {
+		return false
+	}
+
+	courseName := (*h.courses)[courseIndex].Name
 	dbService := NewDatabaseService()
-	canEdit, _, err := dbService.CanEditCourseByIndex(courseIndex, *userID)
+	isOwner, err := dbService.IsUserCourseOwner(*userID, courseName)
 	if err != nil {
 		log.Printf("Error checking course edit permission: %v", err)
 		return false
 	}
 
-	return canEdit
+	return isOwner
 }
 
 func (h *Handlers) parseFormToCourse(c echo.Context, existingID int) (Course, error) {

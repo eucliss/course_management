@@ -299,18 +299,28 @@ func (ds *DatabaseService) GetCourseByArrayIndex(index int) (*CourseDB, error) {
 		return nil, fmt.Errorf("database not connected")
 	}
 
-	var courses []CourseDB
-	result := ds.db.Preload("Creator").Preload("Updater").Find(&courses)
-
+	// Get all course IDs in order, then fetch the specific one by index
+	// This is much more efficient than loading all course data
+	var courseIDs []struct {
+		ID uint
+	}
+	result := ds.db.Model(&CourseDB{}).Select("id").Order("created_at ASC").Find(&courseIDs)
 	if result.Error != nil {
-		return nil, fmt.Errorf("failed to fetch courses: %v", result.Error)
+		return nil, fmt.Errorf("failed to fetch course IDs: %v", result.Error)
 	}
 
-	if index < 0 || index >= len(courses) {
+	if index < 0 || index >= len(courseIDs) {
 		return nil, nil // Course not found
 	}
 
-	return &courses[index], nil
+	// Now fetch only the specific course by ID
+	var course CourseDB
+	result = ds.db.Preload("Creator").Preload("Updater").First(&course, courseIDs[index].ID)
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed to fetch course: %v", result.Error)
+	}
+
+	return &course, nil
 }
 
 func (ds *DatabaseService) CanEditCourse(courseID uint, userID uint) (bool, error) {
