@@ -16,11 +16,3 @@ scripts/all_city_links_summary.txt*
 scripts/destination_links.txt*
 scripts/scrape_courses.py*
 scripts/clean_course_data.py*
-
-# Any file with golfnow in the name (case insensitive)
-*golfnow*
-*GolfNow*
-*GOLFNOW*
-
-# Any file containing golfnowtest entries
-*golfnowtest* 
