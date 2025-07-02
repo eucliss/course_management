@@ -1,9 +1,13 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"os"
+	"regexp"
+	"strings"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -29,7 +33,8 @@ type CourseDB struct {
 	ID         uint   `gorm:"primaryKey" json:"id"`
 	Name       string `gorm:"not null" json:"name"`
 	Address    string `json:"address"`
-	CourseData string `gorm:"type:jsonb" json:"course_data"` // Store existing JSON structure
+	Hash       string `gorm:"uniqueIndex;not null" json:"hash"` // Unique hash based on name + address
+	CourseData string `gorm:"type:jsonb" json:"course_data"`    // Store existing JSON structure
 	CreatedBy  *uint  `json:"created_by"`
 	UpdatedBy  *uint  `json:"updated_by"`
 	CreatedAt  int64  `gorm:"autoCreateTime" json:"created_at"`
@@ -127,4 +132,74 @@ func AutoMigrate() error {
 
 func GetDB() *gorm.DB {
 	return DB
+}
+
+// GenerateCourseHash creates a deterministic hash from course name and address
+func GenerateCourseHash(name, address string) string {
+	// Normalize the input strings
+	normalizedName := normalizeString(name)
+	normalizedAddress := normalizeString(address)
+
+	// Combine name and address without separator
+	combined := normalizedName + normalizedAddress
+
+	// Generate SHA256 hash
+	hash := sha256.Sum256([]byte(combined))
+
+	// Return first 16 characters of hex string (64-bit hash equivalent)
+	return hex.EncodeToString(hash[:])[:16]
+}
+
+// normalizeString cleans and standardizes a string for hashing
+func normalizeString(s string) string {
+	// Convert to lowercase
+	s = strings.ToLower(s)
+
+	// Remove extra whitespace
+	s = strings.TrimSpace(s)
+	s = regexp.MustCompile(`\s+`).ReplaceAllString(s, " ")
+
+	// Remove common punctuation that might vary
+	s = regexp.MustCompile(`[.,\-#]`).ReplaceAllString(s, "")
+
+	// Replace common abbreviations to standardize
+	replacements := map[string]string{
+		" golf course":  " gc",
+		" golf club":    " gc",
+		" country club": " cc",
+		" golf links":   " gl",
+		" golf resort":  " gr",
+		" street":       " st",
+		" avenue":       " ave",
+		" drive":        " dr",
+		" road":         " rd",
+		" boulevard":    " blvd",
+		" north":        " n",
+		" south":        " s",
+		" east":         " e",
+		" west":         " w",
+	}
+
+	for old, new := range replacements {
+		s = strings.ReplaceAll(s, old, new)
+	}
+
+	return s
+}
+
+// BeforeCreate GORM hook to automatically generate hash before saving
+func (c *CourseDB) BeforeCreate(tx *gorm.DB) error {
+	if c.Hash == "" {
+		c.Hash = GenerateCourseHash(c.Name, c.Address)
+	}
+	return nil
+}
+
+// BeforeUpdate GORM hook to regenerate hash if name or address changes
+func (c *CourseDB) BeforeUpdate(tx *gorm.DB) error {
+	// Only regenerate hash if name or address changed
+	if tx.Statement.Changed("Name") || tx.Statement.Changed("Address") {
+		c.Hash = GenerateCourseHash(c.Name, c.Address)
+	}
+	return nil
 }

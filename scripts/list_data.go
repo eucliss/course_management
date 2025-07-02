@@ -178,7 +178,12 @@ func main() {
 
 			fmt.Printf("   %d. %s\n", i+1, course.Name)
 			fmt.Printf("      Address: %s\n", course.Address)
-			fmt.Printf("      Rating: %s | Created by: %s%s\n", course.OverallRating, createdBy, updatedBy)
+
+			rating := course.OverallRating
+			if rating == "" {
+				rating = "-"
+			}
+			fmt.Printf("      Rating: %s | Created by: %s%s\n", rating, createdBy, updatedBy)
 			if course.Review != "" {
 				reviewPreview := course.Review
 				if len(reviewPreview) > 80 {
