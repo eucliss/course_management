@@ -235,7 +235,9 @@ func main() {
 	// API routes
 	e.GET("/api/status/database", handlers.DatabaseStatus)
 	e.POST("/api/migrate/courses", handlers.MigrateCourses)
-	e.Static("/favicon.ico", "static/favicon.ico")
+	// Serve static files
+	e.Static("/static", "static")
+	e.File("/favicon.ico", "static/favicon.ico")
 
 	log.Printf("Server starting on port %s", config.Port)
 	e.Logger.Fatal(e.Start(":" + config.Port))

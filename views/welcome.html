@@ -2,6 +2,8 @@
 <html>
     <head>
         <title>Welcome</title>
+        <link rel="icon" type="image/png" href="/favicon.ico">
+        <link rel="shortcut icon" type="image/png" href="/static/favicon.ico">
         <script src="https://unpkg.com/htmx.org/dist/htmx.js"></script>
         <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet" />
         <style>
@@ -410,8 +412,8 @@
         <script>
             console.log('🏠 Welcome page loaded');
             
-            // Current filter state
-            let currentFilter = 'all';
+            // Current filter state - set from server default
+            let currentFilter = '{{ .DefaultFilter }}';
 
             // Course toggle functionality
             function initializeCourseToggle() {
@@ -480,6 +482,8 @@
             function initializeComponents() {
                 initializeCourseSearch();
                 initializeCourseToggle();
+                // Set the correct active filter button on initialization
+                setActiveFilter(currentFilter);
                 filterCourses(); // Apply initial filter
             }
 

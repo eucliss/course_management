@@ -34,40 +34,74 @@ func (h *Handlers) Home(c echo.Context) error {
 		userID = &uid
 	}
 
-	// Check which courses the user can edit - OPTIMIZED BULK QUERY
+	// Default to showing user's courses if logged in, all courses if not
+	var coursesToShow []Course
 	editPermissions := make(map[int]bool)
+	allCoursesEditPermissions := make(map[int]bool) // Edit permissions for all courses
+
 	if userID != nil && DB != nil {
 		// Get all courses owned by this user in one query
 		dbService := NewDatabaseService()
 		userCourses, err := dbService.GetCoursesByUser(*userID)
 		if err != nil {
 			log.Printf("Warning: failed to get user courses: %v", err)
+			// Fallback to all courses if user courses can't be loaded
+			coursesToShow = *h.courses
 		} else {
-			// Create a map of course names to mark as editable
+			// Create a map of course names owned by user
 			userCourseNames := make(map[string]bool)
 			for _, course := range userCourses {
 				userCourseNames[course.Name] = true
 			}
 
-			// Map the edit permissions by checking course names
+			// Build edit permissions for ALL courses (for frontend filtering)
 			for i, course := range *h.courses {
 				if userCourseNames[course.Name] {
-					editPermissions[i] = true
+					allCoursesEditPermissions[i] = true
 				}
 			}
+
+			// Filter courses to show only user's courses by default
+			for _, course := range *h.courses {
+				if userCourseNames[course.Name] {
+					coursesToShow = append(coursesToShow, course)
+					// Map the new index to edit permission (always true for user's courses)
+					editPermissions[len(coursesToShow)-1] = true
+				}
+			}
+
+			// If user has no courses, show all courses instead
+			if len(coursesToShow) == 0 {
+				coursesToShow = *h.courses
+				editPermissions = allCoursesEditPermissions // Use the all courses edit permissions
+			}
 		}
+	} else {
+		// Not logged in, show all courses
+		coursesToShow = *h.courses
 	}
 
 	data := struct {
-		Courses         []Course
-		MapboxToken     string
-		User            *GoogleUser
-		EditPermissions map[int]bool
+		Courses                   []Course
+		AllCourses                []Course // Include all courses for frontend filtering
+		MapboxToken               string
+		User                      *GoogleUser
+		EditPermissions           map[int]bool
+		AllCoursesEditPermissions map[int]bool // Edit permissions for all courses
+		DefaultFilter             string       // Add default filter indication
 	}{
-		Courses:         *h.courses,
-		MapboxToken:     os.Getenv("MAPBOX_ACCESS_TOKEN"),
-		User:            user,
-		EditPermissions: editPermissions,
+		Courses:                   coursesToShow,
+		AllCourses:                *h.courses,
+		MapboxToken:               os.Getenv("MAPBOX_ACCESS_TOKEN"),
+		User:                      user,
+		EditPermissions:           editPermissions,
+		AllCoursesEditPermissions: allCoursesEditPermissions,
+		DefaultFilter: func() string {
+			if userID != nil {
+				return "my"
+			}
+			return "all"
+		}(),
 	}
 
 	return c.Render(http.StatusOK, "welcome", data)
@@ -427,11 +461,6 @@ func (h *Handlers) CreateCourse(c echo.Context) error {
 }
 
 func (h *Handlers) Map(c echo.Context) error {
-	coursesJSON, err := json.Marshal(*h.courses)
-	if err != nil {
-		return c.String(http.StatusInternalServerError, "Failed to marshal courses to JSON: "+err.Error())
-	}
-
 	// Get user information for ownership context
 	sessionService := NewSessionService()
 	user := sessionService.GetUser(c)
@@ -442,42 +471,89 @@ func (h *Handlers) Map(c echo.Context) error {
 		userID = &uid
 	}
 
-	// Check which courses the user can edit
+	// Default to showing user's courses if logged in, all courses if not
+	var coursesToShow []Course
 	editPermissions := make(map[int]bool)
+	allCoursesEditPermissions := make(map[int]bool) // Edit permissions for all courses
+
 	if userID != nil && DB != nil {
-		// OPTIMIZED: Get all courses owned by this user in one query
+		// Get all courses owned by this user in one query
 		dbService := NewDatabaseService()
 		userCourses, err := dbService.GetCoursesByUser(*userID)
 		if err != nil {
 			log.Printf("Warning: failed to get user courses: %v", err)
+			// Fallback to all courses if user courses can't be loaded
+			coursesToShow = *h.courses
 		} else {
-			// Create a map of course names to mark as editable
+			// Create a map of course names owned by user
 			userCourseNames := make(map[string]bool)
 			for _, course := range userCourses {
 				userCourseNames[course.Name] = true
 			}
 
-			// Map the edit permissions by checking course names
+			// Build edit permissions for ALL courses (for frontend filtering)
 			for i, course := range *h.courses {
 				if userCourseNames[course.Name] {
-					editPermissions[i] = true
+					allCoursesEditPermissions[i] = true
 				}
 			}
+
+			// Filter courses to show only user's courses by default
+			for _, course := range *h.courses {
+				if userCourseNames[course.Name] {
+					coursesToShow = append(coursesToShow, course)
+					// Map the new index to edit permission (always true for user's courses)
+					editPermissions[len(coursesToShow)-1] = true
+				}
+			}
+
+			// If user has no courses, show all courses instead
+			if len(coursesToShow) == 0 {
+				coursesToShow = *h.courses
+				editPermissions = allCoursesEditPermissions // Use the all courses edit permissions
+			}
 		}
+	} else {
+		// Not logged in, show all courses
+		coursesToShow = *h.courses
+	}
+
+	coursesJSON, err := json.Marshal(coursesToShow)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to marshal courses to JSON: "+err.Error())
+	}
+
+	// Also include all courses JSON for frontend filtering
+	allCoursesJSON, err := json.Marshal(*h.courses)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to marshal all courses to JSON: "+err.Error())
 	}
 
 	data := struct {
-		Courses         []Course
-		CoursesJSON     template.JS
-		MapboxToken     string
-		User            *GoogleUser
-		EditPermissions map[int]bool
+		Courses                   []Course
+		AllCourses                []Course
+		CoursesJSON               template.JS
+		AllCoursesJSON            template.JS
+		MapboxToken               string
+		User                      *GoogleUser
+		EditPermissions           map[int]bool
+		AllCoursesEditPermissions map[int]bool
+		DefaultFilter             string
 	}{
-		Courses:         *h.courses,
-		CoursesJSON:     template.JS(coursesJSON),
-		MapboxToken:     os.Getenv("MAPBOX_ACCESS_TOKEN"),
-		User:            user,
-		EditPermissions: editPermissions,
+		Courses:                   coursesToShow,
+		AllCourses:                *h.courses,
+		CoursesJSON:               template.JS(coursesJSON),
+		AllCoursesJSON:            template.JS(allCoursesJSON),
+		MapboxToken:               os.Getenv("MAPBOX_ACCESS_TOKEN"),
+		User:                      user,
+		EditPermissions:           editPermissions,
+		AllCoursesEditPermissions: allCoursesEditPermissions,
+		DefaultFilter: func() string {
+			if userID != nil {
+				return "my"
+			}
+			return "all"
+		}(),
 	}
 
 	return c.Render(http.StatusOK, "map", data)
