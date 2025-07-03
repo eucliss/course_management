@@ -4,8 +4,8 @@
     {{ if .User }}
     <div class="map-toggle-container">
       <div class="map-course-toggle">
-        <button id="map-all-courses-btn" class="map-toggle-btn active" data-filter="all">All Courses</button>
-        <button id="map-my-courses-btn" class="map-toggle-btn" data-filter="my">My Courses</button>
+        <button id="map-all-courses-btn" class="map-toggle-btn {{ if eq .DefaultFilter "all" }}active{{ end }}" data-filter="all">All Courses</button>
+        <button id="map-my-courses-btn" class="map-toggle-btn {{ if eq .DefaultFilter "my" }}active{{ end }}" data-filter="my">My Courses</button>
       </div>
     </div>
     {{ end }}
@@ -234,6 +234,7 @@
       }
     </style>
 
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet" />
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
     <script>
       /* eslint-disable */
@@ -247,23 +248,19 @@
           alert('Mapbox token not configured');
       }
 
-      // Store markers for search and filter functionality - avoid redeclaration
-      if (typeof window.allMarkers === 'undefined') {
-        window.allMarkers = [];
-      } else {
-        // Clear existing markers
-        window.allMarkers.forEach(markerData => {
-          if (markerData.marker) {
-            markerData.marker.remove();
-          }
-        });
-        window.allMarkers = [];
-      }
+      // Current filter state for map - set from server default
+      window.mapCurrentFilter = '{{ .DefaultFilter }}';
 
-      // Current filter state for map - avoid redeclaration
-      if (typeof window.mapCurrentFilter === 'undefined') {
-        window.mapCurrentFilter = 'all';
-      }
+      // Store both course datasets for filtering
+      window.allCourses = JSON.parse('{{ .AllCoursesJSON }}');
+      window.defaultCourses = JSON.parse('{{ .CoursesJSON }}');
+      
+      // Store edit permissions for ownership checking
+      window.allEditPermissions = {};
+      // Build a map of course names to edit permissions using the AllCourses array
+      {{ range $index, $course := .AllCourses }}
+      window.allEditPermissions['{{ $course.Name }}'] = {{ if index $.AllCoursesEditPermissions $index }}true{{ else }}false{{ end }};
+      {{ end }}
 
       // Edit permissions from server - avoid redeclaration
       if (typeof window.editPermissions === 'undefined') {
@@ -300,6 +297,9 @@
           loadCourses(dedicatedCourseMap);
           initializeMapSearch();
           initializeMapToggle();
+          // Set initial filter state
+          setMapActiveFilter(window.mapCurrentFilter);
+          filterMapMarkers();
       });
 
       function addPinFromAddress(courseMap, address, courseName, rating, courseId, courseIndex, color = '#204606') {
@@ -348,14 +348,21 @@
               .addTo(courseMap);
 
               // Store marker with course name and ownership info for search and filter functionality
-              const canEdit = window.editPermissions && window.editPermissions[courseIndex] === true;
+              // Check if user can edit this course using the edit permissions map
+              let canEdit = window.allEditPermissions && window.allEditPermissions[courseName] === true;
+              
               window.allMarkers.push({
                 marker: marker,
                 courseName: courseName.toLowerCase(),
                 canEdit: canEdit,
                 courseIndex: courseIndex,
-                visible: true
+                visible: window.mapCurrentFilter === 'all' || (window.mapCurrentFilter === 'my' && canEdit)
               });
+
+              // Hide marker initially if it doesn't match current filter
+              if (window.mapCurrentFilter === 'my' && !canEdit) {
+                marker.remove();
+              }
 
               // Add click event listener after popup is created
               marker.getPopup().on('open', () => {
@@ -379,11 +386,22 @@
       }
 
       function loadCourses(courseMap) {
-        let courses = JSON.parse('{{ .CoursesJSON }}');
-        console.log('Map loaded, courses:', courses);
+        // Clear existing markers
+        if (window.allMarkers) {
+          window.allMarkers.forEach(markerData => {
+            if (markerData.marker) {
+              markerData.marker.remove();
+            }
+          });
+        }
+        window.allMarkers = [];
+
+        // Load all courses as markers but only show based on filter
+        let allCourses = window.allCourses;
+        console.log('Map loaded, loading all courses for filtering:', allCourses.length);
         
-        if (courses && courses.length > 0) {
-          courses.forEach((course, index) => {
+        if (allCourses && allCourses.length > 0) {
+          allCourses.forEach((course, index) => {
             console.log('Processing course:', course.name, 'Address:', course.address, 'Rating:', course.overallRating);
             if (course.address && course.address.trim() !== '') {
               addPinFromAddress(courseMap, course.address, course.name, course.overallRating, course.ID, index, '#204606');
