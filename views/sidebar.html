@@ -127,9 +127,63 @@
     scrollbar-color: rgba(0, 0, 0, 0.3) rgba(0, 0, 0, 0.1);
 }
 
+/* No courses message styling */
+.no-courses-message {
+    display: none;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    padding: 20px;
+}
+
+.no-courses-content {
+    text-align: center;
+    color: rgba(32, 70, 6, 0.6);
+}
+
+.no-courses-icon {
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: center;
+}
+
+.no-courses-icon svg {
+    stroke: rgba(32, 70, 6, 0.4);
+}
+
+.no-courses-text {
+    margin: 0 0 16px 0;
+    font-size: 1em;
+    color: rgba(32, 70, 6, 0.7);
+    font-weight: 500;
+}
+
+.no-courses-cta {
+    background-color: #F0ED0C;
+    color: #204606;
+    border: 1px solid #204606;
+    border-radius: 4px;
+    padding: 8px 16px;
+    font-size: 0.9em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.no-courses-cta:hover {
+    background-color: #204606;
+    color: #FFFCE7;
+    transform: translateY(-1px);
+}
+
 .sidebar-footer {
     flex-shrink: 0;
     margin-top: auto;
+}
+
+/* Hidden class for filtering */
+.course-item.hidden {
+    display: none !important;
 }
 </style>
 
@@ -137,11 +191,116 @@
 // Set default filter based on server response
 window.sidebarDefaultFilter = '{{ .DefaultFilter }}';
 
-// Override the initialization to use server default
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof window.setActiveFilter === 'function') {
-        window.setActiveFilter(window.sidebarDefaultFilter);
+// Current filter state - set from server default (avoid redeclaration)
+window.sidebarCurrentFilter = '{{ .DefaultFilter }}';
+
+// Course filtering functionality
+function setActiveFilter(filter) {
+    window.sidebarCurrentFilter = filter;
+    const allBtn = document.getElementById('all-courses-btn');
+    const myBtn = document.getElementById('my-courses-btn');
+    
+    if (allBtn && myBtn) {
+        allBtn.classList.toggle('active', filter === 'all');
+        myBtn.classList.toggle('active', filter === 'my');
     }
+}
+
+function filterCourses() {
+    const courseItems = document.querySelectorAll('.course-item');
+    const searchTerm = document.getElementById('course-search')?.value.toLowerCase().trim() || '';
+    let visibleCount = 0;
+    
+    courseItems.forEach(item => {
+        const courseName = item.querySelector('h4');
+        const canEdit = item.getAttribute('data-can-edit') === 'true';
+        
+        if (courseName) {
+            const courseText = courseName.textContent.toLowerCase();
+            const matchesSearch = courseText.includes(searchTerm) || searchTerm === '';
+            const matchesFilter = window.sidebarCurrentFilter === 'all' || (window.sidebarCurrentFilter === 'my' && canEdit);
+            
+            if (matchesSearch && matchesFilter) {
+                item.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                item.classList.add('hidden');
+            }
+        }
+    });
+    
+    // Show/hide no courses message based on visible count
+    const noCourseMessage = document.querySelector('.no-courses-message');
+    if (noCourseMessage) {
+        if (visibleCount === 0) {
+            noCourseMessage.style.display = 'flex';
+            // Update message based on current filter
+            const messageText = noCourseMessage.querySelector('.no-courses-text');
+            if (messageText) {
+                if (window.sidebarCurrentFilter === 'my') {
+                    messageText.textContent = 'No reviews yet...';
+                } else if (searchTerm) {
+                    messageText.textContent = `No courses found for "${searchTerm}"`;
+                } else {
+                    messageText.textContent = 'No courses found';
+                }
+            }
+        } else {
+            noCourseMessage.style.display = 'none';
+        }
+    }
+    
+    console.log(`🔍 Filtered courses: ${window.sidebarCurrentFilter} filter, search: "${searchTerm}", visible: ${visibleCount}`);
+}
+
+// Course toggle functionality
+function initializeCourseToggle() {
+    const allCoursesBtn = document.getElementById('all-courses-btn');
+    const myCoursesBtn = document.getElementById('my-courses-btn');
+    
+    if (allCoursesBtn && myCoursesBtn) {
+        allCoursesBtn.addEventListener('click', function() {
+            setActiveFilter('all');
+            filterCourses();
+        });
+        
+        myCoursesBtn.addEventListener('click', function() {
+            setActiveFilter('my');
+            filterCourses();
+        });
+    }
+}
+
+// Course search functionality
+function initializeCourseSearch() {
+    const searchInput = document.getElementById('course-search');
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            filterCourses();
+        });
+    }
+}
+
+// Initialize components
+function initializeSidebarComponents() {
+    initializeCourseSearch();
+    initializeCourseToggle();
+    // Set the correct active filter button on initialization
+    setActiveFilter(window.sidebarCurrentFilter);
+    filterCourses(); // Apply initial filter
+}
+
+// Make setActiveFilter available globally for welcome.html compatibility
+window.setActiveFilter = setActiveFilter;
+
+// Initialize on DOM load and after HTMX updates
+document.addEventListener('DOMContentLoaded', function() {
+    initializeSidebarComponents();
+});
+
+// Re-initialize after HTMX content updates
+document.addEventListener('htmx:afterRequest', function() {
+    setTimeout(initializeSidebarComponents, 100);
 });
 </script>
 {{ end }}
@@ -172,6 +331,23 @@ document.addEventListener('DOMContentLoaded', function() {
     {{ end }}
 </div>
 {{ end }}
+<!-- Always render no-courses message, JavaScript will show/hide it -->
+<div class="no-courses-message" id="no-courses-message">
+    <div class="no-courses-content">
+        <div class="no-courses-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                <polyline points="14,2 14,8 20,8"></polyline>
+                <path d="M12 13v-2"></path>
+                <path d="M12 17h.01"></path>
+            </svg>
+        </div>
+        <p class="no-courses-text">No reviews found</p>
+        <button class="no-courses-cta" hx-get="/create-course" hx-target="#main-content">
+            Add one now!
+        </button>
+    </div>
+</div>
 {{ end }}
 
 

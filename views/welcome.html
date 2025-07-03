@@ -447,6 +447,7 @@
             function filterCourses() {
                 const courseItems = document.querySelectorAll('.course-item');
                 const searchTerm = document.getElementById('course-search')?.value.toLowerCase().trim() || '';
+                let visibleCount = 0;
                 
                 courseItems.forEach(item => {
                     const courseName = item.querySelector('h4');
@@ -459,13 +460,35 @@
                         
                         if (matchesSearch && matchesFilter) {
                             item.classList.remove('hidden');
+                            visibleCount++;
                         } else {
                             item.classList.add('hidden');
                         }
                     }
                 });
                 
-                console.log(`🔍 Filtered courses: ${currentFilter} filter, search: "${searchTerm}"`);
+                // Show/hide no courses message based on visible count
+                const noCourseMessage = document.querySelector('.no-courses-message');
+                if (noCourseMessage) {
+                    if (visibleCount === 0 && courseItems.length > 0) {
+                        noCourseMessage.style.display = 'flex';
+                        // Update message based on current filter
+                        const messageText = noCourseMessage.querySelector('.no-courses-text');
+                        if (messageText) {
+                            if (currentFilter === 'my') {
+                                messageText.textContent = 'No courses you own found';
+                            } else if (searchTerm) {
+                                messageText.textContent = `No courses found for "${searchTerm}"`;
+                            } else {
+                                messageText.textContent = 'No courses found';
+                            }
+                        }
+                    } else {
+                        noCourseMessage.style.display = 'none';
+                    }
+                }
+                
+                console.log(`🔍 Filtered courses: ${currentFilter} filter, search: "${searchTerm}", visible: ${visibleCount}`);
             }
 
             // Course search functionality
