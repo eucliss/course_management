@@ -270,14 +270,39 @@ func (h *Handlers) GetCourse(c echo.Context) error {
 }
 
 func (h *Handlers) CreateCourseForm(c echo.Context) error {
+	// Get authenticated user to check which courses they haven't reviewed yet
+	sessionService := NewSessionService()
+	userID := sessionService.GetDatabaseUserID(c)
+
+	var availableCourses []Course
+	var userReviewedCourses map[string]bool = make(map[string]bool)
+
+	if userID != nil && DB != nil {
+		// Get courses the user has already reviewed
+		dbService := NewDatabaseService()
+		userCourses, err := dbService.GetCoursesByUser(*userID)
+		if err == nil {
+			for _, course := range userCourses {
+				userReviewedCourses[course.Name] = true
+			}
+		}
+	}
+
+	// Filter to show only courses the user hasn't reviewed yet
+	for _, course := range *h.courses {
+		if !userReviewedCourses[course.Name] {
+			availableCourses = append(availableCourses, course)
+		}
+	}
+
 	data := struct {
-		Course  Course
-		Courses []Course
-		IsEdit  bool
+		AvailableCourses []Course
+		IsEdit           bool
+		IsReviewMode     bool
 	}{
-		Course:  Course{},
-		Courses: *h.courses,
-		IsEdit:  false,
+		AvailableCourses: availableCourses,
+		IsEdit:           false,
+		IsReviewMode:     true,
 	}
 
 	return c.Render(http.StatusOK, "create-course", data)
@@ -302,13 +327,15 @@ func (h *Handlers) EditCourseForm(c echo.Context) error {
 	course := (*h.courses)[courseIndex]
 
 	data := struct {
-		Course  Course
-		Courses []Course
-		IsEdit  bool
+		Course       Course
+		Courses      []Course
+		IsEdit       bool
+		IsReviewMode bool
 	}{
-		Course:  course,
-		Courses: *h.courses,
-		IsEdit:  true,
+		Course:       course,
+		Courses:      *h.courses,
+		IsEdit:       true,
+		IsReviewMode: false,
 	}
 
 	return c.Render(http.StatusOK, "create-course", data)
@@ -425,39 +452,94 @@ func (h *Handlers) DeleteCourse(c echo.Context) error {
 }
 
 func (h *Handlers) CreateCourse(c echo.Context) error {
-	log.Printf("[CREATE_COURSE] Starting request from %s", c.RealIP())
+	log.Printf("[REVIEW_COURSE] Starting request from %s", c.RealIP())
 
 	// Get authenticated user ID
 	sessionService := NewSessionService()
 	userID := sessionService.GetDatabaseUserID(c)
 	if userID == nil {
-		log.Printf("[CREATE_COURSE] ERROR: User not authenticated")
-		return c.String(http.StatusUnauthorized, "You must be logged in to create a course")
+		log.Printf("[REVIEW_COURSE] ERROR: User not authenticated")
+		return c.String(http.StatusUnauthorized, "You must be logged in to review a course")
 	}
 
-	log.Printf("[CREATE_COURSE] User ID %d creating course", *userID)
+	log.Printf("[REVIEW_COURSE] User ID %d reviewing course", *userID)
 
 	if err := c.Request().ParseForm(); err != nil {
-		log.Printf("[CREATE_COURSE] ERROR: Failed to parse form: %v", err)
+		log.Printf("[REVIEW_COURSE] ERROR: Failed to parse form: %v", err)
 		return c.String(http.StatusBadRequest, "Failed to parse form data: "+err.Error())
 	}
 
-	course, err := h.parseFormToCourse(c, 0)
+	// Get selected course ID from form
+	selectedCourseID := c.FormValue("selectedCourseId")
+	if selectedCourseID == "" {
+		return c.String(http.StatusBadRequest, "No course selected")
+	}
+
+	// Convert to int and find the course
+	courseIndex, err := strconv.Atoi(selectedCourseID)
+	if err != nil || courseIndex < 0 || courseIndex >= len(*h.courses) {
+		return c.String(http.StatusBadRequest, "Invalid course selection")
+	}
+
+	// Get the base course info
+	baseCourse := (*h.courses)[courseIndex]
+
+	// Create a new course review with the user's ratings and review
+	reviewCourse := Course{
+		ID:            baseCourse.ID,
+		Name:          baseCourse.Name,
+		Description:   baseCourse.Description,
+		Address:       baseCourse.Address,
+		OverallRating: c.FormValue("overallRating"),
+		Review:        c.FormValue("review"),
+		Ranks: Ranking{
+			Price:              c.FormValue("price"),
+			HandicapDifficulty: parseInt(c.FormValue("handicapDifficulty")),
+			HazardDifficulty:   parseInt(c.FormValue("hazardDifficulty")),
+			Merch:              c.FormValue("merch"),
+			Condition:          c.FormValue("condition"),
+			EnjoymentRating:    c.FormValue("enjoymentRating"),
+			Vibe:               c.FormValue("vibe"),
+			Range:              c.FormValue("range"),
+			Amenities:          c.FormValue("amenities"),
+			Glizzies:           c.FormValue("glizzies"),
+		},
+		Holes:  []Hole{},
+		Scores: []Score{},
+	}
+
+	// Parse optional hole and score data
+	holes, scores, err := h.courseService.ParseFormData(c.Request().Form)
 	if err != nil {
 		return c.String(http.StatusBadRequest, err.Error())
 	}
 
-	// Save course with user ownership
-	if err := h.courseService.SaveCourseWithOwner(course, userID); err != nil {
-		return c.String(http.StatusInternalServerError, "Failed to save course: "+err.Error())
+	reviewCourse.Holes = holes
+	reviewCourse.Scores = scores
+
+	// Save course review with user ownership
+	if err := h.courseService.SaveCourseWithOwner(reviewCourse, userID); err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to save course review: "+err.Error())
 	}
 
-	// Reload courses to include the new one
+	// Reload courses to include the new review
 	if err := h.reloadCourses(); err != nil {
 		log.Printf("Warning: failed to reload courses: %v", err)
 	}
 
-	return h.renderSuccessMessage(c, "Course Created Successfully!", "has been created and saved", course.Name)
+	return h.renderSuccessMessage(c, "Course Review Created Successfully!", "review has been created and saved", reviewCourse.Name)
+}
+
+// Helper function to parse integers safely
+func parseInt(s string) int {
+	if s == "" {
+		return 0
+	}
+	val, err := strconv.Atoi(s)
+	if err != nil {
+		return 0
+	}
+	return val
 }
 
 func (h *Handlers) Map(c echo.Context) error {

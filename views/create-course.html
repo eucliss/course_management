@@ -1,4 +1,251 @@
 {{ block "create-course" . }}
+{{ if .IsReviewMode }}
+<div class="course-selection-view">
+    <div class="header-section">
+        <h1>Review a Course</h1>
+        <p>Select a course from the list below to write your review</p>
+    </div>
+    
+    {{ if gt (len .AvailableCourses) 0 }}
+    <div class="available-courses">
+        <div class="course-search-container">
+            <input type="text" id="course-selection-search" placeholder="Search courses to review..." class="course-search-input">
+            <div class="course-search-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                </svg>
+            </div>
+        </div>
+        <div class="courses-grid">
+            {{ range $index, $course := .AvailableCourses }}
+            <div class="course-card" onclick="selectCourse({{ $index }}, '{{ $course.Name }}', '{{ $course.Description }}', '{{ $course.Address }}')">
+                <div class="course-card-header">
+                    <h3>{{ $course.Name }}</h3>
+                    <span class="course-address">{{ $course.Address }}</span>
+                </div>
+                <div class="course-card-description">
+                    <p>{{ $course.Description }}</p>
+                </div>
+                <div class="course-card-footer">
+                    <button type="button" class="select-course-btn">Review This Course</button>
+                </div>
+            </div>
+            {{ end }}
+        </div>
+    </div>
+    {{ else }}
+    <div class="no-courses-message">
+        <h2>All courses reviewed!</h2>
+        <p>You have already reviewed all available courses. Great job!</p>
+        <button hx-get="/" hx-target="#main-content" class="return-home-btn">Return to Home</button>
+    </div>
+    {{ end }}
+</div>
+
+<!-- Review Form (Initially Hidden) -->
+<div class="course-review-form" id="review-form" style="display: none;">
+    <div class="course-detail">
+        <div class="header-section">
+            <div class="title-and-line">
+                <h1 id="selected-course-name">Course Name</h1>
+                <div class="line-section">
+                    <span id="selected-course-description">Course description</span>
+                </div>
+            </div>
+            <div class="tier-box">
+                <select id="overall-rating" class="rating-value-select">
+                    <option value="">-</option>
+                    <option value="S">S</option>
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="C">C</option>
+                    <option value="D">D</option>
+                    <option value="F">F</option>
+                </select>
+                <div class="tier-label">TIER</div>
+            </div>
+        </div>
+        
+        <div class="course-content">
+            <div class="course-table">
+                <table>
+                    <tr>
+                        <th style="background-color: #000000;">Category</th>
+                        <th style="background-color: #000000;">Rating</th>
+                    </tr>
+                    <tr>
+                        <td>Price</td>
+                        <td class="editable-cell">
+                            <select id="price" class="rating-select">
+                                <option value="">Select</option>
+                                <option value="$">$</option>
+                                <option value="$$">$$</option>
+                                <option value="$$$">$$$</option>
+                                <option value="$$$$">$$$$</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Handicap Difficulty</td>
+                        <td class="editable-cell">
+                            <input type="number" id="handicap-difficulty" min="0" max="20" placeholder="0-20" class="number-input">
+                            <span class="unit-text">handicap</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Hazard Difficulty</td>
+                        <td class="editable-cell">
+                            <input type="number" id="hazard-difficulty" min="0" max="5" placeholder="0-5" class="number-input">
+                            <span class="unit-text">Sleeve(s)</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Merch</td>
+                        <td class="editable-cell">
+                            <select id="merch" class="rating-select">
+                                <option value="">Select</option>
+                                <option value="S">S</option>
+                                <option value="A">A</option>
+                                <option value="B">B</option>
+                                <option value="C">C</option>
+                                <option value="D">D</option>
+                                <option value="F">F</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Condition</td>
+                        <td class="editable-cell">
+                            <select id="condition" class="rating-select">
+                                <option value="">Select</option>
+                                <option value="S">S</option>
+                                <option value="A">A</option>
+                                <option value="B">B</option>
+                                <option value="C">C</option>
+                                <option value="D">D</option>
+                                <option value="F">F</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Enjoyment Rating</td>
+                        <td class="editable-cell">
+                            <select id="enjoyment-rating" class="rating-select">
+                                <option value="">Select</option>
+                                <option value="S">S</option>
+                                <option value="A">A</option>
+                                <option value="B">B</option>
+                                <option value="C">C</option>
+                                <option value="D">D</option>
+                                <option value="F">F</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Vibe</td>
+                        <td class="editable-cell">
+                            <select id="vibe" class="rating-select">
+                                <option value="">Select</option>
+                                <option value="S">S</option>
+                                <option value="A">A</option>
+                                <option value="B">B</option>
+                                <option value="C">C</option>
+                                <option value="D">D</option>
+                                <option value="F">F</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Range</td>
+                        <td class="editable-cell">
+                            <select id="range" class="rating-select">
+                                <option value="">Select</option>
+                                <option value="S">S</option>
+                                <option value="A">A</option>
+                                <option value="B">B</option>
+                                <option value="C">C</option>
+                                <option value="D">D</option>
+                                <option value="F">F</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Amenities</td>
+                        <td class="editable-cell">
+                            <select id="amenities" class="rating-select">
+                                <option value="">Select</option>
+                                <option value="S">S</option>
+                                <option value="A">A</option>
+                                <option value="B">B</option>
+                                <option value="C">C</option>
+                                <option value="D">D</option>
+                                <option value="F">F</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Turn Dog</td>
+                        <td class="editable-cell">
+                            <select id="glizzies" class="rating-select">
+                                <option value="">Select</option>
+                                <option value="S">S</option>
+                                <option value="A">A</option>
+                                <option value="B">B</option>
+                                <option value="C">C</option>
+                                <option value="D">D</option>
+                                <option value="F">F</option>
+                            </select>
+                        </td>
+                    </tr>
+                </table>
+                
+                <div class="scoring-section">
+                    <h3>Scores (Optional)</h3>
+                    <div id="scores-container">
+                        <!-- Scores will be added dynamically -->
+                    </div>
+                    <button type="button" class="add-score-btn" onclick="addScore()">+ Add Score</button>
+                </div>
+            </div>
+            
+            <div class="course-info">
+                <h2>Course Details</h2>
+                <div class="detail-item">
+                    <label for="course-address">Address:</label>
+                    <input type="text" id="course-address" class="address-input" readonly>
+                </div>
+                
+                <h2>What's the read on this course?</h2>
+                <div class="review-section">
+                    <textarea id="course-review" placeholder="Write a detailed review of the course including highlights, challenges, and overall experience" class="review-textarea"></textarea>
+                </div>
+                
+                <br style="clear: both; margin-bottom: 20px;"/>
+                
+                <div class="hole-by-hole-section">
+                    <h2>Hole by Hole</h2>
+                    <div id="holes-container">
+                        <!-- Holes will be added dynamically -->
+                    </div>
+                    <button type="button" class="add-hole-btn" onclick="addHole()">+ Add Hole</button>
+                </div>
+                
+                <div class="save-section">
+                    <div class="ownership-notice">
+                        <small>📝 This review will be associated with your account and you'll be able to edit it later.</small>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="back-to-selection-btn" onclick="showCourseSelection()">← Back to Course Selection</button>
+                        <button type="button" class="save-course-btn" onclick="saveCourseReview()">Save Review</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{ else }}
+<!-- Keep existing edit mode structure for editing existing reviews -->
 <div class="course-detail">
     <div class="header-section">
         <div class="title-and-line">
@@ -198,8 +445,228 @@
         </div>
     </div>
 </div>
+{{ end }}
 
 <style>
+    /* Course Selection View - Match design system */
+    .course-selection-view {
+        padding: 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+        background-color: #FFFCE7;
+    }
+
+    .course-selection-view .header-section {
+        display: block !important;
+        text-align: center;
+        margin-bottom: 30px;
+        padding-bottom: 0px;
+        max-width: none !important;
+        gap: 0 !important;
+        align-items: initial !important;
+        justify-content: initial !important;
+    }
+
+    .course-selection-view h1 {
+        color: #204606;
+        font-size: 2.5em;
+        margin: 0 0 15px 0;
+        font-weight: 600;
+        line-height: 1.2;
+    }
+
+    .course-selection-view p {
+        color: #204606;
+        font-size: 1.1em;
+        margin: 0 0 25px 0;
+        opacity: 0.8;
+        line-height: 1.4;
+    }
+
+    /* Course Search Container */
+    .course-search-container {
+        position: relative;
+        margin-bottom: 20px;
+    }
+
+    .course-search-input {
+        width: 100%;
+        padding: 12px 45px 12px 15px;
+        border: 2px solid rgba(32, 70, 6, 0.3);
+        border-radius: 8px;
+        font-size: 1em;
+        background-color: #FFFCE7;
+        color: #204606;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+    }
+
+    .course-search-input:focus {
+        outline: none;
+        border-color: #204606;
+        box-shadow: 0 0 0 2px rgba(32, 70, 6, 0.1);
+    }
+
+    .course-search-input::placeholder {
+        color: rgba(32, 70, 6, 0.6);
+    }
+
+    .course-search-icon {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: rgba(32, 70, 6, 0.6);
+        pointer-events: none;
+    }
+
+    .courses-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+    }
+
+    .course-card {
+        background-color: white;
+        border: 2px solid rgba(32, 70, 6, 0.1);
+        border-radius: 12px;
+        padding: 20px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .course-card:hover {
+        border-color: rgba(32, 70, 6, 0.3);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+
+    .course-card-header {
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid rgba(32, 70, 6, 0.1);
+    }
+
+    .course-card-header h3 {
+        margin: 0 0 8px 0;
+        color: #204606;
+        font-size: 1.3em;
+        font-weight: 600;
+    }
+
+    .course-address {
+        color: #666;
+        font-size: 0.9em;
+        margin: 0;
+    }
+
+    .course-card-description {
+        margin: 15px 0 20px 0;
+    }
+
+    .course-card-description p {
+        margin: 0;
+        color: #204606;
+        line-height: 1.4;
+        font-size: 1em;
+    }
+
+    .course-card-footer {
+        text-align: center;
+    }
+
+    .select-course-btn {
+        background-color: #204606;
+        color: #FFFCE7;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.95em;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        width: 100%;
+    }
+
+    .select-course-btn:hover {
+        background-color: #2d6509;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    .no-courses-available {
+        text-align: center;
+        padding: 60px 20px;
+        background-color: rgba(181, 216, 68, 0.05);
+        border-radius: 12px;
+        border: 2px dashed rgba(32, 70, 6, 0.2);
+        margin: 20px 0;
+    }
+
+    .no-courses-available h2 {
+        color: #204606;
+        font-size: 1.8em;
+        margin: 0 0 15px 0;
+        font-weight: 600;
+    }
+
+    .no-courses-available p {
+        color: #666;
+        font-size: 1.1em;
+        margin: 0 0 25px 0;
+        line-height: 1.4;
+    }
+
+    .return-home-btn {
+        background-color: #204606;
+        color: #FFFCE7;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .return-home-btn:hover {
+        background-color: #2d6509;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    /* Review Form Actions */
+    .form-actions {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        justify-content: center;
+        margin-top: 20px;
+    }
+
+    .back-to-selection-btn {
+        background-color: transparent;
+        color: #204606;
+        border: 2px solid #204606;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9em;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+    .back-to-selection-btn:hover {
+        background-color: #204606;
+        color: #FFFCE7;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
     /* Base Layout */
     .course-detail {
         padding: 20px;
@@ -861,6 +1328,245 @@
     });
     
     console.log('🎉 Create course JavaScript fully loaded');
+
+    // ========================================
+    // COURSE SELECTION FUNCTIONS (for review mode)
+    // ========================================
+    
+    // Use window properties to avoid redeclaration errors
+    window.selectedCourseIndex = window.selectedCourseIndex || null;
+    window.selectedCourseData = window.selectedCourseData || null;
+
+    // Course search functionality for selection page
+    function initializeCourseSelectionSearch() {
+        console.log('🔍 Initializing course selection search...');
+        const searchInput = document.getElementById('course-selection-search');
+        console.log('🔍 Search input found:', !!searchInput);
+        
+        if (searchInput) {
+            searchInput.addEventListener('input', function(e) {
+                console.log('🔍 Search input changed:', e.target.value);
+                filterCourseSelection();
+            });
+            console.log('✅ Search event listener added');
+        } else {
+            console.log('❌ Search input not found');
+        }
+    }
+
+    function filterCourseSelection() {
+        const searchInput = document.getElementById('course-selection-search');
+        const searchTerm = searchInput?.value.toLowerCase().trim() || '';
+        const courseCards = document.querySelectorAll('.course-card');
+        let visibleCount = 0;
+
+        console.log(`🔍 Filtering courses - Search term: "${searchTerm}", Total cards: ${courseCards.length}`);
+
+        courseCards.forEach((card, index) => {
+            const courseName = card.querySelector('h3')?.textContent.toLowerCase() || '';
+            const courseAddress = card.querySelector('.course-address')?.textContent.toLowerCase() || '';
+            const courseDescription = card.querySelector('.course-card-description p')?.textContent.toLowerCase() || '';
+            
+            const matchesSearch = searchTerm === '' || 
+                courseName.includes(searchTerm) || 
+                courseAddress.includes(searchTerm) || 
+                courseDescription.includes(searchTerm);
+
+            console.log(`Card ${index}: "${courseName}" - Matches: ${matchesSearch}`);
+
+            if (matchesSearch) {
+                card.style.display = 'block';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        console.log(`🔍 Course selection search complete: "${searchTerm}", visible: ${visibleCount}/${courseCards.length}`);
+    }
+
+    function selectCourse(index, name, description, address) {
+        window.selectedCourseIndex = index;
+        window.selectedCourseData = { name, description, address };
+        
+        console.log('🎯 Selected course:', name);
+        
+        // Update the review form with course data
+        document.getElementById('selected-course-name').textContent = name;
+        document.getElementById('selected-course-description').textContent = description;
+        document.getElementById('course-address').value = address;
+        
+        // Show review form and hide selection
+        document.querySelector('.course-selection-view').style.display = 'none';
+        document.getElementById('review-form').style.display = 'block';
+        
+        // Scroll to top
+        window.scrollTo(0, 0);
+    }
+
+    function showCourseSelection() {
+        document.querySelector('.course-selection-view').style.display = 'block';
+        document.getElementById('review-form').style.display = 'none';
+        window.scrollTo(0, 0);
+    }
+
+    function saveCourseReview() {
+        if (window.selectedCourseIndex === null) {
+            alert('No course selected');
+            return;
+        }
+
+        try {
+            const formData = new FormData();
+            
+            // Add selected course ID
+            formData.append('selectedCourseId', window.selectedCourseIndex);
+            
+            // Add all the review data
+            formData.append('overallRating', document.getElementById('overall-rating').value);
+            formData.append('price', document.getElementById('price').value);
+            formData.append('handicapDifficulty', document.getElementById('handicap-difficulty').value);
+            formData.append('hazardDifficulty', document.getElementById('hazard-difficulty').value);
+            formData.append('merch', document.getElementById('merch').value);
+            formData.append('condition', document.getElementById('condition').value);
+            formData.append('enjoymentRating', document.getElementById('enjoyment-rating').value);
+            formData.append('vibe', document.getElementById('vibe').value);
+            formData.append('range', document.getElementById('range').value);
+            formData.append('amenities', document.getElementById('amenities').value);
+            formData.append('glizzies', document.getElementById('glizzies').value);
+            formData.append('review', document.getElementById('course-review').value);
+            
+            // Add scores and holes
+            const scoreElements = document.querySelectorAll('#scores-container .score-entry');
+            scoreElements.forEach((scoreElement, index) => {
+                const inputs = scoreElement.querySelectorAll('input');
+                inputs.forEach(input => {
+                    if (input.value) {
+                        formData.append(input.name, input.value);
+                    }
+                });
+            });
+
+            const holeElements = document.querySelectorAll('#holes-container .hole-entry');
+            holeElements.forEach((holeElement, index) => {
+                const inputs = holeElement.querySelectorAll('input, textarea');
+                inputs.forEach(input => {
+                    if (input.value) {
+                        formData.append(input.name, input.value);
+                    }
+                });
+            });
+            
+            console.log('📤 Submitting course review for:', window.selectedCourseData.name);
+            
+            // Submit via HTMX
+            htmx.ajax('POST', '/create-course', {
+                values: formData,
+                target: '#main-content'
+            });
+            
+        } catch (error) {
+            console.error('💥 Error saving course review:', error);
+            alert('An error occurred while saving the review: ' + error.message);
+        }
+    }
+
+    // ========================================
+    // EDIT MODE FUNCTIONS 
+    // ========================================
+    
+    function saveEditedCourse() {
+        try {
+            const formData = new FormData();
+            
+            // Add course data that can be edited
+            formData.append('name', document.getElementById('course-name').textContent);
+            formData.append('description', document.getElementById('course-description').textContent);
+            formData.append('overallRating', document.getElementById('overall-rating').value);
+            formData.append('price', document.getElementById('price').value);
+            formData.append('handicapDifficulty', document.getElementById('handicap-difficulty').value);
+            formData.append('hazardDifficulty', document.getElementById('hazard-difficulty').value);
+            formData.append('merch', document.getElementById('merch').value);
+            formData.append('condition', document.getElementById('condition').value);
+            formData.append('enjoymentRating', document.getElementById('enjoyment-rating').value);
+            formData.append('vibe', document.getElementById('vibe').value);
+            formData.append('range', document.getElementById('range').value);
+            formData.append('amenities', document.getElementById('amenities').value);
+            formData.append('glizzies', document.getElementById('glizzies').value);
+            formData.append('review', document.getElementById('course-review').value);
+            formData.append('address', document.getElementById('course-address').value);
+            
+            // Add scores and holes
+            const scoreElements = document.querySelectorAll('#scores-container .score-entry');
+            scoreElements.forEach((scoreElement, index) => {
+                const inputs = scoreElement.querySelectorAll('input');
+                inputs.forEach(input => {
+                    if (input.value) {
+                        formData.append(input.name, input.value);
+                    }
+                });
+            });
+
+            const holeElements = document.querySelectorAll('#holes-container .hole-entry');
+            holeElements.forEach((holeElement, index) => {
+                const inputs = holeElement.querySelectorAll('input, textarea');
+                inputs.forEach(input => {
+                    if (input.value) {
+                        formData.append(input.name, input.value);
+                    }
+                });
+            });
+            
+            console.log('📤 Updating course review');
+            
+            // Submit via HTMX
+            htmx.ajax('POST', `/edit-course/${courseId}`, {
+                values: formData,
+                target: '#main-content'
+            });
+            
+        } catch (error) {
+            console.error('💥 Error updating course review:', error);
+            alert('An error occurred while updating the review: ' + error.message);
+        }
+    }
+
+    // ========================================
+    // INITIALIZATION
+    // ========================================
+    
+    // Initialize search functionality - try multiple times to ensure it works
+    function initializeSearch() {
+        console.log('🚀 Attempting to initialize course selection search...');
+        initializeCourseSelectionSearch();
+        
+        // Fallback: try again after a short delay if search input wasn't found
+        setTimeout(() => {
+            const searchInput = document.getElementById('course-selection-search');
+            if (searchInput && !searchInput.hasEventListener) {
+                console.log('🔄 Retrying search initialization...');
+                initializeCourseSelectionSearch();
+                searchInput.hasEventListener = true;
+            }
+        }, 500);
+    }
+    
+    // Initialize on DOM ready
+    document.addEventListener('DOMContentLoaded', initializeSearch);
+    
+    // Also initialize immediately if DOM is already loaded
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeSearch);
+    } else {
+        initializeSearch();
+    }
+    
+    // Initialize after HTMX content updates (for dynamic loading)
+    document.addEventListener('htmx:afterSwap', function() {
+        console.log('🔄 HTMX content swapped, reinitializing search...');
+        setTimeout(initializeSearch, 100);
+    });
+
 </script>
 {{ end }}
 

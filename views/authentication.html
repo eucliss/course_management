@@ -195,7 +195,7 @@ window.addEventListener('load', function() {
         <div class="courses-reviewed-header">
             <h3>Courses Reviewed ({{len .Courses}})</h3>
             <button hx-get="/create-course" hx-target="#main-content" class="add-course-btn">
-                + Add Course
+                + Review Course
             </button>
         </div>
         {{ if gt (len .Courses) 0 }}
