@@ -37,7 +37,7 @@
                 <!-- Show all courses template by default - filtering will handle visibility -->
                 <div id="all-courses-template">
                     {{ range $index, $course := .AllCourses }}
-                    <div class="course-item" data-can-edit="{{ if index $.AllCoursesEditPermissions $index }}true{{ else }}false{{ end }}" data-course-type="all">
+                    <div class="course-item" data-can-edit="{{ if index $.AllCoursesEditPermissions $index }}true{{ else }}false{{ end }}" data-has-review="{{ if index $.AllCoursesReviewStatus $index }}true{{ else }}false{{ end }}" data-course-type="all">
                         <div class="course-content" hx-get="/course/{{ $course.ID }}" hx-target="#main-content">
                             <h4>{{ $course.Name }}</h4>
                         </div>
@@ -241,10 +241,11 @@ function filterCourses() {
         if (courseName) {
             const courseText = courseName.textContent.toLowerCase();
             const canEdit = item.getAttribute('data-can-edit') === 'true';
+            const hasReview = item.getAttribute('data-has-review') === 'true';
             
-            // Same logic as map: all courses OR (my filter AND can edit)
+            // Updated logic: all courses OR (my filter AND has review)
             const matchesSearch = courseText.includes(searchTerm) || searchTerm === '';
-            const matchesFilter = window.sidebarCurrentFilter === 'all' || (window.sidebarCurrentFilter === 'my' && canEdit);
+            const matchesFilter = window.sidebarCurrentFilter === 'all' || (window.sidebarCurrentFilter === 'my' && hasReview);
             
             if (matchesSearch && matchesFilter) {
                 item.style.display = '';  // Show course

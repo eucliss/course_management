@@ -452,11 +452,12 @@
                 courseItems.forEach(item => {
                     const courseName = item.querySelector('h4');
                     const canEdit = item.getAttribute('data-can-edit') === 'true';
+                    const hasReview = item.getAttribute('data-has-review') === 'true';
                     
                     if (courseName) {
                         const courseText = courseName.textContent.toLowerCase();
                         const matchesSearch = courseText.includes(searchTerm) || searchTerm === '';
-                        const matchesFilter = currentFilter === 'all' || (currentFilter === 'my' && canEdit);
+                        const matchesFilter = currentFilter === 'all' || (currentFilter === 'my' && hasReview);
                         
                         if (matchesSearch && matchesFilter) {
                             item.classList.remove('hidden');
@@ -476,7 +477,7 @@
                         const messageText = noCourseMessage.querySelector('.no-courses-text');
                         if (messageText) {
                             if (currentFilter === 'my') {
-                                messageText.textContent = 'No courses you own found';
+                                messageText.textContent = 'No reviews yet...';
                             } else if (searchTerm) {
                                 messageText.textContent = `No courses found for "${searchTerm}"`;
                             } else {

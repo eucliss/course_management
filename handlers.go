@@ -156,6 +156,7 @@ func (h *Handlers) Home(c echo.Context) error {
 		User                      *GoogleUser
 		EditPermissions           map[int]bool
 		AllCoursesEditPermissions map[int]bool // Edit permissions for all courses
+		AllCoursesReviewStatus    map[int]bool // NEW: Track which courses have been reviewed
 		DefaultFilter             string       // Add default filter indication
 	}{
 		Courses:                   coursesToShow,
@@ -164,12 +165,33 @@ func (h *Handlers) Home(c echo.Context) error {
 		User:                      user,
 		EditPermissions:           editPermissions,
 		AllCoursesEditPermissions: allCoursesEditPermissions,
+		AllCoursesReviewStatus:    make(map[int]bool), // Will be populated below
 		DefaultFilter: func() string {
 			if userID != nil {
 				return "my"
 			}
 			return "all"
 		}(),
+	}
+
+	// Populate review status for all courses
+	if userID != nil && DB != nil {
+		reviewService := NewReviewService()
+		userReviews, err := reviewService.GetUserReviews(*userID)
+		if err == nil {
+			// Create a map of reviewed course names
+			reviewedCourseNames := make(map[string]bool)
+			for _, review := range userReviews {
+				reviewedCourseNames[review.CourseName] = true
+			}
+
+			// Mark courses as reviewed in the AllCoursesReviewStatus map
+			for i, course := range *h.courses {
+				if reviewedCourseNames[course.Name] {
+					data.AllCoursesReviewStatus[i] = true
+				}
+			}
+		}
 	}
 
 	return c.Render(http.StatusOK, "welcome", data)
@@ -851,6 +873,7 @@ func (h *Handlers) Map(c echo.Context) error {
 		User                      *GoogleUser
 		EditPermissions           map[int]bool
 		AllCoursesEditPermissions map[int]bool
+		AllCoursesReviewStatus    map[int]bool
 		DefaultFilter             string
 	}{
 		Courses:                   coursesToShow,
@@ -861,12 +884,33 @@ func (h *Handlers) Map(c echo.Context) error {
 		User:                      user,
 		EditPermissions:           editPermissions,
 		AllCoursesEditPermissions: allCoursesEditPermissions,
+		AllCoursesReviewStatus:    make(map[int]bool),
 		DefaultFilter: func() string {
 			if userID != nil {
 				return "my"
 			}
 			return "all"
 		}(),
+	}
+
+	// Populate review status for all courses
+	if userID != nil && DB != nil {
+		reviewService := NewReviewService()
+		userReviews, err := reviewService.GetUserReviews(*userID)
+		if err == nil {
+			// Create a map of reviewed course names
+			reviewedCourseNames := make(map[string]bool)
+			for _, review := range userReviews {
+				reviewedCourseNames[review.CourseName] = true
+			}
+
+			// Mark courses as reviewed in the AllCoursesReviewStatus map
+			for i, course := range *h.courses {
+				if reviewedCourseNames[course.Name] {
+					data.AllCoursesReviewStatus[i] = true
+				}
+			}
+		}
 	}
 
 	return c.Render(http.StatusOK, "map", data)
