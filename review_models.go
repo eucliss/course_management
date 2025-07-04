@@ -57,6 +57,27 @@ type UserCourseScore struct {
 	User   *User     `gorm:"foreignKey:UserID" json:"user,omitempty"`
 }
 
+// UserCourseHole represents a user's hole-by-hole data for a specific course
+type UserCourseHole struct {
+	ID       uint `gorm:"primaryKey" json:"id"`
+	CourseID uint `gorm:"not null" json:"course_id"`
+	UserID   uint `gorm:"not null" json:"user_id"`
+
+	// Hole data
+	Number      int     `gorm:"not null" json:"number"`
+	Par         *int    `json:"par"`
+	Yardage     *int    `json:"yardage"`
+	Description *string `gorm:"type:text" json:"description"`
+
+	// Timestamps
+	CreatedAt int64 `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt int64 `gorm:"autoUpdateTime" json:"updated_at"`
+
+	// Relationships
+	Course *CourseDB `gorm:"foreignKey:CourseID" json:"course,omitempty"`
+	User   *User     `gorm:"foreignKey:UserID" json:"user,omitempty"`
+}
+
 // UserActivity represents activities for social feed
 type UserActivity struct {
 	ID           uint   `gorm:"primaryKey" json:"id"`
@@ -123,4 +144,12 @@ type ScoreFormData struct {
 	OutScore   int     `json:"out_score"`
 	InScore    int     `json:"in_score"`
 	Notes      string  `json:"notes"`
+}
+
+// HoleFormData represents the form data for hole information
+type HoleFormData struct {
+	Number      int    `json:"number"`
+	Par         int    `json:"par"`
+	Yardage     int    `json:"yardage"`
+	Description string `json:"description"`
 }

@@ -122,6 +122,7 @@ func AutoMigrate() error {
 		&CourseDB{},
 		&CourseReview{},
 		&UserCourseScore{},
+		&UserCourseHole{},
 		&UserActivity{},
 	)
 

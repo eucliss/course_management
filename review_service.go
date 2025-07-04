@@ -244,6 +244,64 @@ func (rs *ReviewService) AddScore(userID uint, courseID uint, formData ScoreForm
 	return score, nil
 }
 
+// AddScores saves multiple scores for a user and course
+func (rs *ReviewService) AddScores(userID uint, courseID uint, scores []ScoreFormData) error {
+	if rs.db == nil {
+		return fmt.Errorf("database not connected")
+	}
+
+	// Delete existing scores for this user/course
+	result := rs.db.Where("user_id = ? AND course_id = ?", userID, courseID).Delete(&UserCourseScore{})
+	if result.Error != nil {
+		log.Printf("Warning: failed to delete existing scores: %v", result.Error)
+	}
+
+	// Add new scores
+	for _, scoreData := range scores {
+		if scoreData.Score <= 0 {
+			continue // Skip invalid scores
+		}
+
+		score := &UserCourseScore{
+			UserID:   userID,
+			CourseID: courseID,
+			Score:    scoreData.Score,
+		}
+
+		if scoreData.Handicap > 0 {
+			score.Handicap = &scoreData.Handicap
+		}
+		if scoreData.DatePlayed != "" {
+			score.DatePlayed = &scoreData.DatePlayed
+		}
+		if scoreData.OutScore > 0 {
+			score.OutScore = &scoreData.OutScore
+		}
+		if scoreData.InScore > 0 {
+			score.InScore = &scoreData.InScore
+		}
+		if scoreData.Notes != "" {
+			score.Notes = &scoreData.Notes
+		}
+
+		result := rs.db.Create(score)
+		if result.Error != nil {
+			log.Printf("Warning: failed to save score %d: %v", scoreData.Score, result.Error)
+		}
+	}
+
+	log.Printf("✅ Saved %d scores for user %d, course %d", len(scores), userID, courseID)
+
+	// Create activity record for the first score
+	if len(scores) > 0 {
+		rs.createActivity(userID, "score_posted", &courseID, map[string]interface{}{
+			"score": scores[0].Score,
+		})
+	}
+
+	return nil
+}
+
 // GetUserScoresForCourse gets all scores for a user and course
 func (rs *ReviewService) GetUserScoresForCourse(userID uint, courseID uint) ([]UserCourseScore, error) {
 	if rs.db == nil {
@@ -258,6 +316,66 @@ func (rs *ReviewService) GetUserScoresForCourse(userID uint, courseID uint) ([]U
 	}
 
 	return scores, nil
+}
+
+// AddHoles saves hole-by-hole data for a user and course
+func (rs *ReviewService) AddHoles(userID uint, courseID uint, holes []HoleFormData) error {
+	if rs.db == nil {
+		return fmt.Errorf("database not connected")
+	}
+
+	// Delete existing holes for this user/course
+	result := rs.db.Where("user_id = ? AND course_id = ?", userID, courseID).Delete(&UserCourseHole{})
+	if result.Error != nil {
+		log.Printf("Warning: failed to delete existing holes: %v", result.Error)
+	}
+
+	// Add new holes
+	for _, holeData := range holes {
+		if holeData.Number <= 0 {
+			continue // Skip invalid holes
+		}
+
+		hole := &UserCourseHole{
+			UserID:   userID,
+			CourseID: courseID,
+			Number:   holeData.Number,
+		}
+
+		if holeData.Par > 0 {
+			hole.Par = &holeData.Par
+		}
+		if holeData.Yardage > 0 {
+			hole.Yardage = &holeData.Yardage
+		}
+		if holeData.Description != "" {
+			hole.Description = &holeData.Description
+		}
+
+		result := rs.db.Create(hole)
+		if result.Error != nil {
+			log.Printf("Warning: failed to save hole %d: %v", holeData.Number, result.Error)
+		}
+	}
+
+	log.Printf("✅ Saved %d holes for user %d, course %d", len(holes), userID, courseID)
+	return nil
+}
+
+// GetUserHolesForCourse gets all holes for a user and course
+func (rs *ReviewService) GetUserHolesForCourse(userID uint, courseID uint) ([]UserCourseHole, error) {
+	if rs.db == nil {
+		return nil, fmt.Errorf("database not connected")
+	}
+
+	var holes []UserCourseHole
+	result := rs.db.Where("user_id = ? AND course_id = ?", userID, courseID).Order("number ASC").Find(&holes)
+
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed to get user holes: %v", result.Error)
+	}
+
+	return holes, nil
 }
 
 // GetCoursesUserHasReviewed gets list of course IDs that a user has reviewed
@@ -369,7 +487,9 @@ func ParseReviewFormData(getFormValue func(string) string) ReviewFormData {
 }
 
 // ParseScoreFormData parses score form data from HTTP request
-func ParseScoreFormData(getFormValue func(string) string) ScoreFormData {
+func ParseScoreFormData(getFormValue func(string) string) []ScoreFormData {
+	var scores []ScoreFormData
+
 	// Helper function to parse int safely
 	parseInt := func(s string) int {
 		if s == "" {
@@ -394,12 +514,64 @@ func ParseScoreFormData(getFormValue func(string) string) ScoreFormData {
 		return val
 	}
 
-	return ScoreFormData{
-		Score:      parseInt(getFormValue("score")),
-		Handicap:   parseFloat(getFormValue("handicap")),
-		DatePlayed: getFormValue("date-played"),
-		OutScore:   parseInt(getFormValue("out-score")),
-		InScore:    parseInt(getFormValue("in-score")),
-		Notes:      getFormValue("notes"),
+	// Parse scores array - look for scores[0].score, scores[1].score, etc.
+	for i := 0; i < 10; i++ { // Max 10 scores (reasonable limit)
+		scoreStr := getFormValue(fmt.Sprintf("scores[%d].score", i))
+		if scoreStr == "" {
+			continue // No more scores
+		}
+
+		scoreData := ScoreFormData{
+			Score:      parseInt(scoreStr),
+			Handicap:   parseFloat(getFormValue(fmt.Sprintf("scores[%d].handicap", i))),
+			DatePlayed: getFormValue(fmt.Sprintf("scores[%d].date-played", i)),
+			OutScore:   parseInt(getFormValue(fmt.Sprintf("scores[%d].out-score", i))),
+			InScore:    parseInt(getFormValue(fmt.Sprintf("scores[%d].in-score", i))),
+			Notes:      getFormValue(fmt.Sprintf("scores[%d].notes", i)),
+		}
+
+		if scoreData.Score > 0 {
+			scores = append(scores, scoreData)
+		}
 	}
+
+	return scores
+}
+
+// ParseHoleFormData parses hole form data from HTTP request
+func ParseHoleFormData(getFormValue func(string) string) []HoleFormData {
+	var holes []HoleFormData
+
+	// Helper function to parse int safely
+	parseInt := func(s string) int {
+		if s == "" {
+			return 0
+		}
+		val, err := strconv.Atoi(s)
+		if err != nil {
+			return 0
+		}
+		return val
+	}
+
+	// Parse holes array - look for holes[0].number, holes[1].number, etc.
+	for i := 0; i < 18; i++ { // Max 18 holes
+		numberStr := getFormValue(fmt.Sprintf("holes[%d].number", i))
+		if numberStr == "" {
+			continue // No more holes
+		}
+
+		holeData := HoleFormData{
+			Number:      parseInt(numberStr),
+			Par:         parseInt(getFormValue(fmt.Sprintf("holes[%d].par", i))),
+			Yardage:     parseInt(getFormValue(fmt.Sprintf("holes[%d].yardage", i))),
+			Description: getFormValue(fmt.Sprintf("holes[%d].description", i)),
+		}
+
+		if holeData.Number > 0 {
+			holes = append(holes, holeData)
+		}
+	}
+
+	return holes
 }

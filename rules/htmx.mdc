@@ -1,0 +1,21 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+The stack for this app is as folows:
+Golang
+HTMX
+Javascript
+JSON for data storage
+
+Everything you generate must fit within this template. Do not under any circumstances suggest and code that is part of these frameworks:
+React
+Vue
+Svelte
+Typescript
+Angular
+
+The app is running via Air, it is automatically updating the database and the front end. Unless asked specifically, there is no reason to kill the process and restart it.
+Do not tell me to run the go program and wait for results.
+Dont add emojis.

@@ -419,6 +419,48 @@ func (h *Handlers) GetCourse(c echo.Context) error {
 			} else if userReview != nil {
 				// User has a review for this course - use their review data
 				hasUserReview = true
+
+				// Get user's holes and scores for this course
+				userHoles, err := reviewService.GetUserHolesForCourse(*userID, dbCourse.ID)
+				if err != nil {
+					log.Printf("Warning: failed to get user holes: %v", err)
+				}
+
+				userScores, err := reviewService.GetUserScoresForCourse(*userID, dbCourse.ID)
+				if err != nil {
+					log.Printf("Warning: failed to get user scores: %v", err)
+				}
+
+				// Convert database holes to Course.Holes format
+				var holes []Hole
+				for _, dbHole := range userHoles {
+					hole := Hole{
+						Number: dbHole.Number,
+					}
+					if dbHole.Par != nil {
+						hole.Par = *dbHole.Par
+					}
+					if dbHole.Yardage != nil {
+						hole.Yardage = *dbHole.Yardage
+					}
+					if dbHole.Description != nil {
+						hole.Description = *dbHole.Description
+					}
+					holes = append(holes, hole)
+				}
+
+				// Convert database scores to Course.Scores format
+				var scores []Score
+				for _, dbScore := range userScores {
+					score := Score{
+						Score: dbScore.Score,
+					}
+					if dbScore.Handicap != nil {
+						score.Handicap = *dbScore.Handicap
+					}
+					scores = append(scores, score)
+				}
+
 				courseToDisplay = Course{
 					ID:            baseCourse.ID, // Keep the array index for routing
 					Name:          baseCourse.Name,
@@ -437,8 +479,8 @@ func (h *Handlers) GetCourse(c echo.Context) error {
 						Amenities:          safeStringValue(userReview.Amenities),
 						Glizzies:           safeStringValue(userReview.Glizzies),
 					},
-					Holes:  baseCourse.Holes,  // Keep the original hole data
-					Scores: baseCourse.Scores, // Keep the original score data for now
+					Holes:  holes,  // Use user's saved holes
+					Scores: scores, // Use user's saved scores
 				}
 
 				// Add the user's review text if available
@@ -716,23 +758,110 @@ func (h *Handlers) CreateCourse(c echo.Context) error {
 	log.Printf("[REVIEW_COURSE] ✅ Review saved successfully for user %d, course %d", *userID, dbCourse.ID)
 
 	// Also save any score data if provided
-	scoreStr := c.FormValue("score")
-	if scoreStr != "" {
-		scoreFormData := ParseScoreFormData(func(key string) string {
-			return c.FormValue(key)
-		})
+	scoreFormData := ParseScoreFormData(func(key string) string {
+		return c.FormValue(key)
+	})
 
-		if scoreFormData.Score > 0 {
-			_, err := reviewService.AddScore(*userID, dbCourse.ID, scoreFormData)
-			if err != nil {
-				log.Printf("[REVIEW_COURSE] Warning: Failed to save score: %v", err)
-			} else {
-				log.Printf("[REVIEW_COURSE] ✅ Score %d saved for user %d, course %d", scoreFormData.Score, *userID, dbCourse.ID)
-			}
+	if len(scoreFormData) > 0 {
+		err := reviewService.AddScores(*userID, dbCourse.ID, scoreFormData)
+		if err != nil {
+			log.Printf("[REVIEW_COURSE] Warning: Failed to save scores: %v", err)
+		} else {
+			log.Printf("[REVIEW_COURSE] ✅ %d scores saved for user %d, course %d", len(scoreFormData), *userID, dbCourse.ID)
+		}
+	}
+
+	// Also save any hole data if provided
+	holeFormData := ParseHoleFormData(func(key string) string {
+		return c.FormValue(key)
+	})
+
+	if len(holeFormData) > 0 {
+		err := reviewService.AddHoles(*userID, dbCourse.ID, holeFormData)
+		if err != nil {
+			log.Printf("[REVIEW_COURSE] Warning: Failed to save holes: %v", err)
+		} else {
+			log.Printf("[REVIEW_COURSE] ✅ %d holes saved for user %d, course %d", len(holeFormData), *userID, dbCourse.ID)
 		}
 	}
 
 	return h.renderSuccessMessage(c, "Course Review Created Successfully!", "review has been created and saved", dbCourse.Name)
+}
+
+// AddScore handles adding a single score from the profile page
+func (h *Handlers) AddScore(c echo.Context) error {
+	log.Printf("[ADD_SCORE] Starting request from %s", c.RealIP())
+
+	// Get authenticated user ID
+	sessionService := NewSessionService()
+	userID := sessionService.GetDatabaseUserID(c)
+	if userID == nil {
+		log.Printf("[ADD_SCORE] ERROR: User not authenticated")
+		return c.String(http.StatusUnauthorized, "You must be logged in to add a score")
+	}
+
+	if err := c.Request().ParseForm(); err != nil {
+		log.Printf("[ADD_SCORE] ERROR: Failed to parse form: %v", err)
+		return c.String(http.StatusBadRequest, "Failed to parse form data: "+err.Error())
+	}
+
+	// Get course ID from form
+	courseIDStr := c.FormValue("courseId")
+	if courseIDStr == "" {
+		return c.String(http.StatusBadRequest, "No course ID provided")
+	}
+
+	// Convert course ID - this is the JSON array index, need to convert to DB course ID
+	courseIndex, err := strconv.Atoi(courseIDStr)
+	if err != nil || courseIndex >= len(*h.courses) {
+		return c.String(http.StatusBadRequest, "Invalid course ID")
+	}
+
+	// Get the course name to find the database course
+	courseName := (*h.courses)[courseIndex].Name
+
+	// Find the database course by name
+	if DB == nil {
+		return c.String(http.StatusServiceUnavailable, "Database not available")
+	}
+
+	dbService := NewDatabaseService()
+	dbCourse, err := dbService.GetCourseByName(courseName)
+	if err != nil {
+		log.Printf("[ADD_SCORE] ERROR: Course not found in database: %v", err)
+		return c.String(http.StatusNotFound, "Course not found")
+	}
+
+	// Parse score data
+	outScore, _ := strconv.Atoi(c.FormValue("outScore"))
+	inScore, _ := strconv.Atoi(c.FormValue("inScore"))
+	totalScore, _ := strconv.Atoi(c.FormValue("totalScore"))
+	handicap, _ := strconv.ParseFloat(c.FormValue("handicap"), 64)
+
+	if totalScore <= 0 {
+		return c.String(http.StatusBadRequest, "Invalid total score")
+	}
+
+	// Create score data
+	scoreData := ScoreFormData{
+		Score:    totalScore,
+		Handicap: handicap,
+		OutScore: outScore,
+		InScore:  inScore,
+	}
+
+	// Save the score
+	reviewService := NewReviewService()
+	_, err = reviewService.AddScore(*userID, dbCourse.ID, scoreData)
+	if err != nil {
+		log.Printf("[ADD_SCORE] ERROR: Failed to save score: %v", err)
+		return c.String(http.StatusInternalServerError, "Failed to save score: "+err.Error())
+	}
+
+	log.Printf("[ADD_SCORE] ✅ Score %d saved for user %d, course %d", totalScore, *userID, dbCourse.ID)
+
+	// Return success response
+	return c.String(http.StatusOK, "Score added successfully!")
 }
 
 // Helper function to parse integers safely

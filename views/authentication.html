@@ -106,35 +106,7 @@ window.addEventListener('load', function() {
         }
     });
 
-    // Placeholder function for adding score
-    function addScore(courseId) {
-        const scoreSection = event.target.closest('.score-input-section');
-        const outScore = scoreSection.querySelector('input[placeholder="Out"]').value;
-        const inScore = scoreSection.querySelector('input[placeholder="In"]').value;
-        const totalScore = scoreSection.querySelector('input[placeholder="Total"]').value;
-        const handicap = scoreSection.querySelector('input[placeholder="Handicap"]').value;
-        
-        if (!outScore || !inScore || !totalScore) {
-            alert('Please enter both out and in scores');
-            return;
-        }
-        
-        // TODO: Implement score submission to backend
-        console.log('Adding score for course', courseId, {
-            out: outScore,
-            in: inScore,
-            total: totalScore,
-            handicap: handicap
-        });
-        
-        // Clear inputs after successful submission
-        scoreSection.querySelector('input[placeholder="Out"]').value = '';
-        scoreSection.querySelector('input[placeholder="In"]').value = '';
-        scoreSection.querySelector('input[placeholder="Total"]').value = '';
-        scoreSection.querySelector('input[placeholder="Handicap"]').value = '';
-        
-        alert('Score added successfully!');
-    }
+
 </script>
 
 {{ end }}
@@ -271,7 +243,7 @@ window.addEventListener('load', function() {
                             <input type="number" class="score-input" placeholder="Total" min="36" max="180" readonly>
                             <input type="number" class="score-input" placeholder="Handicap" min="0" max="54" 
                                    value="{{if $.Handicap}}{{$.Handicap}}{{end}}">
-                            <button class="add-score-btn" onclick="addScore({{ $course.ID }})">Add Score</button>
+                            <button class="add-score-btn" onclick="addProfileScore({{ $course.ID }})">Add Score</button>
                         </div>
                     </div>
                 </div>
@@ -899,36 +871,6 @@ window.addEventListener('load', function() {
         }
     });
 
-    // Placeholder function for adding score
-    function addScore(courseId) {
-        const scoreSection = event.target.closest('.score-input-section');
-        const outScore = scoreSection.querySelector('input[placeholder="Out"]').value;
-        const inScore = scoreSection.querySelector('input[placeholder="In"]').value;
-        const totalScore = scoreSection.querySelector('input[placeholder="Total"]').value;
-        const handicap = scoreSection.querySelector('input[placeholder="Handicap"]').value;
-        
-        if (!outScore || !inScore || !totalScore) {
-            alert('Please enter both out and in scores');
-            return;
-        }
-        
-        // TODO: Implement score submission to backend
-        console.log('Adding score for course', courseId, {
-            out: outScore,
-            in: inScore,
-            total: totalScore,
-            handicap: handicap
-        });
-        
-        // Clear inputs after successful submission
-        scoreSection.querySelector('input[placeholder="Out"]').value = '';
-        scoreSection.querySelector('input[placeholder="In"]').value = '';
-        scoreSection.querySelector('input[placeholder="Total"]').value = '';
-        scoreSection.querySelector('input[placeholder="Handicap"]').value = '';
-        
-        alert('Score added successfully!');
-    }
-
     function editHandicap() {
         document.getElementById('handicap-display').style.display = 'none';
         document.getElementById('handicap-edit').style.display = 'block';
@@ -1029,6 +971,53 @@ window.addEventListener('load', function() {
         } else if (event.key === 'Escape') {
             cancelDisplayNameEdit();
         }
+    }
+
+    // Function to add score via HTMX from profile page
+    function addProfileScore(courseId) {
+        const scoreSection = event.target.closest('.score-input-section');
+        const outScore = scoreSection.querySelector('input[placeholder="Out"]').value;
+        const inScore = scoreSection.querySelector('input[placeholder="In"]').value;
+        const totalScore = scoreSection.querySelector('input[placeholder="Total"]').value;
+        const handicap = scoreSection.querySelector('input[placeholder="Handicap"]').value;
+        
+        if (!outScore || !inScore || !totalScore) {
+            alert('Please enter both out and in scores');
+            return;
+        }
+        
+        // Create form data
+        const formData = new FormData();
+        formData.append('courseId', courseId);
+        formData.append('outScore', outScore);
+        formData.append('inScore', inScore);
+        formData.append('totalScore', totalScore);
+        formData.append('handicap', handicap || '0');
+        
+        console.log('📤 Submitting score for course', courseId, {
+            out: outScore,
+            in: inScore,
+            total: totalScore,
+            handicap: handicap
+        });
+        
+        // Submit via HTMX
+        htmx.ajax('POST', '/profile/add-score', {
+            values: formData,
+            swap: 'none'
+        }).then(function() {
+            // Clear inputs after successful submission
+            scoreSection.querySelector('input[placeholder="Out"]').value = '';
+            scoreSection.querySelector('input[placeholder="In"]').value = '';
+            scoreSection.querySelector('input[placeholder="Total"]').value = '';
+            // Keep handicap value for convenience
+            
+            alert('Score added successfully!');
+            console.log('✅ Score submitted successfully');
+        }).catch(function(error) {
+            console.error('❌ Error submitting score:', error);
+            alert('Error adding score. Please try again.');
+        });
     }
 </script>
 

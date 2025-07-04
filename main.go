@@ -222,6 +222,7 @@ func main() {
 	e.GET("/profile", handlers.Profile, AddOwnershipContext(sessionService))
 	e.POST("/profile/handicap", handlers.UpdateHandicap, RequireAuth(sessionService))
 	e.POST("/profile/display-name", handlers.UpdateDisplayName, RequireAuth(sessionService))
+	e.POST("/profile/add-score", handlers.AddScore, RequireAuth(sessionService))
 	e.GET("/course/:id", handlers.GetCourse, AddOwnershipContext(sessionService))
 	e.GET("/create-course", handlers.CreateCourseForm, RequireAuth(sessionService))
 	e.GET("/review-course/:id", handlers.ReviewSpecificCourseForm, RequireAuth(sessionService))

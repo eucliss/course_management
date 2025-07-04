@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Everytime you create a md file or a file that is considered documentation, you must put it in the docs folder. If a docs folder does not exist, make one.
