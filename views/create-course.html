@@ -1,6 +1,6 @@
 {{ block "create-course" . }}
 {{ if .IsReviewMode }}
-<div class="course-selection-view">
+<div class="course-selection-view" {{ if .DirectReview }}style="display: none;"{{ end }}>
     <div class="header-section">
         <h1>Review a Course</h1>
         <p>Select a course from the list below to write your review</p>
@@ -19,13 +19,13 @@
         </div>
         <div class="courses-grid">
             {{ range $index, $course := .AvailableCourses }}
-            <div class="course-card" onclick="selectCourse({{ $index }}, '{{ $course.Name }}', '{{ $course.Description }}', '{{ $course.Address }}')">
+            <div class="course-card" onclick="selectCourse({{ $course.ID }}, '{{ $course.Name }}', '{{ $course.Address }}', '{{ $course.Address }}')">
                 <div class="course-card-header">
                     <h3>{{ $course.Name }}</h3>
                     <span class="course-address">{{ $course.Address }}</span>
                 </div>
                 <div class="course-card-description">
-                    <p>{{ $course.Description }}</p>
+                    <p>{{ $course.Address }}</p>
                 </div>
                 <div class="course-card-footer">
                     <button type="button" class="select-course-btn">Review This Course</button>
@@ -44,7 +44,7 @@
 </div>
 
 <!-- Review Form (Initially Hidden) -->
-<div class="course-review-form" id="review-form" style="display: none;">
+<div class="course-review-form" id="review-form" {{ if not .DirectReview }}style="display: none;"{{ end }}>
     <div class="course-detail">
         <div class="header-section">
             <div class="title-and-line">
@@ -1385,11 +1385,11 @@
         console.log(`🔍 Course selection search complete: "${searchTerm}", visible: ${visibleCount}/${courseCards.length}`);
     }
 
-    function selectCourse(index, name, description, address) {
-        window.selectedCourseIndex = index;
+    function selectCourse(courseId, name, description, address) {
+        window.selectedCourseIndex = courseId;
         window.selectedCourseData = { name, description, address };
         
-        console.log('🎯 Selected course:', name);
+        console.log('🎯 Selected course:', name, 'ID:', courseId);
         
         // Update the review form with course data
         document.getElementById('selected-course-name').textContent = name;
@@ -1423,18 +1423,18 @@
             formData.append('selectedCourseId', window.selectedCourseIndex);
             
             // Add all the review data
-            formData.append('overallRating', document.getElementById('overall-rating').value);
+            formData.append('overall-rating', document.getElementById('overall-rating').value);
             formData.append('price', document.getElementById('price').value);
-            formData.append('handicapDifficulty', document.getElementById('handicap-difficulty').value);
-            formData.append('hazardDifficulty', document.getElementById('hazard-difficulty').value);
+            formData.append('handicap-difficulty', document.getElementById('handicap-difficulty').value);
+            formData.append('hazard-difficulty', document.getElementById('hazard-difficulty').value);
             formData.append('merch', document.getElementById('merch').value);
             formData.append('condition', document.getElementById('condition').value);
-            formData.append('enjoymentRating', document.getElementById('enjoyment-rating').value);
+            formData.append('enjoyment-rating', document.getElementById('enjoyment-rating').value);
             formData.append('vibe', document.getElementById('vibe').value);
             formData.append('range', document.getElementById('range').value);
             formData.append('amenities', document.getElementById('amenities').value);
             formData.append('glizzies', document.getElementById('glizzies').value);
-            formData.append('review', document.getElementById('course-review').value);
+            formData.append('course-review', document.getElementById('course-review').value);
             
             // Add scores and holes
             const scoreElements = document.querySelectorAll('#scores-container .score-entry');
@@ -1566,6 +1566,40 @@
         console.log('🔄 HTMX content swapped, reinitializing search...');
         setTimeout(initializeSearch, 100);
     });
+
+    // ========================================
+    // DIRECT REVIEW INITIALIZATION
+    // ========================================
+    
+    {{ if .DirectReview }}
+    // Auto-select the course for direct review
+    function initializeDirectReview() {
+        {{ if .SelectedCourse }}
+        const courseId = {{ .SelectedCourse.ID }};
+        const courseName = '{{ .SelectedCourse.Name }}';
+        const courseAddress = '{{ .SelectedCourse.Address }}';
+        
+        console.log('🎯 Direct review mode: auto-selecting course:', courseName);
+        
+        // Set the global variables
+        window.selectedCourseIndex = courseId;
+        window.selectedCourseData = { name: courseName, description: courseAddress, address: courseAddress };
+        
+        // Update the form with course data
+        document.getElementById('selected-course-name').textContent = courseName;
+        document.getElementById('selected-course-description').textContent = courseAddress;
+        document.getElementById('course-address').value = courseAddress;
+        
+        console.log('✅ Direct review initialized for:', courseName);
+        {{ end }}
+    }
+    
+    // Initialize direct review on page load
+    document.addEventListener('DOMContentLoaded', initializeDirectReview);
+    if (document.readyState !== 'loading') {
+        initializeDirectReview();
+    }
+    {{ end }}
 
 </script>
 {{ end }}

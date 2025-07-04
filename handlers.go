@@ -177,6 +177,7 @@ func (h *Handlers) Profile(c echo.Context) error {
 				if err := sessionService.SetDatabaseUser(c, user, dbUser.ID); err != nil {
 					log.Printf("⚠️ Failed to update session with DB User ID: %v", err)
 				}
+				dbUserID = &dbUser.ID
 			}
 		} else {
 			log.Printf("⚠️ User not found in database")
@@ -185,28 +186,79 @@ func (h *Handlers) Profile(c echo.Context) error {
 		log.Printf("⚠️ Database not available")
 	}
 
-	// Filter courses to only show ones the user can edit (owns)
+	// Get courses the user has reviewed using the new review system
 	var userCourses []Course
 	editPermissions := make(map[int]bool)
-	if dbUserID != nil && DB != nil {
-		// OPTIMIZED: Get all user's courses in one query instead of checking each course
-		dbService := NewDatabaseService()
-		dbUserCourses, err := dbService.GetCoursesByUser(*dbUserID)
-		if err != nil {
-			log.Printf("Warning: failed to get user courses: %v", err)
-		} else {
-			// Create a map of course names owned by user
-			userCourseNames := make(map[string]bool)
-			for _, course := range dbUserCourses {
-				userCourseNames[course.Name] = true
-			}
 
-			// Filter courses to only show owned ones
-			for _, course := range *h.courses {
-				if userCourseNames[course.Name] {
-					userCourses = append(userCourses, course)
-					// Map the new index to edit permission (always true for user's courses)
-					editPermissions[len(userCourses)-1] = true
+	if dbUserID != nil && DB != nil {
+		// Use the review service to get user's reviews
+		reviewService := NewReviewService()
+		userReviews, err := reviewService.GetUserReviews(*dbUserID)
+		if err != nil {
+			log.Printf("Warning: failed to get user reviews: %v", err)
+		} else {
+			log.Printf("✅ Found %d reviews for user %d", len(userReviews), *dbUserID)
+
+			// Convert each review to a Course struct that the template expects
+			for _, reviewWithCourse := range userReviews {
+				// Find the corresponding course in the JSON array to get the correct index
+				var courseArrayIndex int = -1
+				for idx, jsonCourse := range *h.courses {
+					if jsonCourse.Name == reviewWithCourse.CourseName {
+						courseArrayIndex = idx
+						break
+					}
+				}
+
+				// If we can't find the course in the JSON array, skip it
+				if courseArrayIndex == -1 {
+					log.Printf("Warning: Course '%s' from review not found in JSON array", reviewWithCourse.CourseName)
+					continue
+				}
+
+				// Get the original course description from the JSON array
+				originalCourse := (*h.courses)[courseArrayIndex]
+
+				course := Course{
+					ID:            courseArrayIndex, // Use the JSON array index for compatibility
+					Name:          reviewWithCourse.CourseName,
+					Description:   originalCourse.Description, // Use the actual course description
+					OverallRating: safeStringValue(reviewWithCourse.OverallRating),
+					Address:       reviewWithCourse.CourseAddress,
+					Ranks: Ranking{
+						Price:              safeStringValue(reviewWithCourse.Price),
+						HandicapDifficulty: safeIntValue(reviewWithCourse.HandicapDifficulty),
+						HazardDifficulty:   safeIntValue(reviewWithCourse.HazardDifficulty),
+						Merch:              safeStringValue(reviewWithCourse.Merch),
+						Condition:          safeStringValue(reviewWithCourse.Condition),
+						EnjoymentRating:    safeStringValue(reviewWithCourse.EnjoymentRating),
+						Vibe:               safeStringValue(reviewWithCourse.Vibe),
+						Range:              safeStringValue(reviewWithCourse.RangeRating),
+						Amenities:          safeStringValue(reviewWithCourse.Amenities),
+						Glizzies:           safeStringValue(reviewWithCourse.Glizzies),
+					},
+				}
+
+				// Add review text if available
+				if reviewWithCourse.ReviewText != nil {
+					course.Review = *reviewWithCourse.ReviewText
+				}
+
+				userCourses = append(userCourses, course)
+
+				// Users can always edit their own reviews, but we need to check if they own the course
+				// For now, we'll check if they created the course (for backward compatibility)
+				if DB != nil {
+					dbService := NewDatabaseService()
+					isOwner, err := dbService.IsUserCourseOwner(*dbUserID, course.Name)
+					if err != nil {
+						log.Printf("Warning: failed to check course ownership: %v", err)
+						editPermissions[len(userCourses)-1] = false
+					} else {
+						editPermissions[len(userCourses)-1] = isOwner
+					}
+				} else {
+					editPermissions[len(userCourses)-1] = false
 				}
 			}
 		}
@@ -231,6 +283,7 @@ func (h *Handlers) Profile(c echo.Context) error {
 	} else {
 		log.Printf("📊 Rendering profile with handicap: nil")
 	}
+	log.Printf("📊 Rendering profile with %d reviewed courses", len(userCourses))
 	return c.Render(http.StatusOK, "user-profile", data)
 }
 
@@ -241,29 +294,86 @@ func (h *Handlers) GetCourse(c echo.Context) error {
 		return c.String(http.StatusNotFound, "Course not found")
 	}
 
-	// Get ownership context from middleware if available
+	// Get the base course data from the JSON array
+	baseCourse := (*h.courses)[idInt]
+
+	// Get user context from middleware if available
+	sessionService := NewSessionService()
+	userID := sessionService.GetDatabaseUserID(c)
+
+	// Start with the base course data
+	courseToDisplay := baseCourse
 	var canEdit bool
-	if userID, ok := c.Get("userID").(uint); ok {
-		// OPTIMIZED: Check course ownership without calling GetCourseByArrayIndex
-		if DB != nil {
-			dbService := NewDatabaseService()
-			courseName := (*h.courses)[idInt].Name
-			isOwner, err := dbService.IsUserCourseOwner(userID, courseName)
+	var hasUserReview bool
+
+	// If user is logged in and database is available, get their specific review
+	if userID != nil && DB != nil {
+		// Check if they own this course (for edit permissions)
+		dbService := NewDatabaseService()
+		isOwner, err := dbService.IsUserCourseOwner(*userID, baseCourse.Name)
+		if err != nil {
+			log.Printf("Warning: failed to check course ownership: %v", err)
+		} else {
+			canEdit = isOwner
+		}
+
+		// Get the user's review for this course
+		reviewService := NewReviewService()
+
+		// First, find the database course ID by name
+		dbCourse, err := dbService.GetCourseByName(baseCourse.Name)
+		if err == nil && dbCourse != nil {
+			userReview, err := reviewService.GetUserReviewForCourse(*userID, dbCourse.ID)
 			if err != nil {
-				log.Printf("Warning: failed to check course ownership: %v", err)
+				log.Printf("Warning: failed to get user review: %v", err)
+			} else if userReview != nil {
+				// User has a review for this course - use their review data
+				hasUserReview = true
+				courseToDisplay = Course{
+					ID:            baseCourse.ID, // Keep the array index for routing
+					Name:          baseCourse.Name,
+					Description:   baseCourse.Description,
+					Address:       baseCourse.Address,
+					OverallRating: safeStringValue(userReview.OverallRating),
+					Ranks: Ranking{
+						Price:              safeStringValue(userReview.Price),
+						HandicapDifficulty: safeIntValue(userReview.HandicapDifficulty),
+						HazardDifficulty:   safeIntValue(userReview.HazardDifficulty),
+						Merch:              safeStringValue(userReview.Merch),
+						Condition:          safeStringValue(userReview.Condition),
+						EnjoymentRating:    safeStringValue(userReview.EnjoymentRating),
+						Vibe:               safeStringValue(userReview.Vibe),
+						Range:              safeStringValue(userReview.RangeRating),
+						Amenities:          safeStringValue(userReview.Amenities),
+						Glizzies:           safeStringValue(userReview.Glizzies),
+					},
+					Holes:  baseCourse.Holes,  // Keep the original hole data
+					Scores: baseCourse.Scores, // Keep the original score data for now
+				}
+
+				// Add the user's review text if available
+				if userReview.ReviewText != nil {
+					courseToDisplay.Review = *userReview.ReviewText
+				}
+
+				log.Printf("✅ Displaying user %d's review for course '%s'", *userID, baseCourse.Name)
 			} else {
-				canEdit = isOwner
+				log.Printf("ℹ️  User %d has no review for course '%s', showing base course data", *userID, baseCourse.Name)
 			}
 		}
 	}
 
-	// Add ownership context to course data
+	// Add context to course data
 	courseData := struct {
 		Course
-		CanEdit bool
+		CanEdit       bool
+		HasUserReview bool
+		IsLoggedIn    bool
 	}{
-		Course:  (*h.courses)[idInt],
-		CanEdit: canEdit,
+		Course:        courseToDisplay,
+		CanEdit:       canEdit,
+		HasUserReview: hasUserReview,
+		IsLoggedIn:    userID != nil,
 	}
 
 	return c.Render(http.StatusOK, "course", courseData)
@@ -274,29 +384,36 @@ func (h *Handlers) CreateCourseForm(c echo.Context) error {
 	sessionService := NewSessionService()
 	userID := sessionService.GetDatabaseUserID(c)
 
-	var availableCourses []Course
-	var userReviewedCourses map[string]bool = make(map[string]bool)
+	var availableCourses []CourseDB
 
 	if userID != nil && DB != nil {
-		// Get courses the user has already reviewed
-		dbService := NewDatabaseService()
-		userCourses, err := dbService.GetCoursesByUser(*userID)
-		if err == nil {
-			for _, course := range userCourses {
-				userReviewedCourses[course.Name] = true
+		// Use the new review service to get available courses
+		reviewService := NewReviewService()
+		dbCourses, err := reviewService.GetAvailableCoursesForReview(*userID)
+		if err != nil {
+			log.Printf("Warning: failed to get available courses: %v", err)
+			// Fallback: get all courses from database
+			dbService := NewDatabaseService()
+			allDBCourses, err := dbService.GetAllCourses()
+			if err == nil {
+				availableCourses = allDBCourses
+			}
+		} else {
+			availableCourses = dbCourses
+		}
+	} else {
+		// User not authenticated or DB not available, get all courses from database
+		if DB != nil {
+			dbService := NewDatabaseService()
+			allDBCourses, err := dbService.GetAllCourses()
+			if err == nil {
+				availableCourses = allDBCourses
 			}
 		}
 	}
 
-	// Filter to show only courses the user hasn't reviewed yet
-	for _, course := range *h.courses {
-		if !userReviewedCourses[course.Name] {
-			availableCourses = append(availableCourses, course)
-		}
-	}
-
 	data := struct {
-		AvailableCourses []Course
+		AvailableCourses []CourseDB
 		IsEdit           bool
 		IsReviewMode     bool
 	}{
@@ -469,65 +586,63 @@ func (h *Handlers) CreateCourse(c echo.Context) error {
 		return c.String(http.StatusBadRequest, "Failed to parse form data: "+err.Error())
 	}
 
-	// Get selected course ID from form
+	// Get selected course ID from form - this is now the database course ID
 	selectedCourseID := c.FormValue("selectedCourseId")
 	if selectedCourseID == "" {
 		return c.String(http.StatusBadRequest, "No course selected")
 	}
 
-	// Convert to int and find the course
-	courseIndex, err := strconv.Atoi(selectedCourseID)
-	if err != nil || courseIndex < 0 || courseIndex >= len(*h.courses) {
-		return c.String(http.StatusBadRequest, "Invalid course selection")
-	}
-
-	// Get the base course info
-	baseCourse := (*h.courses)[courseIndex]
-
-	// Create a new course review with the user's ratings and review
-	reviewCourse := Course{
-		ID:            baseCourse.ID,
-		Name:          baseCourse.Name,
-		Description:   baseCourse.Description,
-		Address:       baseCourse.Address,
-		OverallRating: c.FormValue("overallRating"),
-		Review:        c.FormValue("review"),
-		Ranks: Ranking{
-			Price:              c.FormValue("price"),
-			HandicapDifficulty: parseInt(c.FormValue("handicapDifficulty")),
-			HazardDifficulty:   parseInt(c.FormValue("hazardDifficulty")),
-			Merch:              c.FormValue("merch"),
-			Condition:          c.FormValue("condition"),
-			EnjoymentRating:    c.FormValue("enjoymentRating"),
-			Vibe:               c.FormValue("vibe"),
-			Range:              c.FormValue("range"),
-			Amenities:          c.FormValue("amenities"),
-			Glizzies:           c.FormValue("glizzies"),
-		},
-		Holes:  []Hole{},
-		Scores: []Score{},
-	}
-
-	// Parse optional hole and score data
-	holes, scores, err := h.courseService.ParseFormData(c.Request().Form)
+	// Convert to database course ID
+	courseID, err := strconv.ParseUint(selectedCourseID, 10, 32)
 	if err != nil {
-		return c.String(http.StatusBadRequest, err.Error())
+		return c.String(http.StatusBadRequest, "Invalid course ID")
 	}
 
-	reviewCourse.Holes = holes
-	reviewCourse.Scores = scores
-
-	// Save course review with user ownership
-	if err := h.courseService.SaveCourseWithOwner(reviewCourse, userID); err != nil {
-		return c.String(http.StatusInternalServerError, "Failed to save course review: "+err.Error())
+	// Validate that the course exists in the database
+	if DB == nil {
+		return c.String(http.StatusServiceUnavailable, "Database not available")
 	}
 
-	// Reload courses to include the new review
-	if err := h.reloadCourses(); err != nil {
-		log.Printf("Warning: failed to reload courses: %v", err)
+	dbService := NewDatabaseService()
+	dbCourse, err := dbService.GetCourseByID(uint(courseID))
+	if err != nil {
+		log.Printf("[REVIEW_COURSE] ERROR: Course not found in database: %v", err)
+		return c.String(http.StatusNotFound, "Course not found")
 	}
 
-	return h.renderSuccessMessage(c, "Course Review Created Successfully!", "review has been created and saved", reviewCourse.Name)
+	// Parse review form data using the new service
+	reviewService := NewReviewService()
+	formData := ParseReviewFormData(func(key string) string {
+		return c.FormValue(key)
+	})
+
+	// Create or update the review
+	_, err = reviewService.CreateOrUpdateReview(*userID, dbCourse.ID, formData)
+	if err != nil {
+		log.Printf("[REVIEW_COURSE] ERROR: Failed to save review: %v", err)
+		return c.String(http.StatusInternalServerError, "Failed to save review: "+err.Error())
+	}
+
+	log.Printf("[REVIEW_COURSE] ✅ Review saved successfully for user %d, course %d", *userID, dbCourse.ID)
+
+	// Also save any score data if provided
+	scoreStr := c.FormValue("score")
+	if scoreStr != "" {
+		scoreFormData := ParseScoreFormData(func(key string) string {
+			return c.FormValue(key)
+		})
+
+		if scoreFormData.Score > 0 {
+			_, err := reviewService.AddScore(*userID, dbCourse.ID, scoreFormData)
+			if err != nil {
+				log.Printf("[REVIEW_COURSE] Warning: Failed to save score: %v", err)
+			} else {
+				log.Printf("[REVIEW_COURSE] ✅ Score %d saved for user %d, course %d", scoreFormData.Score, *userID, dbCourse.ID)
+			}
+		}
+	}
+
+	return h.renderSuccessMessage(c, "Course Review Created Successfully!", "review has been created and saved", dbCourse.Name)
 }
 
 // Helper function to parse integers safely
@@ -895,4 +1010,101 @@ func (h *Handlers) getOwnershipContext(c echo.Context) (userID *uint, authentica
 		return &uid, true
 	}
 	return nil, c.Get("authenticated").(bool)
+}
+
+// Helper functions for safely converting nullable values to template-friendly formats
+func safeStringValue(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
+}
+
+func safeIntValue(value *int) int {
+	if value == nil {
+		return 0
+	}
+	return *value
+}
+
+func (h *Handlers) ReviewSpecificCourseForm(c echo.Context) error {
+	// Get course ID from URL parameter
+	courseIDParam := c.Param("id")
+	courseIndex, err := strconv.Atoi(courseIDParam)
+	if err != nil || courseIndex >= len(*h.courses) {
+		return c.String(http.StatusBadRequest, "Invalid course ID")
+	}
+
+	// Get the course from the JSON array
+	course := (*h.courses)[courseIndex]
+
+	// Get authenticated user to verify they haven't already reviewed this course
+	sessionService := NewSessionService()
+	userID := sessionService.GetDatabaseUserID(c)
+	if userID == nil {
+		return c.String(http.StatusUnauthorized, "You must be logged in to review a course")
+	}
+
+	// Check if user has already reviewed this course
+	if DB != nil {
+		dbService := NewDatabaseService()
+		dbCourse, err := dbService.GetCourseByName(course.Name)
+		if err != nil {
+			log.Printf("Warning: failed to get course from database: %v", err)
+		} else if dbCourse != nil {
+			reviewService := NewReviewService()
+			existingReview, err := reviewService.GetUserReviewForCourse(*userID, dbCourse.ID)
+			if err != nil {
+				log.Printf("Warning: failed to check existing review: %v", err)
+			} else if existingReview != nil {
+				// User has already reviewed this course, redirect to the course page
+				return c.HTML(http.StatusOK, `
+					<div style="text-align: center; padding: 40px; color: #204606;">
+						<h2>Already Reviewed</h2>
+						<p>You have already reviewed this course. You can view your review below.</p>
+						<button hx-get="/course/`+courseIDParam+`" hx-target="#main-content" style="background-color: #204606; color: #FFFCE7; padding: 15px 30px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">View Your Review</button>
+					</div>
+				`)
+			}
+		}
+	}
+
+	// Get the real database course ID if available
+	var dbCourseID uint
+	if DB != nil {
+		dbService := NewDatabaseService()
+		dbCourse, err := dbService.GetCourseByName(course.Name)
+		if err == nil && dbCourse != nil {
+			dbCourseID = dbCourse.ID
+		} else {
+			// Fallback to a computed ID if course not in database
+			dbCourseID = uint(courseIndex + 1)
+		}
+	} else {
+		dbCourseID = uint(courseIndex + 1)
+	}
+
+	// Convert the JSON course to a CourseDB format for the template
+	courseDB := CourseDB{
+		ID:      dbCourseID,
+		Name:    course.Name,
+		Address: course.Address,
+	}
+
+	// Render the review form directly for this specific course
+	data := struct {
+		SelectedCourse   *CourseDB
+		AvailableCourses []CourseDB
+		IsEdit           bool
+		IsReviewMode     bool
+		DirectReview     bool
+	}{
+		SelectedCourse:   &courseDB,
+		AvailableCourses: []CourseDB{courseDB}, // Only include this course
+		IsEdit:           false,
+		IsReviewMode:     true,
+		DirectReview:     true, // Flag to indicate this is a direct course review
+	}
+
+	return c.Render(http.StatusOK, "create-course", data)
 }
