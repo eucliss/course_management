@@ -16,7 +16,7 @@
                 {{ if .User }}
                 <div class="course-toggle">
                     <button id="all-courses-btn" class="toggle-btn {{ if eq .DefaultFilter "all" }}active{{ end }}" data-filter="all">All Courses</button>
-                    <button id="my-courses-btn" class="toggle-btn {{ if eq .DefaultFilter "my" }}active{{ end }}" data-filter="my">My Courses</button>
+                    <button id="my-courses-btn" class="toggle-btn {{ if eq .DefaultFilter "my" }}active{{ end }}" data-filter="my">My Reviews</button>
                 </div>
                 {{ end }}
             </div>
@@ -30,9 +30,12 @@
                 </div>
             </div>
             <div class="courses-list courses-list-scrollable">
-                {{ template "courses-map" . }}
-                <!-- Hidden template for all courses to enable frontend filtering -->
-                <div id="all-courses-template" style="display: none;">
+                <!-- Hide the old reviewed courses template -->
+                <div id="reviewed-courses-template" style="display: none;">
+                    {{ template "courses-map" . }}
+                </div>
+                <!-- Show all courses template by default - filtering will handle visibility -->
+                <div id="all-courses-template">
                     {{ range $index, $course := .AllCourses }}
                     <div class="course-item" data-can-edit="{{ if index $.AllCoursesEditPermissions $index }}true{{ else }}false{{ end }}" data-course-type="all">
                         <div class="course-content" hx-get="/course/{{ $course.ID }}" hx-target="#main-content">
@@ -58,6 +61,23 @@
                         {{ end }}
                     </div>
                     {{ end }}
+                    <!-- Always render no-courses message, JavaScript will show/hide it -->
+                    <div class="no-courses-message" id="no-courses-message">
+                        <div class="no-courses-content">
+                            <div class="no-courses-icon">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                                    <polyline points="14,2 14,8 20,8"></polyline>
+                                    <path d="M12 13v-2"></path>
+                                    <path d="M12 17h.01"></path>
+                                </svg>
+                            </div>
+                            <p class="no-courses-text">No reviews found</p>
+                            <button class="no-courses-cta" hx-get="/create-course" hx-target="#main-content">
+                                Add one now!
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -207,25 +227,33 @@ function setActiveFilter(filter) {
 }
 
 function filterCourses() {
-    const courseItems = document.querySelectorAll('.course-item');
     const searchTerm = document.getElementById('course-search')?.value.toLowerCase().trim() || '';
     let visibleCount = 0;
     
-    courseItems.forEach(item => {
+    console.log(`🔍 Filter: ${window.sidebarCurrentFilter}, Search: "${searchTerm}"`);
+    
+    // Get all course items from both templates (similar to map approach)
+    const allCourseItems = document.querySelectorAll('.course-item');
+    console.log(`📊 Total course items found: ${allCourseItems.length}`);
+    
+    allCourseItems.forEach(item => {
         const courseName = item.querySelector('h4');
-        const canEdit = item.getAttribute('data-can-edit') === 'true';
-        
         if (courseName) {
             const courseText = courseName.textContent.toLowerCase();
+            const canEdit = item.getAttribute('data-can-edit') === 'true';
+            
+            // Same logic as map: all courses OR (my filter AND can edit)
             const matchesSearch = courseText.includes(searchTerm) || searchTerm === '';
             const matchesFilter = window.sidebarCurrentFilter === 'all' || (window.sidebarCurrentFilter === 'my' && canEdit);
             
             if (matchesSearch && matchesFilter) {
-                item.classList.remove('hidden');
+                item.style.display = '';  // Show course
                 visibleCount++;
             } else {
-                item.classList.add('hidden');
+                item.style.display = 'none';  // Hide course
             }
+        } else {
+            console.log(`   ⚠️ Course item found but no h4 element`);
         }
     });
     
@@ -250,7 +278,7 @@ function filterCourses() {
         }
     }
     
-    console.log(`🔍 Filtered courses: ${window.sidebarCurrentFilter} filter, search: "${searchTerm}", visible: ${visibleCount}`);
+    console.log(`✅ Filtered courses: ${window.sidebarCurrentFilter} filter, search: "${searchTerm}", visible: ${visibleCount}`);
 }
 
 // Course toggle functionality
@@ -260,11 +288,13 @@ function initializeCourseToggle() {
     
     if (allCoursesBtn && myCoursesBtn) {
         allCoursesBtn.addEventListener('click', function() {
+            console.log('🔘 All Courses button clicked');
             setActiveFilter('all');
             filterCourses();
         });
         
         myCoursesBtn.addEventListener('click', function() {
+            console.log('🔘 My Reviews button clicked');
             setActiveFilter('my');
             filterCourses();
         });
@@ -285,6 +315,11 @@ function initializeCourseSearch() {
 function initializeSidebarComponents() {
     initializeCourseSearch();
     initializeCourseToggle();
+    
+    // Debug: Check course count
+    const allCourseItems = document.querySelectorAll('.course-item');
+    console.log(`🔍 Sidebar initialized: ${allCourseItems.length} total courses, filter: ${window.sidebarCurrentFilter}`);
+    
     // Set the correct active filter button on initialization
     setActiveFilter(window.sidebarCurrentFilter);
     filterCourses(); // Apply initial filter
@@ -331,23 +366,6 @@ document.addEventListener('htmx:afterRequest', function() {
     {{ end }}
 </div>
 {{ end }}
-<!-- Always render no-courses message, JavaScript will show/hide it -->
-<div class="no-courses-message" id="no-courses-message">
-    <div class="no-courses-content">
-        <div class="no-courses-icon">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
-                <polyline points="14,2 14,8 20,8"></polyline>
-                <path d="M12 13v-2"></path>
-                <path d="M12 17h.01"></path>
-            </svg>
-        </div>
-        <p class="no-courses-text">No reviews found</p>
-        <button class="no-courses-cta" hx-get="/create-course" hx-target="#main-content">
-            Add one now!
-        </button>
-    </div>
-</div>
 {{ end }}
 
 

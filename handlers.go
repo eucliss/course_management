@@ -40,37 +40,89 @@ func (h *Handlers) Home(c echo.Context) error {
 	allCoursesEditPermissions := make(map[int]bool) // Edit permissions for all courses
 
 	if userID != nil && DB != nil {
-		// Get all courses owned by this user in one query
-		dbService := NewDatabaseService()
-		userCourses, err := dbService.GetCoursesByUser(*userID)
+		// Get courses the user has reviewed using the new review system
+		reviewService := NewReviewService()
+		userReviews, err := reviewService.GetUserReviews(*userID)
 		if err != nil {
-			log.Printf("Warning: failed to get user courses: %v", err)
-			// Fallback to all courses if user courses can't be loaded
+			log.Printf("Warning: failed to get user reviews: %v", err)
+			// Fallback to all courses if user reviews can't be loaded
 			coursesToShow = *h.courses
 		} else {
-			// Create a map of course names owned by user
-			userCourseNames := make(map[string]bool)
-			for _, course := range userCourses {
-				userCourseNames[course.Name] = true
+			log.Printf("✅ Found %d reviews for user %d in Home handler", len(userReviews), *userID)
+			// Debug: Print review details
+			for i, review := range userReviews {
+				log.Printf("   Review %d: %s", i+1, review.CourseName)
+			}
+
+			// Get all courses owned by this user for edit permissions
+			dbService := NewDatabaseService()
+			userOwnedCourses, err := dbService.GetCoursesByUser(*userID)
+			userOwnedCourseNames := make(map[string]bool)
+			if err == nil {
+				for _, course := range userOwnedCourses {
+					userOwnedCourseNames[course.Name] = true
+				}
 			}
 
 			// Build edit permissions for ALL courses (for frontend filtering)
 			for i, course := range *h.courses {
-				if userCourseNames[course.Name] {
+				if userOwnedCourseNames[course.Name] {
 					allCoursesEditPermissions[i] = true
 				}
 			}
 
-			// Filter courses to show only user's courses by default
-			for _, course := range *h.courses {
-				if userCourseNames[course.Name] {
-					coursesToShow = append(coursesToShow, course)
-					// Map the new index to edit permission (always true for user's courses)
-					editPermissions[len(coursesToShow)-1] = true
+			// Convert each review to a Course struct that the template expects
+			for _, reviewWithCourse := range userReviews {
+				// Find the corresponding course in the JSON array to get the correct index
+				var courseArrayIndex int = -1
+				for idx, jsonCourse := range *h.courses {
+					if jsonCourse.Name == reviewWithCourse.CourseName {
+						courseArrayIndex = idx
+						break
+					}
 				}
+
+				// If we can't find the course in the JSON array, skip it
+				if courseArrayIndex == -1 {
+					log.Printf("Warning: Course '%s' from review not found in JSON array", reviewWithCourse.CourseName)
+					continue
+				}
+
+				// Get the original course description from the JSON array
+				originalCourse := (*h.courses)[courseArrayIndex]
+
+				course := Course{
+					ID:            courseArrayIndex, // Use the JSON array index for compatibility
+					Name:          reviewWithCourse.CourseName,
+					Description:   originalCourse.Description, // Use the actual course description
+					OverallRating: safeStringValue(reviewWithCourse.OverallRating),
+					Address:       reviewWithCourse.CourseAddress,
+					Ranks: Ranking{
+						Price:              safeStringValue(reviewWithCourse.Price),
+						HandicapDifficulty: safeIntValue(reviewWithCourse.HandicapDifficulty),
+						HazardDifficulty:   safeIntValue(reviewWithCourse.HazardDifficulty),
+						Merch:              safeStringValue(reviewWithCourse.Merch),
+						Condition:          safeStringValue(reviewWithCourse.Condition),
+						EnjoymentRating:    safeStringValue(reviewWithCourse.EnjoymentRating),
+						Vibe:               safeStringValue(reviewWithCourse.Vibe),
+						Range:              safeStringValue(reviewWithCourse.RangeRating),
+						Amenities:          safeStringValue(reviewWithCourse.Amenities),
+						Glizzies:           safeStringValue(reviewWithCourse.Glizzies),
+					},
+				}
+
+				// Add review text if available
+				if reviewWithCourse.ReviewText != nil {
+					course.Review = *reviewWithCourse.ReviewText
+				}
+
+				coursesToShow = append(coursesToShow, course)
+
+				// Check if user owns this course (for edit permissions)
+				editPermissions[len(coursesToShow)-1] = userOwnedCourseNames[course.Name]
 			}
 
-			// If user has no courses, show all courses instead
+			// If user has no reviewed courses, show all courses instead
 			if len(coursesToShow) == 0 {
 				coursesToShow = *h.courses
 				editPermissions = allCoursesEditPermissions // Use the all courses edit permissions
@@ -79,6 +131,22 @@ func (h *Handlers) Home(c echo.Context) error {
 	} else {
 		// Not logged in, show all courses
 		coursesToShow = *h.courses
+	}
+
+	// Debug: Log what we're sending to the template
+	log.Printf("🎯 Home handler sending to template:")
+	log.Printf("   - Courses to show: %d", len(coursesToShow))
+	log.Printf("   - All courses: %d", len(*h.courses))
+	log.Printf("   - User logged in: %t", userID != nil)
+	log.Printf("   - Default filter: %s", func() string {
+		if userID != nil {
+			return "my"
+		}
+		return "all"
+	}())
+
+	for i, course := range coursesToShow {
+		log.Printf("   Course %d: %s", i+1, course.Name)
 	}
 
 	data := struct {
@@ -674,37 +742,85 @@ func (h *Handlers) Map(c echo.Context) error {
 	allCoursesEditPermissions := make(map[int]bool) // Edit permissions for all courses
 
 	if userID != nil && DB != nil {
-		// Get all courses owned by this user in one query
-		dbService := NewDatabaseService()
-		userCourses, err := dbService.GetCoursesByUser(*userID)
+		// Get courses the user has reviewed using the new review system
+		reviewService := NewReviewService()
+		userReviews, err := reviewService.GetUserReviews(*userID)
 		if err != nil {
-			log.Printf("Warning: failed to get user courses: %v", err)
-			// Fallback to all courses if user courses can't be loaded
+			log.Printf("Warning: failed to get user reviews: %v", err)
+			// Fallback to all courses if user reviews can't be loaded
 			coursesToShow = *h.courses
 		} else {
-			// Create a map of course names owned by user
-			userCourseNames := make(map[string]bool)
-			for _, course := range userCourses {
-				userCourseNames[course.Name] = true
+			log.Printf("✅ Found %d reviews for user %d in Map handler", len(userReviews), *userID)
+
+			// Get all courses owned by this user for edit permissions
+			dbService := NewDatabaseService()
+			userOwnedCourses, err := dbService.GetCoursesByUser(*userID)
+			userOwnedCourseNames := make(map[string]bool)
+			if err == nil {
+				for _, course := range userOwnedCourses {
+					userOwnedCourseNames[course.Name] = true
+				}
 			}
 
 			// Build edit permissions for ALL courses (for frontend filtering)
 			for i, course := range *h.courses {
-				if userCourseNames[course.Name] {
+				if userOwnedCourseNames[course.Name] {
 					allCoursesEditPermissions[i] = true
 				}
 			}
 
-			// Filter courses to show only user's courses by default
-			for _, course := range *h.courses {
-				if userCourseNames[course.Name] {
-					coursesToShow = append(coursesToShow, course)
-					// Map the new index to edit permission (always true for user's courses)
-					editPermissions[len(coursesToShow)-1] = true
+			// Convert each review to a Course struct that the template expects
+			for _, reviewWithCourse := range userReviews {
+				// Find the corresponding course in the JSON array to get the correct index
+				var courseArrayIndex int = -1
+				for idx, jsonCourse := range *h.courses {
+					if jsonCourse.Name == reviewWithCourse.CourseName {
+						courseArrayIndex = idx
+						break
+					}
 				}
+
+				// If we can't find the course in the JSON array, skip it
+				if courseArrayIndex == -1 {
+					log.Printf("Warning: Course '%s' from review not found in JSON array", reviewWithCourse.CourseName)
+					continue
+				}
+
+				// Get the original course description from the JSON array
+				originalCourse := (*h.courses)[courseArrayIndex]
+
+				course := Course{
+					ID:            courseArrayIndex, // Use the JSON array index for compatibility
+					Name:          reviewWithCourse.CourseName,
+					Description:   originalCourse.Description, // Use the actual course description
+					OverallRating: safeStringValue(reviewWithCourse.OverallRating),
+					Address:       reviewWithCourse.CourseAddress,
+					Ranks: Ranking{
+						Price:              safeStringValue(reviewWithCourse.Price),
+						HandicapDifficulty: safeIntValue(reviewWithCourse.HandicapDifficulty),
+						HazardDifficulty:   safeIntValue(reviewWithCourse.HazardDifficulty),
+						Merch:              safeStringValue(reviewWithCourse.Merch),
+						Condition:          safeStringValue(reviewWithCourse.Condition),
+						EnjoymentRating:    safeStringValue(reviewWithCourse.EnjoymentRating),
+						Vibe:               safeStringValue(reviewWithCourse.Vibe),
+						Range:              safeStringValue(reviewWithCourse.RangeRating),
+						Amenities:          safeStringValue(reviewWithCourse.Amenities),
+						Glizzies:           safeStringValue(reviewWithCourse.Glizzies),
+					},
+				}
+
+				// Add review text if available
+				if reviewWithCourse.ReviewText != nil {
+					course.Review = *reviewWithCourse.ReviewText
+				}
+
+				coursesToShow = append(coursesToShow, course)
+
+				// Check if user owns this course (for edit permissions)
+				editPermissions[len(coursesToShow)-1] = userOwnedCourseNames[course.Name]
 			}
 
-			// If user has no courses, show all courses instead
+			// If user has no reviewed courses, show all courses instead
 			if len(coursesToShow) == 0 {
 				coursesToShow = *h.courses
 				editPermissions = allCoursesEditPermissions // Use the all courses edit permissions
