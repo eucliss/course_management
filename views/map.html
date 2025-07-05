@@ -254,6 +254,7 @@
       // Store both course datasets for filtering
       window.allCourses = JSON.parse('{{ .AllCoursesJSON }}');
       window.defaultCourses = JSON.parse('{{ .CoursesJSON }}');
+      window.userReviewedCourses = JSON.parse('{{ .CoursesJSON }}'); // User's reviewed courses with their review data
       
       // Store edit permissions for ownership checking
       window.allEditPermissions = {};
@@ -264,6 +265,13 @@
       window.allEditPermissions['{{ $course.Name }}'] = {{ if index $.AllCoursesEditPermissions $index }}true{{ else }}false{{ end }};
       window.allReviewStatus['{{ $course.Name }}'] = {{ if index $.AllCoursesReviewStatus $index }}true{{ else }}false{{ end }};
       {{ end }}
+      
+      // Build a map of user reviewed courses by name for quick lookup
+      window.userReviewMap = {};
+      window.userReviewedCourses.forEach(course => {
+        const courseName = course.Name || course.name;
+        window.userReviewMap[courseName] = course;
+      });
 
       // Edit permissions from server - avoid redeclaration
       if (typeof window.editPermissions === 'undefined') {
@@ -305,10 +313,30 @@
           filterMapMarkers();
       });
 
+      function createPopupHTML(courseName, courseId, rating, markerColor) {
+        return `
+          <div class="marker-popup">
+            <div class="popup-content">
+              <div class="popup-header">
+                <h3 class="course-title" data-course-id="${courseId}">${courseName}</h3>
+              </div>
+            </div>
+            <div class="rating-plaque" style="background-color: ${markerColor};">${rating || '-'}</div>
+          </div>
+        `;
+      }
+
       function addPinFromAddress(courseMap, address, courseName, rating, courseId, courseIndex, color = '#204606') {
         if (!address || address.trim() === '') {
           console.log('No address provided for course:', courseName);
           return;
+        }
+        
+        // Determine which rating to use based on current filter and user reviews
+        let displayRating = rating;
+        if (window.mapCurrentFilter === 'my' && window.userReviewMap[courseName]) {
+          const userReview = window.userReviewMap[courseName];
+          displayRating = userReview.OverallRating || userReview.overallRating || rating;
         }
         
         // Define rating colors based on the course.html color scheme
@@ -322,7 +350,7 @@
         };
         
         // Get the color for this rating, default to the original color if not found
-        const markerColor = ratingColors[rating] || color;
+        const markerColor = ratingColors[displayRating] || color;
         
         fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token={{ .MapboxToken }}`)
           .then(response => response.json())
@@ -337,16 +365,7 @@
               .setLngLat([lng, lat])
               .setPopup(
                 new mapboxgl.Popup({ offset: 25 })
-                  .setHTML(`
-                    <div class="marker-popup">
-                      <div class="popup-content">
-                        <div class="popup-header">
-                          <h3 class="course-title" data-course-id="${courseId}">${courseName}</h3>
-                        </div>
-                      </div>
-                      <div class="rating-plaque" style="background-color: ${markerColor};">${rating || '-'}</div>
-                    </div>
-                  `)
+                  .setHTML(createPopupHTML(courseName, courseId, displayRating, markerColor))
               )
               .addTo(courseMap);
 
@@ -361,6 +380,8 @@
                 canEdit: canEdit,
                 hasReview: hasReview,
                 courseIndex: courseIndex,
+                courseId: courseId,
+                originalCourseName: courseName,
                 visible: window.mapCurrentFilter === 'all' || (window.mapCurrentFilter === 'my' && hasReview)
               });
 
@@ -407,11 +428,16 @@
         
         if (allCourses && allCourses.length > 0) {
           allCourses.forEach((course, index) => {
-            console.log('Processing course:', course.name, 'Address:', course.address, 'Rating:', course.overallRating);
-            if (course.address && course.address.trim() !== '') {
-              addPinFromAddress(courseMap, course.address, course.name, course.overallRating, course.ID, index, '#204606');
+            const courseName = course.Name || course.name;
+            const courseAddress = course.Address || course.address;
+            const courseRating = course.OverallRating || course.overallRating;
+            const courseID = course.ID || index;
+            
+            console.log('Processing course:', courseName, 'Address:', courseAddress, 'Rating:', courseRating);
+            if (courseAddress && courseAddress.trim() !== '') {
+              addPinFromAddress(courseMap, courseAddress, courseName, courseRating, courseID, index, '#204606');
             } else {
-              console.log('Skipping course without address:', course.name);
+              console.log('Skipping course without address:', courseName);
             }
           });
         } else {
@@ -426,15 +452,19 @@
         if (allCoursesBtn && myCoursesBtn) {
           allCoursesBtn.addEventListener('click', function() {
             setMapActiveFilter('all');
-            filterMapMarkers();
+            // Reload markers with correct ratings/colors for "All Courses" mode
+            loadCourses(dedicatedCourseMap);
           });
           
           myCoursesBtn.addEventListener('click', function() {
             setMapActiveFilter('my');
-            filterMapMarkers();
+            // Reload markers with correct ratings/colors for "My Courses" mode
+            loadCourses(dedicatedCourseMap);
           });
         }
       }
+
+
 
       function setMapActiveFilter(filter) {
         window.mapCurrentFilter = filter;
@@ -468,9 +498,9 @@
             }
           }
         });
-        
-        console.log(`🗺️ Filtered map markers: ${window.mapCurrentFilter} filter, search: "${searchTerm}"`);
       }
+
+
 
       function initializeMapSearch() {
         const searchInput = document.getElementById('map-course-search');
