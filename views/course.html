@@ -15,13 +15,37 @@
     
     {{ if .HasUserReview }}
     <div class="user-review-indicator">
-        <div class="review-badge">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 9V5a3 3 0 0 0-6 0v4"></path>
-                <rect x="2" y="9" width="20" height="11" rx="2" ry="2"></rect>
-                <circle cx="12" cy="15" r="1"></circle>
-            </svg>
-            <span>Your Personal Review</span>
+        <div class="review-header">
+            <div class="review-spacer"></div>
+            
+            <div class="review-badge">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 9V5a3 3 0 0 0-6 0v4"></path>
+                    <rect x="2" y="9" width="20" height="11" rx="2" ry="2"></rect>
+                    <circle cx="12" cy="15" r="1"></circle>
+                </svg>
+                <span>Your Personal Review</span>
+            </div>
+            
+            <!-- Review Actions Inline -->
+            <div class="review-actions-inline">
+                <button class="action-btn edit-review-action-btn" hx-get="/review-course/{{ .ID }}" hx-target="#main-content">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    Edit
+                </button>
+                <button class="action-btn delete-review-action-btn" hx-delete="/delete-review/{{ .ID }}" hx-target="#main-content" hx-confirm="Are you sure you want to delete your review for '{{ .Name }}'? This action cannot be undone.">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3,6 5,6 21,6"></polyline>
+                        <path d="m19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1,2,2h4a2,2 0 0,1,2,2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                    Delete
+                </button>
+            </div>
         </div>
         <p class="review-note">This is your personal review and ratings for this course. Only you can see this data.</p>
     </div>
@@ -296,6 +320,66 @@
     .action-btn svg {
         width: 18px;
         height: 18px;
+        stroke: currentColor;
+    }
+
+    /* Review header with inline actions */
+    .review-header {
+        display: flex;
+        align-items: center;
+        position: relative;
+        margin-bottom: 10px;
+    }
+
+    .review-spacer {
+        flex: 1;
+    }
+
+    .review-badge {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .review-actions-inline {
+        display: flex;
+        gap: 8px;
+        margin-left: auto;
+    }
+
+    .edit-review-action-btn {
+        background-color: #B5D844;
+        color: #204606;
+        font-size: 0.75em;
+        padding: 6px 12px;
+        border-radius: 4px;
+    }
+
+    .edit-review-action-btn:hover {
+        background-color: #204606;
+        color: #FFFCE7;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(32, 70, 6, 0.3);
+    }
+
+    .delete-review-action-btn {
+        background-color: #ff6b6b;
+        color: white;
+        font-size: 0.75em;
+        padding: 6px 12px;
+        border-radius: 4px;
+    }
+
+    .delete-review-action-btn:hover {
+        background-color: #ff5252;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(255, 107, 107, 0.3);
+    }
+
+    .edit-review-action-btn svg,
+    .delete-review-action-btn svg {
+        width: 14px;
+        height: 14px;
         stroke: currentColor;
     }
 
