@@ -346,11 +346,12 @@
           'B': '#FFFF73',
           'C': '#FFDA74',
           'D': '#FFB774',
-          'F': '#FF7474'
+          'F': '#FF7474',
+          '-': '#BABEBC'  // Gray color for no rating
         };
         
-        // Get the color for this rating, default to the original color if not found
-        const markerColor = ratingColors[displayRating] || color;
+        // Get the color for this rating, default to gray if not found
+        const markerColor = ratingColors[displayRating] || ratingColors['-'];
         
         fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token={{ .MapboxToken }}`)
           .then(response => response.json())
