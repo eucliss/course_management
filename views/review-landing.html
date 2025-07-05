@@ -18,15 +18,12 @@
         </div>
         <div class="courses-grid">
             {{ range $index, $course := .AvailableCourses }}
-            <div class="course-card">
+            <div class="course-card clickable-card" 
+                 hx-get="/review-course/{{ $course.JSONIndex }}" 
+                 hx-target="#main-content">
                 <div class="course-card-header">
                     <h3>{{ $course.Name }}</h3>
                     <span class="course-address">{{ $course.Address }}</span>
-                </div>
-                <div class="course-card-footer">
-                    <button type="button" class="select-course-btn" 
-                            hx-get="/review-course/{{ $course.JSONIndex }}" 
-                            hx-target="#main-content">Review This Course</button>
                 </div>
             </div>
             {{ end }}
@@ -521,8 +518,8 @@
     .course-card {
         background-color: white;
         border: 2px solid rgba(32, 70, 6, 0.1);
-        border-radius: 12px;
-        padding: 20px;
+        border-radius: 8px;
+        padding: 12px;
         cursor: pointer;
         transition: all 0.2s ease;
         box-shadow: 0 2px 8px rgba(0,0,0,0.05);
@@ -534,16 +531,31 @@
         transform: translateY(-2px);
     }
 
+    .clickable-card {
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .clickable-card:hover {
+        border-color: #204606;
+        box-shadow: 0 6px 20px rgba(32, 70, 6, 0.15);
+        transform: translateY(-3px);
+    }
+
+    .clickable-card:active {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(32, 70, 6, 0.2);
+    }
+
     .course-card-header {
-        margin-bottom: 15px;
-        padding-bottom: 15px;
-        border-bottom: 1px solid rgba(32, 70, 6, 0.1);
+        margin-bottom: 8px;
+        padding-bottom: 8px;
     }
 
     .course-card-header h3 {
-        margin: 0 0 8px 0;
+        margin: 0 0 4px 0;
         color: #204606;
-        font-size: 1.3em;
+        font-size: 1.1em;
         font-weight: 600;
     }
 
@@ -554,39 +566,17 @@
     }
 
     .course-card-description {
-        margin: 15px 0 20px 0;
+        margin: 8px 0 0 0;
     }
 
     .course-card-description p {
         margin: 0;
         color: #204606;
-        line-height: 1.4;
-        font-size: 1em;
+        line-height: 1.3;
+        font-size: 0.9em;
     }
 
-    .course-card-footer {
-        text-align: center;
-    }
 
-    .select-course-btn {
-        background-color: #204606;
-        color: #FFFCE7;
-        border: none;
-        padding: 12px 24px;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 0.95em;
-        font-weight: 500;
-        transition: all 0.2s ease;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        width: 100%;
-    }
-
-    .select-course-btn:hover {
-        background-color: #2d6509;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    }
 
     .no-courses-available {
         text-align: center;
