@@ -558,7 +558,7 @@ func (h *Handlers) CreateCourseForm(c echo.Context) error {
 		IsReviewMode:     true,
 	}
 
-	return c.Render(http.StatusOK, "create-course", data)
+	return c.Render(http.StatusOK, "review-landing", data)
 }
 
 func (h *Handlers) EditCourseForm(c echo.Context) error {
@@ -591,7 +591,7 @@ func (h *Handlers) EditCourseForm(c echo.Context) error {
 		IsReviewMode: false,
 	}
 
-	return c.Render(http.StatusOK, "create-course", data)
+	return c.Render(http.StatusOK, "review-landing", data)
 }
 
 func (h *Handlers) UpdateCourse(c echo.Context) error {

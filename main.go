@@ -30,7 +30,7 @@ func NewTemplates() *Templates {
 			"views/welcome.html",
 			"views/course.html",
 			"views/introduction.html",
-			"views/create-course.html",
+			"views/review-landing.html",
 			"views/map.html",
 			"views/authentication.html",
 			"views/sidebar.html",
@@ -225,7 +225,7 @@ func main() {
 	e.POST("/profile/display-name", handlers.UpdateDisplayName, RequireAuth(sessionService))
 	e.POST("/profile/add-score", handlers.AddScore, RequireAuth(sessionService))
 	e.GET("/course/:id", handlers.GetCourse, AddOwnershipContext(sessionService))
-	e.GET("/create-course", handlers.CreateCourseForm, RequireAuth(sessionService))
+	e.GET("/review-landing", handlers.CreateCourseForm, RequireAuth(sessionService))
 	e.GET("/review-course/:id", handlers.ReviewSpecificCourseForm, RequireAuth(sessionService))
 	e.POST("/create-course", handlers.CreateCourse, RequireAuth(sessionService))
 	e.GET("/map", handlers.Map, AddOwnershipContext(sessionService))

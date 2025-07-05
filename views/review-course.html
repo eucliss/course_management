@@ -194,7 +194,7 @@
                         <small>📝 {{ if .UserReview }}Update your review{{ else }}This review will be associated with your account{{ end }}</small>
                     </div>
                     <div class="form-actions">
-                        <button type="button" class="back-to-selection-btn" hx-get="/create-course" hx-target="#main-content">← Back</button>
+                        <button type="button" class="back-to-selection-btn" hx-get="/review-landing" hx-target="#main-content">← Back</button>
                         <button type="submit" class="save-course-btn" hx-post="/create-course" hx-target="#main-content" hx-include="closest form">{{ if .UserReview }}Update Review{{ else }}Save Review{{ end }}</button>
                     </div>
                 </div>

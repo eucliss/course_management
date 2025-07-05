@@ -166,7 +166,7 @@ window.addEventListener('load', function() {
     <div class="courses-reviewed-section">
         <div class="courses-reviewed-header">
             <h3>Courses Reviewed ({{len .Courses}})</h3>
-            <button hx-get="/create-course" hx-target="#main-content" class="add-course-btn">
+                            <button hx-get="/review-landing" hx-target="#main-content" class="add-course-btn">
                 + Review Course
             </button>
         </div>
@@ -254,7 +254,7 @@ window.addEventListener('load', function() {
                 <div class="no-courses-message">
                     <h3>Add a course review to see it here...</h3>
                     <p>You haven't reviewed any courses yet. Start building your golf course portfolio!</p>
-                    <button hx-get="/create-course" hx-target="#main-content" class="add-course-btn">
+                    <button hx-get="/review-landing" hx-target="#main-content" class="add-course-btn">
                         Add Your First Course Review
                     </button>
                 </div>
