@@ -235,6 +235,9 @@ func main() {
 	e.POST("/edit-course/:id", handlers.UpdateCourse, RequireOwnership(sessionService, courseService, &courses))
 	e.DELETE("/delete-course/:id", handlers.DeleteCourse, RequireOwnership(sessionService, courseService, &courses))
 
+	// Review management routes
+	e.DELETE("/delete-review/:id", handlers.DeleteReview, RequireAuth(sessionService))
+
 	// API routes
 	e.GET("/api/status/database", handlers.DatabaseStatus)
 	e.POST("/api/migrate/courses", handlers.MigrateCourses)

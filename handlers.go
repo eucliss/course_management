@@ -704,6 +704,67 @@ func (h *Handlers) DeleteCourse(c echo.Context) error {
 	return h.renderSuccessMessage(c, "Course Deleted Successfully!", "has been deleted", courseName)
 }
 
+func (h *Handlers) DeleteReview(c echo.Context) error {
+	log.Printf("[DELETE_REVIEW] Starting request from %s", c.RealIP())
+
+	// Get authenticated user ID
+	sessionService := NewSessionService()
+	userID := sessionService.GetDatabaseUserID(c)
+	if userID == nil {
+		log.Printf("[DELETE_REVIEW] ERROR: User not authenticated")
+		return c.String(http.StatusUnauthorized, "You must be logged in to delete a review")
+	}
+
+	// Get course index from URL parameter (this is the JSON array index)
+	courseIndexParam := c.Param("id")
+	courseIndex, err := strconv.Atoi(courseIndexParam)
+	if err != nil || courseIndex >= len(*h.courses) {
+		log.Printf("[DELETE_REVIEW] ERROR: Invalid course index: %s", courseIndexParam)
+		return c.String(http.StatusBadRequest, "Invalid course ID")
+	}
+
+	// Get the course name from the JSON array
+	courseName := (*h.courses)[courseIndex].Name
+
+	// Validate that the database is available
+	if DB == nil {
+		return c.String(http.StatusServiceUnavailable, "Database not available")
+	}
+
+	// Find the database course by name
+	dbService := NewDatabaseService()
+	dbCourse, err := dbService.GetCourseByName(courseName)
+	if err != nil {
+		log.Printf("[DELETE_REVIEW] ERROR: Course not found in database: %v", err)
+		return c.String(http.StatusNotFound, "Course not found")
+	}
+
+	// Verify the user has a review for this course
+	reviewService := NewReviewService()
+	existingReview, err := reviewService.GetUserReviewForCourse(*userID, dbCourse.ID)
+	if err != nil {
+		log.Printf("[DELETE_REVIEW] ERROR: Failed to check existing review: %v", err)
+		return c.String(http.StatusInternalServerError, "Failed to check existing review")
+	}
+
+	if existingReview == nil {
+		log.Printf("[DELETE_REVIEW] ERROR: User %d has no review for course %d", *userID, dbCourse.ID)
+		return c.String(http.StatusNotFound, "You have no review for this course")
+	}
+
+	// Delete the review (this will NOT delete the course, only the user's review)
+	err = reviewService.DeleteUserReview(*userID, dbCourse.ID)
+	if err != nil {
+		log.Printf("[DELETE_REVIEW] ERROR: Failed to delete review: %v", err)
+		return c.String(http.StatusInternalServerError, "Failed to delete review: "+err.Error())
+	}
+
+	log.Printf("[DELETE_REVIEW] ✅ Review deleted successfully for user %d, course %d (%s)", *userID, dbCourse.ID, courseName)
+
+	// Return success message
+	return h.renderSuccessMessage(c, "Review Deleted Successfully!", "review has been deleted", courseName)
+}
+
 func (h *Handlers) CreateCourse(c echo.Context) error {
 	log.Printf("[REVIEW_COURSE] Starting request from %s", c.RealIP())
 

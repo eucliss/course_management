@@ -111,6 +111,45 @@ func (rs *ReviewService) GetUserReviewForCourse(userID uint, courseID uint) (*Co
 	return &review, nil
 }
 
+// DeleteUserReview deletes a user's review for a specific course (does NOT delete the course)
+func (rs *ReviewService) DeleteUserReview(userID uint, courseID uint) error {
+	if rs.db == nil {
+		return fmt.Errorf("database not connected")
+	}
+
+	// First, verify the review exists and belongs to the user
+	var review CourseReview
+	result := rs.db.Where("user_id = ? AND course_id = ?", userID, courseID).First(&review)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			return fmt.Errorf("review not found")
+		}
+		return fmt.Errorf("failed to find review: %v", result.Error)
+	}
+
+	// Delete the review (this only deletes the CourseReview record, NOT the CourseDB record)
+	result = rs.db.Where("user_id = ? AND course_id = ?", userID, courseID).Delete(&CourseReview{})
+	if result.Error != nil {
+		return fmt.Errorf("failed to delete review: %v", result.Error)
+	}
+
+	// Also delete associated scores and holes for this user/course
+	// Delete scores
+	result = rs.db.Where("user_id = ? AND course_id = ?", userID, courseID).Delete(&UserCourseScore{})
+	if result.Error != nil {
+		log.Printf("Warning: failed to delete user scores: %v", result.Error)
+	}
+
+	// Delete holes
+	result = rs.db.Where("user_id = ? AND course_id = ?", userID, courseID).Delete(&UserCourseHole{})
+	if result.Error != nil {
+		log.Printf("Warning: failed to delete user holes: %v", result.Error)
+	}
+
+	log.Printf("✅ Deleted review and associated data for user %d, course %d", userID, courseID)
+	return nil
+}
+
 // GetUserReviews gets all reviews by a specific user
 func (rs *ReviewService) GetUserReviews(userID uint) ([]UserReviewWithCourse, error) {
 	if rs.db == nil {
