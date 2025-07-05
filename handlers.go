@@ -512,40 +512,44 @@ func (h *Handlers) GetCourse(c echo.Context) error {
 }
 
 func (h *Handlers) CreateCourseForm(c echo.Context) error {
-	// Get authenticated user to check which courses they haven't reviewed yet
-	sessionService := NewSessionService()
-	userID := sessionService.GetDatabaseUserID(c)
+	// Create a struct that includes both database info and JSON array index
+	type CourseWithIndex struct {
+		CourseDB
+		JSONIndex int // The index in the JSON array for routing
+	}
 
-	var availableCourses []CourseDB
+	var availableCourses []CourseWithIndex
 
-	if userID != nil && DB != nil {
-		// Use the new review service to get available courses
-		reviewService := NewReviewService()
-		dbCourses, err := reviewService.GetAvailableCoursesForReview(*userID)
+	if DB != nil {
+		// Get ALL courses from database - user should be able to review any course
+		dbService := NewDatabaseService()
+		allDBCourses, err := dbService.GetAllCourses()
 		if err != nil {
-			log.Printf("Warning: failed to get available courses: %v", err)
-			// Fallback: get all courses from database
-			dbService := NewDatabaseService()
-			allDBCourses, err := dbService.GetAllCourses()
-			if err == nil {
-				availableCourses = allDBCourses
-			}
+			log.Printf("Warning: failed to get all courses: %v", err)
 		} else {
-			availableCourses = dbCourses
-		}
-	} else {
-		// User not authenticated or DB not available, get all courses from database
-		if DB != nil {
-			dbService := NewDatabaseService()
-			allDBCourses, err := dbService.GetAllCourses()
-			if err == nil {
-				availableCourses = allDBCourses
+			// Map database courses to JSON array indices
+			for _, dbCourse := range allDBCourses {
+				// Find the corresponding index in the JSON array
+				jsonIndex := -1
+				for i, jsonCourse := range *h.courses {
+					if jsonCourse.Name == dbCourse.Name {
+						jsonIndex = i
+						break
+					}
+				}
+
+				if jsonIndex != -1 {
+					availableCourses = append(availableCourses, CourseWithIndex{
+						CourseDB:  dbCourse,
+						JSONIndex: jsonIndex,
+					})
+				}
 			}
 		}
 	}
 
 	data := struct {
-		AvailableCourses []CourseDB
+		AvailableCourses []CourseWithIndex
 		IsEdit           bool
 		IsReviewMode     bool
 	}{
@@ -1334,30 +1338,6 @@ func (h *Handlers) ReviewSpecificCourseForm(c echo.Context) error {
 		return c.String(http.StatusUnauthorized, "You must be logged in to review a course")
 	}
 
-	// Check if user has already reviewed this course
-	if DB != nil {
-		dbService := NewDatabaseService()
-		dbCourse, err := dbService.GetCourseByName(course.Name)
-		if err != nil {
-			log.Printf("Warning: failed to get course from database: %v", err)
-		} else if dbCourse != nil {
-			reviewService := NewReviewService()
-			existingReview, err := reviewService.GetUserReviewForCourse(*userID, dbCourse.ID)
-			if err != nil {
-				log.Printf("Warning: failed to check existing review: %v", err)
-			} else if existingReview != nil {
-				// User has already reviewed this course, redirect to the course page
-				return c.HTML(http.StatusOK, `
-					<div style="text-align: center; padding: 40px; color: #204606;">
-						<h2>Already Reviewed</h2>
-						<p>You have already reviewed this course. You can view your review below.</p>
-						<button hx-get="/course/`+courseIDParam+`" hx-target="#main-content" style="background-color: #204606; color: #FFFCE7; padding: 15px 30px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">View Your Review</button>
-					</div>
-				`)
-			}
-		}
-	}
-
 	// Get the real database course ID if available
 	var dbCourseID uint
 	if DB != nil {
@@ -1380,20 +1360,83 @@ func (h *Handlers) ReviewSpecificCourseForm(c echo.Context) error {
 		Address: course.Address,
 	}
 
-	// Render the review form directly for this specific course
-	data := struct {
-		SelectedCourse   *CourseDB
-		AvailableCourses []CourseDB
-		IsEdit           bool
-		IsReviewMode     bool
-		DirectReview     bool
-	}{
-		SelectedCourse:   &courseDB,
-		AvailableCourses: []CourseDB{courseDB}, // Only include this course
-		IsEdit:           false,
-		IsReviewMode:     true,
-		DirectReview:     true, // Flag to indicate this is a direct course review
+	// Get user's existing review, scores, and holes for this course
+	var userReview *CourseReview
+	var userScores []UserCourseScore
+	var userHoles []UserCourseHole
+
+	if DB != nil {
+		dbService := NewDatabaseService()
+		dbCourse, err := dbService.GetCourseByName(course.Name)
+		if err == nil && dbCourse != nil {
+			reviewService := NewReviewService()
+
+			// Get existing review
+			userReview, err = reviewService.GetUserReviewForCourse(*userID, dbCourse.ID)
+			if err != nil {
+				log.Printf("Warning: failed to get user review: %v", err)
+			}
+
+			// Get user's scores
+			userScores, err = reviewService.GetUserScoresForCourse(*userID, dbCourse.ID)
+			if err != nil {
+				log.Printf("Warning: failed to get user scores: %v", err)
+			}
+
+			// Get user's holes
+			userHoles, err = reviewService.GetUserHolesForCourse(*userID, dbCourse.ID)
+			if err != nil {
+				log.Printf("Warning: failed to get user holes: %v", err)
+			}
+		}
 	}
 
-	return c.Render(http.StatusOK, "create-course", data)
+	// Prepare data for review-course template
+	// Convert UserReview to template-friendly format if it exists
+	type TemplateReview struct {
+		OverallRating      string
+		Price              string
+		HandicapDifficulty int
+		HazardDifficulty   int
+		Merch              string
+		Condition          string
+		EnjoymentRating    string
+		Vibe               string
+		RangeRating        string
+		Amenities          string
+		Glizzies           string
+		ReviewText         string
+	}
+
+	var templateReview *TemplateReview
+	if userReview != nil {
+		templateReview = &TemplateReview{
+			OverallRating:      safeStringValue(userReview.OverallRating),
+			Price:              safeStringValue(userReview.Price),
+			HandicapDifficulty: safeIntValue(userReview.HandicapDifficulty),
+			HazardDifficulty:   safeIntValue(userReview.HazardDifficulty),
+			Merch:              safeStringValue(userReview.Merch),
+			Condition:          safeStringValue(userReview.Condition),
+			EnjoymentRating:    safeStringValue(userReview.EnjoymentRating),
+			Vibe:               safeStringValue(userReview.Vibe),
+			RangeRating:        safeStringValue(userReview.RangeRating),
+			Amenities:          safeStringValue(userReview.Amenities),
+			Glizzies:           safeStringValue(userReview.Glizzies),
+			ReviewText:         safeStringValue(userReview.ReviewText),
+		}
+	}
+
+	data := struct {
+		Course     *CourseDB
+		UserReview *TemplateReview
+		UserScores []UserCourseScore
+		UserHoles  []UserCourseHole
+	}{
+		Course:     &courseDB,
+		UserReview: templateReview,
+		UserScores: userScores,
+		UserHoles:  userHoles,
+	}
+
+	return c.Render(http.StatusOK, "review-course", data)
 }

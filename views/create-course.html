@@ -1,12 +1,11 @@
 {{ block "create-course" . }}
 {{ if .IsReviewMode }}
-<div class="course-selection-view" {{ if .DirectReview }}style="display: none;"{{ end }}>
+<div class="course-selection-view">
     <div class="header-section">
         <h1>Review a Course</h1>
         <p>Select a course from the list below to write your review</p>
     </div>
     
-    {{ if gt (len .AvailableCourses) 0 }}
     <div class="available-courses">
         <div class="course-search-container">
             <input type="text" id="course-selection-search" placeholder="Search courses to review..." class="course-search-input">
@@ -19,32 +18,24 @@
         </div>
         <div class="courses-grid">
             {{ range $index, $course := .AvailableCourses }}
-            <div class="course-card" onclick="selectCourse({{ $course.ID }}, '{{ $course.Name }}', '{{ $course.Address }}', '{{ $course.Address }}')">
+            <div class="course-card">
                 <div class="course-card-header">
                     <h3>{{ $course.Name }}</h3>
                     <span class="course-address">{{ $course.Address }}</span>
                 </div>
-                <div class="course-card-description">
-                    <p>{{ $course.Address }}</p>
-                </div>
                 <div class="course-card-footer">
-                    <button type="button" class="select-course-btn">Review This Course</button>
+                    <button type="button" class="select-course-btn" 
+                            hx-get="/review-course/{{ $course.JSONIndex }}" 
+                            hx-target="#main-content">Review This Course</button>
                 </div>
             </div>
             {{ end }}
         </div>
     </div>
-    {{ else }}
-    <div class="no-courses-message">
-        <h2>All courses reviewed!</h2>
-        <p>You have already reviewed all available courses. Great job!</p>
-        <button hx-get="/" hx-target="#main-content" class="return-home-btn">Return to Home</button>
-    </div>
-    {{ end }}
 </div>
 
 <!-- Review Form (Initially Hidden) -->
-<div class="course-review-form" id="review-form" {{ if not .DirectReview }}style="display: none;"{{ end }}>
+<div class="course-review-form" id="review-form" >
     <div class="course-detail">
         <div class="header-section">
             <div class="title-and-line">
@@ -1567,39 +1558,7 @@
         setTimeout(initializeSearch, 100);
     });
 
-    // ========================================
-    // DIRECT REVIEW INITIALIZATION
-    // ========================================
-    
-    {{ if .DirectReview }}
-    // Auto-select the course for direct review
-    function initializeDirectReview() {
-        {{ if .SelectedCourse }}
-        const courseId = {{ .SelectedCourse.ID }};
-        const courseName = '{{ .SelectedCourse.Name }}';
-        const courseAddress = '{{ .SelectedCourse.Address }}';
-        
-        console.log('🎯 Direct review mode: auto-selecting course:', courseName);
-        
-        // Set the global variables
-        window.selectedCourseIndex = courseId;
-        window.selectedCourseData = { name: courseName, description: courseAddress, address: courseAddress };
-        
-        // Update the form with course data
-        document.getElementById('selected-course-name').textContent = courseName;
-        document.getElementById('selected-course-description').textContent = courseAddress;
-        document.getElementById('course-address').value = courseAddress;
-        
-        console.log('✅ Direct review initialized for:', courseName);
-        {{ end }}
-    }
-    
-    // Initialize direct review on page load
-    document.addEventListener('DOMContentLoaded', initializeDirectReview);
-    if (document.readyState !== 'loading') {
-        initializeDirectReview();
-    }
-    {{ end }}
+
 
 </script>
 {{ end }}
