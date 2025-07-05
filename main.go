@@ -207,7 +207,14 @@ func main() {
 	if len(sessionSecret) < 32 {
 		log.Printf("Warning: SESSION_SECRET should be at least 32 characters")
 	}
-	e.Use(session.Middleware(sessions.NewCookieStore([]byte(sessionSecret))))
+
+	// Configure session store with proper options
+	store := sessions.NewCookieStore([]byte(sessionSecret))
+	store.Options.Path = "/"
+	store.Options.HttpOnly = true
+	store.Options.Secure = false // Set to true in production with HTTPS
+	store.Options.SameSite = http.SameSiteStrictMode
+	e.Use(session.Middleware(store))
 
 	// Auth handlers
 	authHandlers := NewAuthHandlers()

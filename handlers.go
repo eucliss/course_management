@@ -391,6 +391,14 @@ func (h *Handlers) GetCourse(c echo.Context) error {
 	sessionService := NewSessionService()
 	userID := sessionService.GetDatabaseUserID(c)
 
+	// DEBUG: Log user information for course access
+	user := sessionService.GetUser(c)
+	if user != nil {
+		log.Printf("🔍 [GETCOURSE] User %s (DB ID: %v) accessing course '%s'", user.Email, userID, baseCourse.Name)
+	} else {
+		log.Printf("🔍 [GETCOURSE] Anonymous user accessing course '%s'", baseCourse.Name)
+	}
+
 	// Start with the base course data
 	courseToDisplay := baseCourse
 	var canEdit bool
@@ -413,10 +421,17 @@ func (h *Handlers) GetCourse(c echo.Context) error {
 		// First, find the database course ID by name
 		dbCourse, err := dbService.GetCourseByName(baseCourse.Name)
 		if err == nil && dbCourse != nil {
+			log.Printf("🔍 [GETCOURSE] Looking for review by user %d for course %d (%s)", *userID, dbCourse.ID, baseCourse.Name)
 			userReview, err := reviewService.GetUserReviewForCourse(*userID, dbCourse.ID)
 			if err != nil {
 				log.Printf("Warning: failed to get user review: %v", err)
 			} else if userReview != nil {
+				log.Printf("✅ [GETCOURSE] Found user %d's review for course %d - Rating: %s", *userID, dbCourse.ID, safeStringValue(userReview.OverallRating))
+			} else {
+				log.Printf("ℹ️ [GETCOURSE] No review found for user %d on course %d", *userID, dbCourse.ID)
+			}
+
+			if userReview != nil {
 				// User has a review for this course - use their review data
 				hasUserReview = true
 

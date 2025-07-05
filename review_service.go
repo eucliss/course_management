@@ -98,16 +98,27 @@ func (rs *ReviewService) GetUserReviewForCourse(userID uint, courseID uint) (*Co
 		return nil, fmt.Errorf("database not connected")
 	}
 
+	log.Printf("🔍 [REVIEW_SERVICE] Querying for review: user_id=%d, course_id=%d", userID, courseID)
+
 	var review CourseReview
 	result := rs.db.Where("user_id = ? AND course_id = ?", userID, courseID).First(&review)
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
+			log.Printf("🔍 [REVIEW_SERVICE] No review found for user %d, course %d", userID, courseID)
 			return nil, nil // No review found (not an error)
 		}
+		log.Printf("🔍 [REVIEW_SERVICE] Database error: %v", result.Error)
 		return nil, fmt.Errorf("failed to get user review: %v", result.Error)
 	}
 
+	log.Printf("🔍 [REVIEW_SERVICE] Found review: ID=%d, user_id=%d, course_id=%d, rating=%s",
+		review.ID, review.UserID, review.CourseID, func() string {
+			if review.OverallRating == nil {
+				return "nil"
+			}
+			return *review.OverallRating
+		}())
 	return &review, nil
 }
 

@@ -93,7 +93,12 @@ func (s *SessionService) GetDatabaseUserID(c echo.Context) *uint {
 	}
 
 	if dbUserID, ok := sess.Values["db_user_id"].(uint); ok {
-		log.Printf("🔍 GetDatabaseUserID: Found DB User ID: %d", dbUserID)
+		// Also log the user's email for debugging
+		if userEmail, ok := sess.Values["user_email"].(string); ok {
+			log.Printf("🔍 GetDatabaseUserID: Found DB User ID: %d for user: %s", dbUserID, userEmail)
+		} else {
+			log.Printf("🔍 GetDatabaseUserID: Found DB User ID: %d (no email in session)", dbUserID)
+		}
 		return &dbUserID
 	}
 
