@@ -60,7 +60,7 @@ func LoadDatabaseConfig() *DatabaseConfig {
 		Port:     getEnvOrDefault("DB_PORT", "5432"),
 		User:     getEnvOrDefault("DB_USER", "postgres"),
 		Password: getEnvOrDefault("DB_PASSWORD", ""),
-		DBName:   getEnvOrDefault("DB_NAME", "course_management"),
+		DBName:   getEnvOrDefault("DB_NAME", "course_management_dev"),
 		SSLMode:  getEnvOrDefault("DB_SSLMODE", "disable"),
 	}
 }
@@ -75,15 +75,18 @@ func getEnvOrDefault(key, defaultValue string) string {
 func InitDatabase() error {
 	config := LoadDatabaseConfig()
 
-	// Skip database initialization if no password is set (development mode)
-	if config.Password == "" {
-		log.Printf("🔄 No database password set, skipping database initialization")
-		return fmt.Errorf("database credentials not configured")
+	// Create connection string - handle trust authentication (no password required)
+	var dsn string
+	if config.Password == "" || config.Password == "trust_auth_no_password" {
+		// Trust authentication - no password needed
+		dsn = fmt.Sprintf("host=%s user=%s dbname=%s port=%s sslmode=%s",
+			config.Host, config.User, config.DBName, config.Port, config.SSLMode)
+		log.Printf("🔄 Using trust authentication for database connection")
+	} else {
+		// Password authentication
+		dsn = fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
+			config.Host, config.User, config.Password, config.DBName, config.Port, config.SSLMode)
 	}
-
-	// Create connection string
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
-		config.Host, config.User, config.Password, config.DBName, config.Port, config.SSLMode)
 
 	// Configure GORM logger
 	gormLogger := logger.Default.LogMode(logger.Info)
