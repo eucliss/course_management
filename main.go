@@ -30,10 +30,11 @@ func NewTemplates() *Templates {
 			"views/welcome.html",
 			"views/course.html",
 			"views/introduction.html",
-			"views/create-course.html",
+			"views/review-landing.html",
 			"views/map.html",
 			"views/authentication.html",
 			"views/sidebar.html",
+			"views/review-course.html",
 		)),
 	}
 }
@@ -206,7 +207,14 @@ func main() {
 	if len(sessionSecret) < 32 {
 		log.Printf("Warning: SESSION_SECRET should be at least 32 characters")
 	}
-	e.Use(session.Middleware(sessions.NewCookieStore([]byte(sessionSecret))))
+
+	// Configure session store with proper options
+	store := sessions.NewCookieStore([]byte(sessionSecret))
+	store.Options.Path = "/"
+	store.Options.HttpOnly = true
+	store.Options.Secure = false // Set to true in production with HTTPS
+	store.Options.SameSite = http.SameSiteStrictMode
+	e.Use(session.Middleware(store))
 
 	// Auth handlers
 	authHandlers := NewAuthHandlers()
@@ -222,8 +230,10 @@ func main() {
 	e.GET("/profile", handlers.Profile, AddOwnershipContext(sessionService))
 	e.POST("/profile/handicap", handlers.UpdateHandicap, RequireAuth(sessionService))
 	e.POST("/profile/display-name", handlers.UpdateDisplayName, RequireAuth(sessionService))
+	e.POST("/profile/add-score", handlers.AddScore, RequireAuth(sessionService))
 	e.GET("/course/:id", handlers.GetCourse, AddOwnershipContext(sessionService))
-	e.GET("/create-course", handlers.CreateCourseForm, RequireAuth(sessionService))
+	e.GET("/review-landing", handlers.CreateCourseForm, RequireAuth(sessionService))
+	e.GET("/review-course/:id", handlers.ReviewSpecificCourseForm, RequireAuth(sessionService))
 	e.POST("/create-course", handlers.CreateCourse, RequireAuth(sessionService))
 	e.GET("/map", handlers.Map, AddOwnershipContext(sessionService))
 
@@ -231,6 +241,9 @@ func main() {
 	e.GET("/edit-course/:id", handlers.EditCourseForm, RequireOwnership(sessionService, courseService, &courses))
 	e.POST("/edit-course/:id", handlers.UpdateCourse, RequireOwnership(sessionService, courseService, &courses))
 	e.DELETE("/delete-course/:id", handlers.DeleteCourse, RequireOwnership(sessionService, courseService, &courses))
+
+	// Review management routes
+	e.DELETE("/delete-review/:id", handlers.DeleteReview, RequireAuth(sessionService))
 
 	// API routes
 	e.GET("/api/status/database", handlers.DatabaseStatus)

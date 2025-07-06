@@ -1,0 +1,22 @@
+{
+  "name": "Alpine Bay Resort",
+  "ID": 0,
+  "description": "Golf course in Alpine, Alabama",
+  "ranks": {
+    "price": "$$",
+    "handicapDifficulty": 2,
+    "hazardDifficulty": 2,
+    "merch": "B",
+    "condition": "C",
+    "enjoymentRating": "D",
+    "vibe": "C",
+    "range": "C",
+    "amenities": "C",
+    "glizzies": "C"
+  },
+  "overallRating": "A",
+  "review": "Testing ",
+  "holes": [],
+  "scores": [],
+  "address": "9855 Renfroe Rd, Alpine, Alabama, 35014"
+}

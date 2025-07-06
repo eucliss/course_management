@@ -1,0 +1,735 @@
+{{ block "review-course" . }}
+<div class="course-review-form">
+    <form class="course-detail">
+        <input type="hidden" name="selectedCourseId" value="{{ .Course.ID }}">
+        <div class="header-section">
+            <div class="title-and-line">
+                <h1 id="selected-course-name">{{ .Course.Name }}</h1>
+                <div class="line-section">
+                    <span id="selected-course-description">{{ .Course.Address }}</span>
+                </div>
+            </div>
+            <div class="tier-box">
+                <select id="overall-rating" name="overall-rating" class="rating-value-select">
+                    <option value="">-</option>
+                                <option value="S" {{ if and .UserReview (eq .UserReview.OverallRating "S") }}selected{{ end }}>S</option>
+            <option value="A" {{ if and .UserReview (eq .UserReview.OverallRating "A") }}selected{{ end }}>A</option>
+            <option value="B" {{ if and .UserReview (eq .UserReview.OverallRating "B") }}selected{{ end }}>B</option>
+            <option value="C" {{ if and .UserReview (eq .UserReview.OverallRating "C") }}selected{{ end }}>C</option>
+            <option value="D" {{ if and .UserReview (eq .UserReview.OverallRating "D") }}selected{{ end }}>D</option>
+            <option value="F" {{ if and .UserReview (eq .UserReview.OverallRating "F") }}selected{{ end }}>F</option>
+                </select>
+                <div class="tier-label">TIER</div>
+            </div>
+        </div>
+        
+        <div class="course-content">
+            <div class="course-table">
+                <table>
+                    <tr>
+                        <th style="background-color: #000000;">Category</th>
+                        <th style="background-color: #000000;">Rating</th>
+                    </tr>
+                    <tr>
+                        <td>Price</td>
+                        <td class="editable-cell">
+                            <select id="price" name="price" class="rating-select">
+                                <option value="">Select</option>
+                                <option value="$" {{ if and .UserReview (eq .UserReview.Price "$") }}selected{{ end }}>$</option>
+                                <option value="$$" {{ if and .UserReview (eq .UserReview.Price "$$") }}selected{{ end }}>$$</option>
+                                <option value="$$$" {{ if and .UserReview (eq .UserReview.Price "$$$") }}selected{{ end }}>$$$</option>
+                                <option value="$$$$" {{ if and .UserReview (eq .UserReview.Price "$$$$") }}selected{{ end }}>$$$$</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Handicap Difficulty</td>
+                        <td class="editable-cell">
+                            <input type="number" id="handicap-difficulty" name="handicap-difficulty" min="0" max="20" placeholder="0-20" class="number-input" 
+                                   value="{{ if and .UserReview .UserReview.HandicapDifficulty }}{{ .UserReview.HandicapDifficulty }}{{ end }}">
+                            <span class="unit-text">handicap</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Hazard Difficulty</td>
+                        <td class="editable-cell">
+                            <input type="number" id="hazard-difficulty" name="hazard-difficulty" min="0" max="5" placeholder="0-5" class="number-input"
+                                   value="{{ if and .UserReview .UserReview.HazardDifficulty }}{{ .UserReview.HazardDifficulty }}{{ end }}">
+                            <span class="unit-text">Sleeve(s)</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Merch</td>
+                        <td class="editable-cell">
+                            <select id="merch" name="merch" class="rating-select">
+                                <option value="">Select</option>
+                                <option value="S" {{ if and .UserReview (eq .UserReview.Merch "S") }}selected{{ end }}>S</option>
+                                <option value="A" {{ if and .UserReview (eq .UserReview.Merch "A") }}selected{{ end }}>A</option>
+                                <option value="B" {{ if and .UserReview (eq .UserReview.Merch "B") }}selected{{ end }}>B</option>
+                                <option value="C" {{ if and .UserReview (eq .UserReview.Merch "C") }}selected{{ end }}>C</option>
+                                <option value="D" {{ if and .UserReview (eq .UserReview.Merch "D") }}selected{{ end }}>D</option>
+                                <option value="F" {{ if and .UserReview (eq .UserReview.Merch "F") }}selected{{ end }}>F</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Condition</td>
+                        <td class="editable-cell">
+                            <select id="condition" name="condition" class="rating-select">
+                                <option value="">Select</option>
+                                <option value="S" {{ if and .UserReview (eq .UserReview.Condition "S") }}selected{{ end }}>S</option>
+                                <option value="A" {{ if and .UserReview (eq .UserReview.Condition "A") }}selected{{ end }}>A</option>
+                                <option value="B" {{ if and .UserReview (eq .UserReview.Condition "B") }}selected{{ end }}>B</option>
+                                <option value="C" {{ if and .UserReview (eq .UserReview.Condition "C") }}selected{{ end }}>C</option>
+                                <option value="D" {{ if and .UserReview (eq .UserReview.Condition "D") }}selected{{ end }}>D</option>
+                                <option value="F" {{ if and .UserReview (eq .UserReview.Condition "F") }}selected{{ end }}>F</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Enjoyment Rating</td>
+                        <td class="editable-cell">
+                            <select id="enjoyment-rating" name="enjoyment-rating" class="rating-select">
+                                <option value="">Select</option>
+                                <option value="S" {{ if and .UserReview (eq .UserReview.EnjoymentRating "S") }}selected{{ end }}>S</option>
+                                <option value="A" {{ if and .UserReview (eq .UserReview.EnjoymentRating "A") }}selected{{ end }}>A</option>
+                                <option value="B" {{ if and .UserReview (eq .UserReview.EnjoymentRating "B") }}selected{{ end }}>B</option>
+                                <option value="C" {{ if and .UserReview (eq .UserReview.EnjoymentRating "C") }}selected{{ end }}>C</option>
+                                <option value="D" {{ if and .UserReview (eq .UserReview.EnjoymentRating "D") }}selected{{ end }}>D</option>
+                                <option value="F" {{ if and .UserReview (eq .UserReview.EnjoymentRating "F") }}selected{{ end }}>F</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Vibe</td>
+                        <td class="editable-cell">
+                            <select id="vibe" name="vibe" class="rating-select">
+                                <option value="">Select</option>
+                                <option value="S" {{ if and .UserReview (eq .UserReview.Vibe "S") }}selected{{ end }}>S</option>
+                                <option value="A" {{ if and .UserReview (eq .UserReview.Vibe "A") }}selected{{ end }}>A</option>
+                                <option value="B" {{ if and .UserReview (eq .UserReview.Vibe "B") }}selected{{ end }}>B</option>
+                                <option value="C" {{ if and .UserReview (eq .UserReview.Vibe "C") }}selected{{ end }}>C</option>
+                                <option value="D" {{ if and .UserReview (eq .UserReview.Vibe "D") }}selected{{ end }}>D</option>
+                                <option value="F" {{ if and .UserReview (eq .UserReview.Vibe "F") }}selected{{ end }}>F</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Range</td>
+                        <td class="editable-cell">
+                            <select id="range" name="range" class="rating-select">
+                                <option value="">Select</option>
+                                <option value="S" {{ if and .UserReview (eq .UserReview.RangeRating "S") }}selected{{ end }}>S</option>
+                                <option value="A" {{ if and .UserReview (eq .UserReview.RangeRating "A") }}selected{{ end }}>A</option>
+                                <option value="B" {{ if and .UserReview (eq .UserReview.RangeRating "B") }}selected{{ end }}>B</option>
+                                <option value="C" {{ if and .UserReview (eq .UserReview.RangeRating "C") }}selected{{ end }}>C</option>
+                                <option value="D" {{ if and .UserReview (eq .UserReview.RangeRating "D") }}selected{{ end }}>D</option>
+                                <option value="F" {{ if and .UserReview (eq .UserReview.RangeRating "F") }}selected{{ end }}>F</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Amenities</td>
+                        <td class="editable-cell">
+                            <select id="amenities" name="amenities" class="rating-select">
+                                <option value="">Select</option>
+                                <option value="S" {{ if and .UserReview (eq .UserReview.Amenities "S") }}selected{{ end }}>S</option>
+                                <option value="A" {{ if and .UserReview (eq .UserReview.Amenities "A") }}selected{{ end }}>A</option>
+                                <option value="B" {{ if and .UserReview (eq .UserReview.Amenities "B") }}selected{{ end }}>B</option>
+                                <option value="C" {{ if and .UserReview (eq .UserReview.Amenities "C") }}selected{{ end }}>C</option>
+                                <option value="D" {{ if and .UserReview (eq .UserReview.Amenities "D") }}selected{{ end }}>D</option>
+                                <option value="F" {{ if and .UserReview (eq .UserReview.Amenities "F") }}selected{{ end }}>F</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Turn Dog</td>
+                        <td class="editable-cell">
+                            <select id="glizzies" name="glizzies" class="rating-select">
+                                <option value="">Select</option>
+                                <option value="S" {{ if and .UserReview (eq .UserReview.Glizzies "S") }}selected{{ end }}>S</option>
+                                <option value="A" {{ if and .UserReview (eq .UserReview.Glizzies "A") }}selected{{ end }}>A</option>
+                                <option value="B" {{ if and .UserReview (eq .UserReview.Glizzies "B") }}selected{{ end }}>B</option>
+                                <option value="C" {{ if and .UserReview (eq .UserReview.Glizzies "C") }}selected{{ end }}>C</option>
+                                <option value="D" {{ if and .UserReview (eq .UserReview.Glizzies "D") }}selected{{ end }}>D</option>
+                                <option value="F" {{ if and .UserReview (eq .UserReview.Glizzies "F") }}selected{{ end }}>F</option>
+                            </select>
+                        </td>
+                    </tr>
+                </table>
+                
+                <div class="scoring-section">
+                    <h3>Scores (Optional)</h3>
+                    <div id="scores-container">
+                        <!-- Scores will be added dynamically -->
+                    </div>
+                    <button type="button" class="add-score-btn" onclick="addScore()">+ Add Score</button>
+                </div>
+            </div>
+            
+            <div class="course-info">
+                <h2>What's the read on this course?</h2>
+                <div class="review-section">
+                    <textarea id="course-review" name="course-review" placeholder="Write a detailed review of the course including highlights, challenges, and overall experience" class="review-textarea">{{ if and .UserReview .UserReview.ReviewText }}{{ .UserReview.ReviewText }}{{ end }}</textarea>
+                </div>
+                
+                <br style="clear: both; margin-bottom: 20px;"/>
+                
+                <div class="hole-by-hole-section">
+                    <h2>Hole by Hole</h2>
+                    <div id="holes-container">
+                        <!-- Holes will be added dynamically -->
+                    </div>
+                    <button type="button" class="add-hole-btn" onclick="addHole()">+ Add Hole</button>
+                </div>
+                
+                <div class="save-section">
+                    <div class="ownership-notice">
+                        <small>📝 {{ if .UserReview }}Update your review{{ else }}This review will be associated with your account{{ end }}</small>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="back-to-selection-btn" hx-get="/review-landing" hx-target="#main-content">← Back</button>
+                        <button type="submit" class="save-course-btn" hx-post="/create-course" hx-target="#main-content" hx-include="closest form" hx-ext="json-enc">{{ if .UserReview }}Update Review{{ else }}Save Review{{ end }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<style>
+    /* Base Layout */
+    .course-detail {
+        padding: 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+        background-color: #FFFCE7;
+    }
+
+    .header-section {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 30px;
+        margin-bottom: 40px;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .title-and-line {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        margin-right: 20px;
+    }
+
+    .course-content {
+        display: flex;
+        gap: 40px;
+    }
+
+    .course-table {
+        flex: 0 0 400px;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .course-info {
+        flex: 1;
+        padding: 20px;
+        background-color: #B5D844;
+        border-radius: 8px;
+        border: 1px solid #E5E7EB;
+    }
+
+    /* Typography */
+    .course-detail h1 {
+        text-align: center;
+        color: #204606;
+        font-size: 3.5em;
+        font-weight: bold;
+        margin: 0;
+        border: 2px dashed transparent;
+        padding: 10px;
+        border-radius: 8px;
+        min-height: 1.2em;
+        outline: none;
+        cursor: text;
+    }
+
+    .course-detail h1:hover, .course-detail h1:focus {
+        border-color: #204606;
+        background-color: rgba(32, 70, 6, 0.05);
+    }
+
+    .course-detail h1:empty:before, .line-description:empty:before {
+        content: attr(data-placeholder);
+        color: #999;
+        font-style: italic;
+    }
+
+    .course-info h2 {
+        color: #204606;
+        margin-top: 0;
+        margin-bottom: 16px;
+        font-size: 1.5em;
+    }
+
+    .course-info h3 {
+        color: #204606;
+        margin-top: 20px;
+        margin-bottom: 16px;
+        font-size: 1.3em;
+    }
+
+    /* Form Elements - Unified Styling */
+    input, textarea, select {
+        padding: 10px 12px;
+        border: 2px dashed #204606;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #204606;
+        background-color: rgba(255, 255, 255, 0.8);
+        outline: none;
+        transition: all 0.2s ease;
+        font-family: inherit;
+    }
+
+    input:focus, textarea:focus, select:focus {
+        border-style: solid;
+        background-color: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 0 0 2px rgba(32, 70, 6, 0.1);
+    }
+
+    input::placeholder, textarea::placeholder {
+        color: #999;
+        font-style: italic;
+    }
+
+    input[readonly] {
+        background-color: rgba(32, 70, 6, 0.1);
+        border-style: solid;
+        color: #666;
+        cursor: not-allowed;
+    }
+
+    /* Specific Form Overrides */
+    .rating-value-select {
+        font-size: 3em;
+        font-weight: bold;
+        background: transparent;
+        border: none;
+        color: white;
+        text-align: center;
+        width: 80px;
+    }
+
+    .rating-select, .number-input {
+        background: transparent;
+        border: 1px solid transparent;
+        width: 80px;
+        padding: 4px 8px;
+    }
+
+    .rating-select:hover, .rating-select:focus,
+    .number-input:hover, .number-input:focus {
+        border-color: #204606;
+        background-color: rgba(255, 255, 255, 0.9);
+    }
+
+    .address-input {
+        width: 100%;
+        padding: 12px;
+    }
+
+    .review-textarea {
+        width: 100%;
+        min-height: 120px;
+        padding: 15px;
+        line-height: 1.6;
+        resize: vertical;
+        box-sizing: border-box;
+    }
+
+    /* Tier Box */
+    .tier-box {
+        background-color: #204606;
+        color: white;
+        padding: 15px 30px;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        flex-shrink: 0;
+    }
+
+    .tier-label {
+        font-size: 0.8em;
+        font-weight: 500;
+        letter-spacing: 1px;
+    }
+
+    /* Table */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        padding: 15px;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+    }
+
+    th {
+        font-weight: 600;
+        color: white;
+    }
+
+    th:first-child, td:first-child {
+        background-color: #204606;
+        width: 40%;
+        color: white;
+    }
+
+    th:last-child, td:last-child {
+        background-color: #BABEBC;
+    }
+
+    tr:last-child td {
+        border-bottom: none;
+    }
+
+    tr:hover td:first-child {
+        background-color: #000000;
+    }
+
+    tr:hover td:last-child {
+        background-color: #B5D844;
+    }
+
+    /* Dynamic Content Containers */
+    .hole-entry, .score-entry {
+        background-color: rgba(255, 255, 255, 0.7);
+        border-radius: 8px;
+        padding: 15px 20px;
+        margin-bottom: 15px;
+        border: 1px solid rgba(32, 70, 6, 0.2);
+    }
+
+    .hole-entry {
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .hole-entry h3 {
+        color: #204606;
+        margin: 0 0 15px 0;
+        font-size: 1.3em;
+        font-weight: 600;
+    }
+
+    /* Grid Layouts */
+    .hole-inputs {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+
+    .hole-inputs textarea {
+        grid-column: 1 / -1;
+        min-height: 80px;
+        line-height: 1.5;
+        box-sizing: border-box;
+    }
+
+    .score-inputs {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        gap: 15px;
+        align-items: end;
+        margin-bottom: 15px;
+    }
+
+    .score-field, .hole-field {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .score-field label, .hole-field label {
+        font-size: 14px;
+        font-weight: 500;
+        color: #204606;
+    }
+
+    /* Buttons */
+    .add-hole-btn, .add-score-btn, .save-course-btn, .remove-btn {
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background-color 0.2s ease;
+    }
+
+    .add-hole-btn, .add-score-btn {
+        background-color: #204606;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        margin-top: 10px;
+    }
+
+    .add-hole-btn:hover, .add-score-btn:hover {
+        background-color: #153505;
+    }
+
+    .save-course-btn {
+        background-color: #28a745;
+        color: white;
+        font-size: 18px;
+        padding: 15px 30px;
+        margin-top: 30px;
+        width: 100%;
+    }
+
+    .save-course-btn:hover {
+        background-color: #218838;
+    }
+
+    .remove-btn {
+        background-color: #dc3545;
+        color: white;
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+
+    .remove-btn:hover {
+        background-color: #c82333;
+    }
+
+    /* Utility Classes */
+    .line-description {
+        color: #204606;
+        font-style: italic;
+        border: 2px dashed transparent;
+        padding: 8px;
+        border-radius: 4px;
+        outline: none;
+        cursor: text;
+        display: inline-block;
+        min-width: 200px;
+        min-height: 1.2em;
+    }
+
+    .line-description:hover, .line-description:focus {
+        border-color: #204606;
+        background-color: rgba(32, 70, 6, 0.05);
+    }
+
+    .scoring-section {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 2px solid #204606;
+    }
+
+    .save-section {
+        margin-top: 40px;
+        padding-top: 20px;
+        border-top: 2px solid #204606;
+    }
+
+    .ownership-notice {
+        margin-bottom: 15px;
+        padding: 10px 15px;
+        background-color: rgba(181, 216, 68, 0.2);
+        border: 1px solid rgba(32, 70, 6, 0.3);
+        border-radius: 6px;
+        text-align: center;
+    }
+
+    .ownership-notice small {
+        color: #204606;
+        font-size: 14px;
+    }
+
+    .hole-by-hole-section {
+        margin-top: 30px;
+    }
+
+    #holes-container, #scores-container {
+        margin-bottom: 20px;
+    }
+
+    .unit-text {
+        margin-left: 8px;
+        font-size: 14px;
+        color: #666;
+    }
+
+    /* Rating Colors */
+    .rating-S { background-color: #73FF73 !important; }
+    .rating-A { background-color: #B7FF73 !important; }
+    .rating-B { background-color: #FFFF73 !important; }
+    .rating-C { background-color: #FFDA74 !important; }
+    .rating-D { background-color: #FFB774 !important; }
+    .rating-F { background-color: #FF7474 !important; }
+
+    /* Form Actions */
+    .form-actions {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        justify-content: center;
+        margin-top: 20px;
+    }
+
+    .back-to-selection-btn {
+        background-color: transparent;
+        color: #204606;
+        border: 2px solid #204606;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9em;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+    .back-to-selection-btn:hover {
+        background-color: #204606;
+        color: #FFFCE7;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+        .course-content {
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .header-section {
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .tier-box {
+            margin-left: 0;
+            align-self: center;
+        }
+
+        .hole-inputs, .score-inputs {
+            grid-template-columns: 1fr;
+        }
+        
+        .hole-inputs textarea {
+            grid-column: 1;
+        }
+    }
+</style>
+
+<script>
+    console.log('🚀 Review course JavaScript loading...');
+    
+    // Global variables
+    let scoreCounter = 0;
+    let holeCounter = 0;
+    const courseId = {{ .Course.ID }};
+    const hasExistingReview = {{ if .UserReview }}true{{ else }}false{{ end }};
+
+    // Initialize the form
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('📋 DOM loaded, initializing form...');
+        initializeForm();
+    });
+    
+
+
+    function initializeForm() {
+        console.log('🎯 Initializing review form for course:', '{{ .Course.Name }}');
+        
+        // Load existing scores if in edit mode
+        {{ if .UserScores }}
+        {{ range .UserScores }}
+        addScore({{ .Score }}, {{ if .Handicap }}{{ .Handicap }}{{ else }}0{{ end }});
+        {{ end }}
+        {{ end }}
+
+        // Load existing holes if in edit mode
+        {{ if .UserHoles }}
+        {{ range .UserHoles }}
+        addHole({{ .Number }}, {{ if .Par }}{{ .Par }}{{ else }}0{{ end }}, {{ if .Yardage }}{{ .Yardage }}{{ else }}0{{ end }}, '{{ if .Description }}{{ .Description }}{{ end }}');
+        {{ end }}
+        {{ end }}
+    }
+
+    function addScore(score = '', handicap = '') {
+        const scoreEntry = document.createElement('div');
+        scoreEntry.className = 'score-entry';
+        scoreEntry.innerHTML = `
+            <div class="score-inputs">
+                <div class="score-field">
+                    <label>Total Score</label>
+                    <input type="number" name="scores[${scoreCounter}].score" value="${score}" min="18" max="200" placeholder="72">
+                </div>
+                <div class="score-field">
+                    <label>Handicap</label>
+                    <input type="number" name="scores[${scoreCounter}].handicap" value="${handicap}" min="0" max="54" step="0.1" placeholder="0.0">
+                </div>
+                <button type="button" class="remove-btn" onclick="removeScore(this)">Remove</button>
+            </div>
+        `;
+        
+        document.getElementById('scores-container').appendChild(scoreEntry);
+        scoreCounter++;
+    }
+
+    function removeScore(button) {
+        button.closest('.score-entry').remove();
+    }
+
+    function addHole(number = '', par = '', yardage = '', description = '') {
+        const holeEntry = document.createElement('div');
+        holeEntry.className = 'hole-entry';
+        holeEntry.innerHTML = `
+            <h3>Hole ${holeCounter + 1}</h3>
+            <div class="hole-inputs">
+                <div class="hole-field">
+                    <label>Hole Number</label>
+                    <input type="number" name="holes[${holeCounter}].number" value="${number}" min="1" max="18" placeholder="${holeCounter + 1}">
+                </div>
+                <div class="hole-field">
+                    <label>Par</label>
+                    <input type="number" name="holes[${holeCounter}].par" value="${par}" min="3" max="5" placeholder="4">
+                </div>
+                <div class="hole-field">
+                    <label>Yardage</label>
+                    <input type="number" name="holes[${holeCounter}].yardage" value="${yardage}" min="50" max="600" placeholder="400">
+                </div>
+            </div>
+            <div class="hole-description">
+                <label>Description</label>
+                <textarea name="holes[${holeCounter}].description" placeholder="Describe the hole layout, challenges, and strategy...">${description}</textarea>
+            </div>
+            <button type="button" class="remove-btn" onclick="removeHole(this)">Remove</button>
+        `;
+        
+        document.getElementById('holes-container').appendChild(holeEntry);
+        holeCounter++;
+    }
+
+    function removeHole(button) {
+        button.closest('.hole-entry').remove();
+    }
+
+
+</script>
+{{ end }}

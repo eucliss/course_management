@@ -276,6 +276,21 @@ func (ds *DatabaseService) GetDatabaseStats() (map[string]int, error) {
 }
 
 // Course ownership and authorization methods
+func (ds *DatabaseService) GetAllCourses() ([]CourseDB, error) {
+	if ds.db == nil {
+		return nil, fmt.Errorf("database not connected")
+	}
+
+	var courses []CourseDB
+	result := ds.db.Preload("Creator").Preload("Updater").Find(&courses)
+
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed to fetch courses: %v", result.Error)
+	}
+
+	return courses, nil
+}
+
 func (ds *DatabaseService) GetCourseByID(courseID uint) (*CourseDB, error) {
 	if ds.db == nil {
 		return nil, fmt.Errorf("database not connected")
@@ -283,6 +298,24 @@ func (ds *DatabaseService) GetCourseByID(courseID uint) (*CourseDB, error) {
 
 	var courseDB CourseDB
 	result := ds.db.Preload("Creator").Preload("Updater").First(&courseDB, courseID)
+
+	if result.Error != nil {
+		if result.Error.Error() == "record not found" {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to find course: %v", result.Error)
+	}
+
+	return &courseDB, nil
+}
+
+func (ds *DatabaseService) GetCourseByName(courseName string) (*CourseDB, error) {
+	if ds.db == nil {
+		return nil, fmt.Errorf("database not connected")
+	}
+
+	var courseDB CourseDB
+	result := ds.db.Where("name = ?", courseName).First(&courseDB)
 
 	if result.Error != nil {
 		if result.Error.Error() == "record not found" {

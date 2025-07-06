@@ -1,0 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Your purpose is to write the code not to run the app or migrate the database unless specifically asked to do so.
+Do not run or start the app ever thats not your job.
+Do not build the app each time, I have AIR running which automatically builds it on save.
