@@ -168,12 +168,6 @@
             </div>
             
             <div class="course-info">
-                <h2>Course Details</h2>
-                <div class="detail-item">
-                    <label for="course-address">Address:</label>
-                    <input type="text" id="course-address" class="address-input" readonly value="{{ .Course.Address }}">
-                </div>
-                
                 <h2>What's the read on this course?</h2>
                 <div class="review-section">
                     <textarea id="course-review" name="course-review" placeholder="Write a detailed review of the course including highlights, challenges, and overall experience" class="review-textarea">{{ if and .UserReview .UserReview.ReviewText }}{{ .UserReview.ReviewText }}{{ end }}</textarea>
@@ -195,7 +189,7 @@
                     </div>
                     <div class="form-actions">
                         <button type="button" class="back-to-selection-btn" hx-get="/review-landing" hx-target="#main-content">← Back</button>
-                        <button type="submit" class="save-course-btn" hx-post="/create-course" hx-target="#main-content" hx-include="closest form">{{ if .UserReview }}Update Review{{ else }}Save Review{{ end }}</button>
+                        <button type="submit" class="save-course-btn" hx-post="/create-course" hx-target="#main-content" hx-include="closest form" hx-ext="json-enc">{{ if .UserReview }}Update Review{{ else }}Save Review{{ end }}</button>
                     </div>
                 </div>
             </div>
@@ -456,9 +450,22 @@
 
     .score-inputs {
         display: grid;
-        grid-template-columns: 80px 180px auto;
+        grid-template-columns: 1fr 1fr auto;
         gap: 15px;
-        align-items: center;
+        align-items: end;
+        margin-bottom: 15px;
+    }
+
+    .score-field, .hole-field {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .score-field label, .hole-field label {
+        font-size: 14px;
+        font-weight: 500;
+        color: #204606;
     }
 
     /* Buttons */
@@ -644,61 +651,7 @@
         initializeForm();
     });
     
-    // Make sure saveReview is globally accessible
-    window.saveReview = function() {
-        console.log('🎯 Save review function called');
-        
-        try {
-            // Validate required fields
-            const overallRating = document.getElementById('overall-rating').value;
-            const courseReview = document.getElementById('course-review').value;
-            
-            if (!overallRating) {
-                alert('Please select an overall rating');
-                return;
-            }
-            
-            if (!courseReview || courseReview.trim() === '') {
-                alert('Please write a review');
-                return;
-            }
-            
-            // Collect form data
-            const formData = {
-                selectedCourseId: courseId,
-                overallRating: overallRating,
-                price: document.getElementById('price').value,
-                handicapDifficulty: document.getElementById('handicap-difficulty').value,
-                hazardDifficulty: document.getElementById('hazard-difficulty').value,
-                merch: document.getElementById('merch').value,
-                condition: document.getElementById('condition').value,
-                enjoymentRating: document.getElementById('enjoyment-rating').value,
-                vibe: document.getElementById('vibe').value,
-                range: document.getElementById('range').value,
-                amenities: document.getElementById('amenities').value,
-                glizzies: document.getElementById('glizzies').value,
-                review: courseReview
-            };
-            
-            console.log('📤 Submitting review data:', formData);
-            
-            // Submit via HTMX
-            htmx.ajax('POST', '/create-course', {
-                values: formData,
-                target: '#main-content'
-            });
-            
-        } catch (error) {
-            console.error('💥 Error saving review:', error);
-            alert('An error occurred while saving the review: ' + error.message);
-        }
-    };
-    
-    // Make goBack globally accessible
-    window.goBack = function() {
-        console.log('🔙 Going back...');
-        window.history.back();
-    };
+
 
     function initializeForm() {
         console.log('🎯 Initializing review form for course:', '{{ .Course.Name }}');
@@ -706,7 +659,7 @@
         // Load existing scores if in edit mode
         {{ if .UserScores }}
         {{ range .UserScores }}
-        addScore({{ .Score }}, {{ if .Handicap }}{{ .Handicap }}{{ else }}0{{ end }}, '{{ if .DatePlayed }}{{ .DatePlayed }}{{ end }}', {{ if .OutScore }}{{ .OutScore }}{{ else }}0{{ end }}, {{ if .InScore }}{{ .InScore }}{{ else }}0{{ end }}, '{{ if .Notes }}{{ .Notes }}{{ end }}');
+        addScore({{ .Score }}, {{ if .Handicap }}{{ .Handicap }}{{ else }}0{{ end }});
         {{ end }}
         {{ end }}
 
@@ -718,44 +671,25 @@
         {{ end }}
     }
 
-    function addScore(score = '', handicap = '', datePlayed = '', outScore = '', inScore = '', notes = '') {
-        scoreCounter++;
+    function addScore(score = '', handicap = '') {
         const scoreEntry = document.createElement('div');
         scoreEntry.className = 'score-entry';
         scoreEntry.innerHTML = `
-            <div class="score-entry-header">
-                <span class="score-entry-title">Score ${scoreCounter}</span>
-                <button type="button" class="remove-score-btn" onclick="removeScore(this)">Remove</button>
-            </div>
-            <div class="score-entry-content">
+            <div class="score-inputs">
                 <div class="score-field">
-                    <label>Total Score *</label>
-                    <input type="number" name="score-${scoreCounter}" value="${score}" min="18" max="200" placeholder="72">
+                    <label>Total Score</label>
+                    <input type="number" name="scores[${scoreCounter}].score" value="${score}" min="18" max="200" placeholder="72">
                 </div>
                 <div class="score-field">
                     <label>Handicap</label>
-                    <input type="number" name="handicap-${scoreCounter}" value="${handicap}" min="0" max="54" step="0.1" placeholder="0.0">
+                    <input type="number" name="scores[${scoreCounter}].handicap" value="${handicap}" min="0" max="54" step="0.1" placeholder="0.0">
                 </div>
-                <div class="score-field">
-                    <label>Date Played</label>
-                    <input type="date" name="date-played-${scoreCounter}" value="${datePlayed}">
-                </div>
-                <div class="score-field">
-                    <label>Out Score</label>
-                    <input type="number" name="out-score-${scoreCounter}" value="${outScore}" min="9" max="100" placeholder="36">
-                </div>
-                <div class="score-field">
-                    <label>In Score</label>
-                    <input type="number" name="in-score-${scoreCounter}" value="${inScore}" min="9" max="100" placeholder="36">
-                </div>
-                <div class="score-field">
-                    <label>Notes</label>
-                    <input type="text" name="notes-${scoreCounter}" value="${notes}" placeholder="Course conditions, weather, etc.">
-                </div>
+                <button type="button" class="remove-btn" onclick="removeScore(this)">Remove</button>
             </div>
         `;
         
         document.getElementById('scores-container').appendChild(scoreEntry);
+        scoreCounter++;
     }
 
     function removeScore(button) {
@@ -763,35 +697,33 @@
     }
 
     function addHole(number = '', par = '', yardage = '', description = '') {
-        holeCounter++;
         const holeEntry = document.createElement('div');
         holeEntry.className = 'hole-entry';
         holeEntry.innerHTML = `
-            <div class="hole-entry-header">
-                <span class="hole-entry-title">Hole ${holeCounter}</span>
-                <button type="button" class="remove-hole-btn" onclick="removeHole(this)">Remove</button>
-            </div>
-            <div class="hole-entry-content">
+            <h3>Hole ${holeCounter + 1}</h3>
+            <div class="hole-inputs">
                 <div class="hole-field">
                     <label>Hole Number</label>
-                    <input type="number" name="hole-number-${holeCounter}" value="${number}" min="1" max="18" placeholder="1">
+                    <input type="number" name="holes[${holeCounter}].number" value="${number}" min="1" max="18" placeholder="${holeCounter + 1}">
                 </div>
                 <div class="hole-field">
                     <label>Par</label>
-                    <input type="number" name="hole-par-${holeCounter}" value="${par}" min="3" max="5" placeholder="4">
+                    <input type="number" name="holes[${holeCounter}].par" value="${par}" min="3" max="5" placeholder="4">
                 </div>
                 <div class="hole-field">
                     <label>Yardage</label>
-                    <input type="number" name="hole-yardage-${holeCounter}" value="${yardage}" min="50" max="600" placeholder="400">
+                    <input type="number" name="holes[${holeCounter}].yardage" value="${yardage}" min="50" max="600" placeholder="400">
                 </div>
             </div>
             <div class="hole-description">
                 <label>Description</label>
-                <textarea name="hole-description-${holeCounter}" placeholder="Describe the hole layout, challenges, and strategy...">${description}</textarea>
+                <textarea name="holes[${holeCounter}].description" placeholder="Describe the hole layout, challenges, and strategy...">${description}</textarea>
             </div>
+            <button type="button" class="remove-btn" onclick="removeHole(this)">Remove</button>
         `;
         
         document.getElementById('holes-container').appendChild(holeEntry);
+        holeCounter++;
     }
 
     function removeHole(button) {

@@ -4,7 +4,7 @@
         <div class="title-and-line">
             <h1>{{ .Name }}</h1>
             <div class="line-section">
-                <span class="line-description">{{ .Description }}</span>
+                <span class="line-description">{{ .Address }}</span>
             </div>
         </div>
         <div class="tier-box">
@@ -47,7 +47,7 @@
                 </button>
             </div>
         </div>
-        <p class="review-note">This is your personal review and ratings for this course. Only you can see this data.</p>
+        <p class="review-note">This is your personal review and ratings for this course.</p>
     </div>
     {{ else if .IsLoggedIn }}
     <div class="no-review-indicator">
@@ -137,13 +137,6 @@
         </div>
         
         <div class="course-info">
-            <h2>Course Details</h2>
-            <div class="detail-item">
-                <strong>Address:</strong>
-                <p>{{ .Address }}</p>
-            </div>
-            <br style="clear: both; margin-bottom: 20px;"/>
-            
             <h2>Whats the read on this course?</h2>
             <p>{{ .Review }}</p>
             <br style="clear: both; margin-bottom: 20px;"/>
