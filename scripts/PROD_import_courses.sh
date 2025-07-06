@@ -2,10 +2,6 @@
 
 # import_courses.sh - Import courses from JSON file with duplicate detection
 # This script will import courses and skip duplicates based on hash
-#
-# Usage:
-#   ./import_courses.sh          # Use small dataset (course_details.json) if available
-#   ./import_courses.sh --all    # Force use of large dataset (all_course_details.json)
 
 echo "📥 Course Import Script"
 echo "======================"
@@ -17,36 +13,17 @@ if [ ! -f "main.go" ]; then
     exit 1
 fi
 
-# Check for --all argument
-USE_ALL_COURSES=false
-if [ "$1" = "--all" ]; then
-    USE_ALL_COURSES=true
-    echo "🔄 --all flag detected, using large dataset"
-fi
-
-# Check which JSON file to use
+# Check which JSON file to use - prioritize the smaller file
 JSON_FILE=""
-if [ "$USE_ALL_COURSES" = true ]; then
-    # Force use of all_course_details.json when --all is specified
-    if [ -f "scripts/all_course_details.json" ]; then
-        JSON_FILE="scripts/all_course_details.json"
-        echo "📁 Using: all_course_details.json (large dataset - forced by --all)"
-    else
-        echo "❌ Error: all_course_details.json not found but --all flag was used"
-        exit 1
-    fi
+if [ -f "scripts/course_details.json" ]; then
+    JSON_FILE="scripts/course_details.json"
+    echo "📁 Found: course_details.json (small dataset)"
+elif [ -f "scripts/all_course_details.json" ]; then
+    JSON_FILE="scripts/all_course_details.json"
+    echo "📁 Found: all_course_details.json (large dataset)"
 else
-    # Default behavior - prioritize smaller file
-    if [ -f "scripts/course_details.json" ]; then
-        JSON_FILE="scripts/course_details.json"
-        echo "📁 Found: course_details.json (small dataset)"
-    elif [ -f "scripts/all_course_details.json" ]; then
-        JSON_FILE="scripts/all_course_details.json"
-        echo "📁 Found: all_course_details.json (large dataset)"
-    else
-        echo "❌ Error: No course_details.json file found in scripts/ directory"
-        exit 1
-    fi
+    echo "❌ Error: No course_details.json file found in scripts/ directory"
+    exit 1
 fi
 
 # Show file info
@@ -132,7 +109,7 @@ func getEnvOrDefault(key, defaultValue string) string {
 func connectToDatabase() (*gorm.DB, error) {
 	// Load environment variables
 	if err := godotenv.Load(); err != nil {
-		if err := godotenv.Load("../.env"); err != nil {
+		if err := godotenv.Load("../.env.prod"); err != nil {
 			log.Printf("Warning: .env file not found in current or parent directory")
 		}
 	}

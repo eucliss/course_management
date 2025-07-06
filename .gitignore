@@ -4,6 +4,7 @@
 /views/**/*.go
 
 .env
+.env.prod
 .vscode/
 logs/
 .cursor/

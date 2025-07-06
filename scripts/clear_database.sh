@@ -60,10 +60,10 @@ func connectToDatabase() (*gorm.DB, error) {
 	}
 
 	host := getEnvOrDefault("DB_HOST", "localhost")
-	port := getEnvOrDefault("DB_PORT", "5432")
+	port := getEnvOrDefault("DB_PORT", "5433")
 	user := getEnvOrDefault("DB_USER", "postgres")
 	password := getEnvOrDefault("DB_PASSWORD", "")
-	dbname := getEnvOrDefault("DB_NAME", "course_management")
+	dbname := getEnvOrDefault("DB_NAME", "course_management_dev")
 	sslmode := getEnvOrDefault("DB_SSLMODE", "disable")
 
 	if password == "" {
