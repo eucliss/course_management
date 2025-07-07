@@ -183,7 +183,10 @@ func (ds *DatabaseService) GetAllCoursesFromDatabase() ([]Course, error) {
 		return nil, fmt.Errorf("failed to fetch courses from database: %v", result.Error)
 	}
 
+	log.Printf("🔍 GetAllCoursesFromDatabase: Found %d courses in database", len(coursesDB))
+
 	var courses []Course
+	var coordinateCount int
 	for i, courseDB := range coursesDB {
 		var course Course
 		if err := json.Unmarshal([]byte(courseDB.CourseData), &course); err != nil {
@@ -193,9 +196,28 @@ func (ds *DatabaseService) GetAllCoursesFromDatabase() ([]Course, error) {
 
 		// Set the ID to match the array index for backward compatibility
 		course.ID = i
+
+		// Add latitude and longitude from database if available
+		if courseDB.Latitude != nil && courseDB.Longitude != nil {
+			course.Latitude = courseDB.Latitude
+			course.Longitude = courseDB.Longitude
+			coordinateCount++
+
+			// Debug log for first few courses
+			if i < 3 {
+				log.Printf("🔍 Course %d '%s': lat=%f, lng=%f", i, course.Name, *course.Latitude, *course.Longitude)
+			}
+		} else {
+			// Debug log for courses without coordinates
+			if i < 3 {
+				log.Printf("⚠️ Course %d '%s': NO coordinates (lat=%v, lng=%v)", i, course.Name, courseDB.Latitude, courseDB.Longitude)
+			}
+		}
+
 		courses = append(courses, course)
 	}
 
+	log.Printf("✅ GetAllCoursesFromDatabase: Returning %d courses, %d with coordinates", len(courses), coordinateCount)
 	return courses, nil
 }
 

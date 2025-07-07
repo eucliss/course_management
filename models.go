@@ -21,15 +21,17 @@ type Hole struct {
 }
 
 type Course struct {
-	Name          string  `json:"name"`
-	ID            int     `json:"ID"`
-	Description   string  `json:"description"`
-	Ranks         Ranking `json:"ranks"`
-	OverallRating string  `json:"overallRating"`
-	Review        string  `json:"review"`
-	Holes         []Hole  `json:"holes"`
-	Scores        []Score `json:"scores"`
-	Address       string  `json:"address"`
+	Name          string   `json:"name"`
+	ID            int      `json:"ID"`
+	Description   string   `json:"description"`
+	Ranks         Ranking  `json:"ranks"`
+	OverallRating string   `json:"overallRating"`
+	Review        string   `json:"review"`
+	Holes         []Hole   `json:"holes"`
+	Scores        []Score  `json:"scores"`
+	Address       string   `json:"address"`
+	Latitude      *float64 `json:"latitude"`  // Geocoded latitude
+	Longitude     *float64 `json:"longitude"` // Geocoded longitude
 }
 
 type Score struct {

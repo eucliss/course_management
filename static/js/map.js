@@ -73,12 +73,70 @@ window.CourseMap = {
         
         const markerColor = ratingColors[course.OverallRating] || '#204606';
         
+        // Check if course has stored coordinates
+        if (course.Latitude && course.Longitude) {
+            // Use stored coordinates directly - much faster!
+            console.log('📍 Using stored coordinates for:', course.Name, { lat: course.Latitude, lng: course.Longitude });
+            
+            const marker = new mapboxgl.Marker({
+                color: markerColor,
+                scale: 1.2
+            })
+            .setLngLat([course.Longitude, course.Latitude])
+            .setPopup(
+                new mapboxgl.Popup({ offset: 25 })
+                    .setHTML(`
+                        <div class="marker-popup">
+                            <div class="popup-content">
+                                <div class="popup-header">
+                                    <h3 class="course-title" 
+                                       data-course-id="${course.ID}" 
+                                       style="cursor: pointer; text-decoration: underline;">
+                                       ${course.Name}
+                                    </h3>
+                                    <p>Click to view course details</p>
+                                </div>
+                            </div>
+                            <div class="rating-plaque" style="background-color: ${markerColor};">${course.OverallRating}</div>
+                        </div>
+                    `)
+            )
+            .addTo(this.map);
+
+            // HTMX-compatible click handler
+            marker.getPopup().on('open', () => {
+                setTimeout(() => {
+                    const titleElement = document.querySelector(`[data-course-id="${course.ID}"]`);
+                    if (titleElement) {
+                        titleElement.addEventListener('click', function() {
+                            const courseId = this.getAttribute('data-course-id');
+                            console.log('🎯 Course clicked:', courseId);
+                            
+                            // Use HTMX to load course details
+                            htmx.ajax('GET', `/course/${courseId}`, {
+                                target: '#main-content'
+                            });
+                        });
+                    }
+                }, 100);
+            });
+            
+            return; // Exit early - we used stored coordinates
+        }
+        
+        // FALLBACK: Use geocoding API if no stored coordinates and address exists
+        if (!course.Address || course.Address.trim() === '') {
+            console.log('⚠️ No address or coordinates for course:', course.Name);
+            return;
+        }
+        
+        
         fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(course.Address)}.json?access_token=${mapboxgl.accessToken}`)
             .then(response => response.json())
             .then(data => {
                 if (data.features && data.features.length > 0) {
                     const [lng, lat] = data.features[0].center;
-                    console.log('📍 Geocoded:', course.Name, { lat, lng });
+                    console.log('📍 Geocoded coordinates for:', course.Name, { lat, lng });
                     
                     const marker = new mapboxgl.Marker({
                         color: markerColor,

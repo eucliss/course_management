@@ -24,6 +24,14 @@ func NewHandlers(courses *[]Course, courseService *CourseService) *Handlers {
 	}
 }
 
+// Helper function to get minimum of two integers
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 func (h *Handlers) Home(c echo.Context) error {
 	sessionService := NewSessionService()
 	user := sessionService.GetUser(c)
@@ -32,6 +40,34 @@ func (h *Handlers) Home(c echo.Context) error {
 	var userID *uint
 	if uid, ok := c.Get("userID").(uint); ok {
 		userID = &uid
+	}
+
+	// Get courses with coordinates from database if available, otherwise use JSON files
+	var allCourses []Course
+	if DB != nil {
+		log.Printf("🔍 Home handler: Database available, attempting to load courses from database")
+		dbService := NewDatabaseService()
+		dbCourses, err := dbService.GetAllCoursesFromDatabase()
+		if err == nil && len(dbCourses) > 0 {
+			allCourses = dbCourses
+			log.Printf("✅ Home handler: Using %d courses from database with coordinates", len(allCourses))
+
+			// Debug: Check first few courses for coordinates
+			for i := 0; i < min(3, len(allCourses)); i++ {
+				course := allCourses[i]
+				if course.Latitude != nil && course.Longitude != nil {
+					log.Printf("🔍 Home handler: Course %d '%s' has coordinates: lat=%f, lng=%f", i, course.Name, *course.Latitude, *course.Longitude)
+				} else {
+					log.Printf("⚠️ Home handler: Course %d '%s' missing coordinates", i, course.Name)
+				}
+			}
+		} else {
+			log.Printf("Warning: failed to load from database: %v, using JSON fallback", err)
+			allCourses = *h.courses
+		}
+	} else {
+		log.Printf("🔍 Home handler: Database not available, using JSON courses")
+		allCourses = *h.courses
 	}
 
 	// Default to showing user's courses if logged in, all courses if not
@@ -46,7 +82,7 @@ func (h *Handlers) Home(c echo.Context) error {
 		if err != nil {
 			log.Printf("Warning: failed to get user reviews: %v", err)
 			// Fallback to all courses if user reviews can't be loaded
-			coursesToShow = *h.courses
+			coursesToShow = allCourses
 		} else {
 			log.Printf("✅ Found %d reviews for user %d in Home handler", len(userReviews), *userID)
 			// Debug: Print review details
@@ -65,7 +101,7 @@ func (h *Handlers) Home(c echo.Context) error {
 			}
 
 			// Build edit permissions for ALL courses (for frontend filtering)
-			for i, course := range *h.courses {
+			for i, course := range allCourses {
 				if userOwnedCourseNames[course.Name] {
 					allCoursesEditPermissions[i] = true
 				}
@@ -73,30 +109,31 @@ func (h *Handlers) Home(c echo.Context) error {
 
 			// Convert each review to a Course struct that the template expects
 			for _, reviewWithCourse := range userReviews {
-				// Find the corresponding course in the JSON array to get the correct index
+				// Find the corresponding course in the all courses array to get the correct index and coordinates
 				var courseArrayIndex int = -1
-				for idx, jsonCourse := range *h.courses {
-					if jsonCourse.Name == reviewWithCourse.CourseName {
+				var baseCourse Course
+				for idx, course := range allCourses {
+					if course.Name == reviewWithCourse.CourseName {
 						courseArrayIndex = idx
+						baseCourse = course
 						break
 					}
 				}
 
-				// If we can't find the course in the JSON array, skip it
+				// If we can't find the course in the all courses array, skip it
 				if courseArrayIndex == -1 {
-					log.Printf("Warning: Course '%s' from review not found in JSON array", reviewWithCourse.CourseName)
+					log.Printf("Warning: Course '%s' from review not found in all courses array", reviewWithCourse.CourseName)
 					continue
 				}
 
-				// Get the original course description from the JSON array
-				originalCourse := (*h.courses)[courseArrayIndex]
-
 				course := Course{
-					ID:            courseArrayIndex, // Use the JSON array index for compatibility
+					ID:            courseArrayIndex, // Use the all courses array index for compatibility
 					Name:          reviewWithCourse.CourseName,
-					Description:   originalCourse.Description, // Use the actual course description
+					Description:   baseCourse.Description, // Use the actual course description
 					OverallRating: safeStringValue(reviewWithCourse.OverallRating),
 					Address:       reviewWithCourse.CourseAddress,
+					Latitude:      baseCourse.Latitude,  // Include coordinates from database
+					Longitude:     baseCourse.Longitude, // Include coordinates from database
 					Ranks: Ranking{
 						Price:              safeStringValue(reviewWithCourse.Price),
 						HandicapDifficulty: safeIntValue(reviewWithCourse.HandicapDifficulty),
@@ -124,19 +161,19 @@ func (h *Handlers) Home(c echo.Context) error {
 
 			// If user has no reviewed courses, show all courses instead
 			if len(coursesToShow) == 0 {
-				coursesToShow = *h.courses
+				coursesToShow = allCourses
 				editPermissions = allCoursesEditPermissions // Use the all courses edit permissions
 			}
 		}
 	} else {
 		// Not logged in, show all courses
-		coursesToShow = *h.courses
+		coursesToShow = allCourses
 	}
 
 	// Debug: Log what we're sending to the template
 	log.Printf("🎯 Home handler sending to template:")
 	log.Printf("   - Courses to show: %d", len(coursesToShow))
-	log.Printf("   - All courses: %d", len(*h.courses))
+	log.Printf("   - All courses: %d", len(allCourses))
 	log.Printf("   - User logged in: %t", userID != nil)
 	log.Printf("   - Default filter: %s", func() string {
 		if userID != nil {
@@ -160,7 +197,7 @@ func (h *Handlers) Home(c echo.Context) error {
 		DefaultFilter             string       // Add default filter indication
 	}{
 		Courses:                   coursesToShow,
-		AllCourses:                *h.courses,
+		AllCourses:                allCourses, // Use courses with coordinates
 		MapboxToken:               os.Getenv("MAPBOX_ACCESS_TOKEN"),
 		User:                      user,
 		EditPermissions:           editPermissions,
@@ -186,7 +223,7 @@ func (h *Handlers) Home(c echo.Context) error {
 			}
 
 			// Mark courses as reviewed in the AllCoursesReviewStatus map
-			for i, course := range *h.courses {
+			for i, course := range allCourses {
 				if reviewedCourseNames[course.Name] {
 					data.AllCoursesReviewStatus[i] = true
 				}
@@ -967,6 +1004,24 @@ func (h *Handlers) Map(c echo.Context) error {
 		userID = &uid
 	}
 
+	// Get courses with coordinates from database if available, otherwise use JSON files
+	var allCourses []Course
+	if DB != nil {
+		log.Printf("🔍 Map handler: Database available, attempting to load courses from database")
+		dbService := NewDatabaseService()
+		dbCourses, err := dbService.GetAllCoursesFromDatabase()
+		log.Printf("🔍 Map handler: dbCourses[0]: %v", dbCourses[0])
+		if err == nil && len(dbCourses) > 0 {
+			allCourses = dbCourses
+		} else {
+			log.Printf("Warning: failed to load from database: %v, using JSON fallback", err)
+			allCourses = *h.courses
+		}
+	} else {
+		log.Printf("🔍 Map handler: Database not available, using JSON courses")
+		allCourses = *h.courses
+	}
+
 	// Default to showing user's courses if logged in, all courses if not
 	var coursesToShow []Course
 	editPermissions := make(map[int]bool)
@@ -979,7 +1034,7 @@ func (h *Handlers) Map(c echo.Context) error {
 		if err != nil {
 			log.Printf("Warning: failed to get user reviews: %v", err)
 			// Fallback to all courses if user reviews can't be loaded
-			coursesToShow = *h.courses
+			coursesToShow = allCourses
 		} else {
 			log.Printf("✅ Found %d reviews for user %d in Map handler", len(userReviews), *userID)
 
@@ -994,7 +1049,7 @@ func (h *Handlers) Map(c echo.Context) error {
 			}
 
 			// Build edit permissions for ALL courses (for frontend filtering)
-			for i, course := range *h.courses {
+			for i, course := range allCourses {
 				if userOwnedCourseNames[course.Name] {
 					allCoursesEditPermissions[i] = true
 				}
@@ -1002,30 +1057,31 @@ func (h *Handlers) Map(c echo.Context) error {
 
 			// Convert each review to a Course struct that the template expects
 			for _, reviewWithCourse := range userReviews {
-				// Find the corresponding course in the JSON array to get the correct index
+				// Find the corresponding course in the all courses array to get the correct index and coordinates
 				var courseArrayIndex int = -1
-				for idx, jsonCourse := range *h.courses {
-					if jsonCourse.Name == reviewWithCourse.CourseName {
+				var baseCourse Course
+				for idx, course := range allCourses {
+					if course.Name == reviewWithCourse.CourseName {
 						courseArrayIndex = idx
+						baseCourse = course
 						break
 					}
 				}
 
-				// If we can't find the course in the JSON array, skip it
+				// If we can't find the course in the all courses array, skip it
 				if courseArrayIndex == -1 {
-					log.Printf("Warning: Course '%s' from review not found in JSON array", reviewWithCourse.CourseName)
+					log.Printf("Warning: Course '%s' from review not found in all courses array", reviewWithCourse.CourseName)
 					continue
 				}
 
-				// Get the original course description from the JSON array
-				originalCourse := (*h.courses)[courseArrayIndex]
-
 				course := Course{
-					ID:            courseArrayIndex, // Use the JSON array index for compatibility
+					ID:            courseArrayIndex, // Use the all courses array index for compatibility
 					Name:          reviewWithCourse.CourseName,
-					Description:   originalCourse.Description, // Use the actual course description
+					Description:   baseCourse.Description, // Use the actual course description
 					OverallRating: safeStringValue(reviewWithCourse.OverallRating),
 					Address:       reviewWithCourse.CourseAddress,
+					Latitude:      baseCourse.Latitude,  // Include coordinates from database
+					Longitude:     baseCourse.Longitude, // Include coordinates from database
 					Ranks: Ranking{
 						Price:              safeStringValue(reviewWithCourse.Price),
 						HandicapDifficulty: safeIntValue(reviewWithCourse.HandicapDifficulty),
@@ -1053,13 +1109,13 @@ func (h *Handlers) Map(c echo.Context) error {
 
 			// If user has no reviewed courses, show all courses instead
 			if len(coursesToShow) == 0 {
-				coursesToShow = *h.courses
+				coursesToShow = allCourses
 				editPermissions = allCoursesEditPermissions // Use the all courses edit permissions
 			}
 		}
 	} else {
 		// Not logged in, show all courses
-		coursesToShow = *h.courses
+		coursesToShow = allCourses
 	}
 
 	coursesJSON, err := json.Marshal(coursesToShow)
@@ -1068,7 +1124,7 @@ func (h *Handlers) Map(c echo.Context) error {
 	}
 
 	// Also include all courses JSON for frontend filtering
-	allCoursesJSON, err := json.Marshal(*h.courses)
+	allCoursesJSON, err := json.Marshal(allCourses)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to marshal all courses to JSON: "+err.Error())
 	}
@@ -1086,7 +1142,7 @@ func (h *Handlers) Map(c echo.Context) error {
 		DefaultFilter             string
 	}{
 		Courses:                   coursesToShow,
-		AllCourses:                *h.courses,
+		AllCourses:                allCourses, // Use courses with coordinates
 		CoursesJSON:               template.JS(coursesJSON),
 		AllCoursesJSON:            template.JS(allCoursesJSON),
 		MapboxToken:               os.Getenv("MAPBOX_ACCESS_TOKEN"),
@@ -1114,7 +1170,7 @@ func (h *Handlers) Map(c echo.Context) error {
 			}
 
 			// Mark courses as reviewed in the AllCoursesReviewStatus map
-			for i, course := range *h.courses {
+			for i, course := range allCourses {
 				if reviewedCourseNames[course.Name] {
 					data.AllCoursesReviewStatus[i] = true
 				}

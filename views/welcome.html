@@ -546,31 +546,118 @@
                             console.log('🗑️ Removed existing map');
                         }
                         
-                        mapboxgl.accessToken = mapboxToken;
+                        mapboxgl.accessToken = mapboxToken || '{{ .MapboxToken }}';
                         
-                        let courseMap = new mapboxgl.Map({
-                            container: 'map',
-                            style: 'mapbox://styles/mapbox/streets-v12',
-                            center: [-98.5795, 39.8283],
-                            zoom: 4.5,
-                            minZoom: 3,
-                            maxZoom: 15
-                        });
-
-                        window.existingMap = courseMap;
-
-                        window.addPinFromAddress = function(address, courseName, rating, courseId) {
-                            if (!address || address.trim() === '') {
-                                console.log('⚠️ No address for:', courseName);
+                        // Function to create map with given center coordinates
+                        function createWelcomeMapWithCenter(centerLng, centerLat) {
+                            // Ensure token is set before creating map
+                            if (!mapboxgl.accessToken || mapboxgl.accessToken === '') {
+                                console.error('❌ Mapbox token is missing in welcome map!');
+                                console.log('Token value:', mapboxgl.accessToken);
                                 return;
                             }
                             
+                            let courseMap = new mapboxgl.Map({
+                                container: 'map',
+                                style: 'mapbox://styles/mapbox/streets-v12',
+                                center: [centerLng, centerLat],
+                                zoom: 4.5,
+                                minZoom: 3,
+                                maxZoom: 15
+                            });
+
+                            window.existingMap = courseMap;
+                            setupMapFunctionality(courseMap, courses, mapboxToken);
+                        }
+                        
+                        // Try to get user's location first
+                        if (navigator.geolocation) {
+                            navigator.geolocation.getCurrentPosition(
+                                function(position) {
+                                    // Success: use user's location
+                                    const userLat = position.coords.latitude;
+                                    const userLng = position.coords.longitude;
+                                    console.log('📍 Using user location for welcome map:', { lat: userLat, lng: userLng });
+                                    createWelcomeMapWithCenter(userLng, userLat);
+                                },
+                                function(error) {
+                                    // Error or denied: use default center
+                                    console.log('⚠️ Geolocation failed for welcome map, using default center:', error.message);
+                                    createWelcomeMapWithCenter(-98.5795, 39.8283);
+                                },
+                                {
+                                    enableHighAccuracy: true,
+                                    timeout: 5000,
+                                    maximumAge: 300000 // Cache location for 5 minutes
+                                }
+                            );
+                        } else {
+                            // Geolocation not supported: use default center
+                            console.log('⚠️ Geolocation not supported for welcome map, using default center');
+                            createWelcomeMapWithCenter(-98.5795, 39.8283);
+                        }
+                        
+                        function setupMapFunctionality(courseMap, courses, mapboxToken) {
+
+                        window.addPinFromAddress = function(address, courseName, rating, courseId) {
                             const ratingColors = {
                                 'S': '#73FF73', 'A': '#B7FF73', 'B': '#FFFF73',
                                 'C': '#FFDA74', 'D': '#FFB774', 'F': '#FF7474'
                             };
                             
                             const markerColor = ratingColors[rating] || '#204606';
+                            
+                            // NEW: Check if we have stored coordinates first
+                            const course = courses.find(c => (c.Name || c.name) === courseName);
+                            if (course && course.Latitude && course.Longitude) {
+                                // Use stored coordinates - much faster!
+                                console.log('📍 Using stored coordinates for:', courseName, { lat: course.Latitude, lng: course.Longitude });
+                                
+                                let marker = new mapboxgl.Marker({
+                                    color: markerColor,
+                                    scale: 1.2
+                                })
+                                .setLngLat([course.Longitude, course.Latitude])
+                                .setPopup(
+                                    new mapboxgl.Popup({ offset: 25 })
+                                        .setHTML(`
+                                            <div class="marker-popup">
+                                                <div class="popup-content">
+                                                    <div class="popup-header">
+                                                        <h3 class="course-title" data-course-id="${courseId}" style="cursor: pointer; text-decoration: underline;">${courseName}</h3>
+                                                    </div>
+                                                </div>
+                                                <div class="rating-plaque" style="background-color: ${markerColor};">${rating || '-'}</div>
+                                            </div>
+                                        `)
+                                )
+                                .addTo(courseMap);
+
+                                marker.getPopup().on('open', () => {
+                                    setTimeout(() => {
+                                        const titleElement = document.querySelector(`[data-course-id="${courseId}"]`);
+                                        if (titleElement) {
+                                            titleElement.addEventListener('click', function() {
+                                                const id = this.getAttribute('data-course-id');
+                                                console.log('🎯 Course clicked:', id);
+                                                htmx.ajax('GET', `/course/${id}`, {
+                                                    target: '#main-content'
+                                                });
+                                            });
+                                        }
+                                    }, 100);
+                                });
+                                
+                                return; // Exit early - we used stored coordinates
+                            }
+                            
+                            // FALLBACK: Use geocoding API if no stored coordinates and address exists
+                            if (!address || address.trim() === '') {
+                                console.log('⚠️ No address or coordinates for:', courseName);
+                                return;
+                            }
+                            
+                            console.log('⚠️ No stored coordinates for:', courseName, 'falling back to geocoding API');
                             
                             fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${mapboxToken}`)
                                 .then(response => response.json())
@@ -632,6 +719,8 @@
                                 });
                             }
                         });
+                        
+                        } // Close setupMapFunctionality function
                     };
                 };
                 document.head.appendChild(script);

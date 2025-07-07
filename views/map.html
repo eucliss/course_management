@@ -256,6 +256,21 @@
       window.defaultCourses = JSON.parse('{{ .CoursesJSON }}');
       window.userReviewedCourses = JSON.parse('{{ .CoursesJSON }}'); // User's reviewed courses with their review data
       
+      // Debug: Check what data we received
+      console.log('🔍 Map loaded with', window.allCourses.length, 'total courses');
+      console.log('🔍 First 3 courses:', window.allCourses.slice(0, 3).map(c => ({
+        name: c.Name || c.name,
+        latitude: c.Latitude || c.latitude,
+        longitude: c.Longitude || c.longitude,
+        hasCoords: !!(c.Latitude && c.Longitude) || !!(c.latitude && c.longitude)
+      })));
+      
+      // Count courses with coordinates
+      const coursesWithCoords = window.allCourses.filter(c => 
+        (c.Latitude && c.Longitude) || (c.latitude && c.longitude)
+      ).length;
+      console.log('📍 Courses with stored coordinates:', coursesWithCoords, 'out of', window.allCourses.length);
+      
       // Store edit permissions for ownership checking
       window.allEditPermissions = {};
       // Store review status for filtering
@@ -327,11 +342,6 @@
       }
 
       function addPinFromAddress(courseMap, address, courseName, rating, courseId, courseIndex, color = '#204606') {
-        if (!address || address.trim() === '') {
-          console.log('No address provided for course:', courseName);
-          return;
-        }
-        
         // Determine which rating to use based on current filter and user reviews
         let displayRating = rating;
         if (window.mapCurrentFilter === 'my' && window.userReviewMap[courseName]) {
@@ -352,6 +362,67 @@
         
         // Get the color for this rating, default to gray if not found
         const markerColor = ratingColors[displayRating] || ratingColors['-'];
+        
+        // PRIORITY: Check if we have stored coordinates first (much faster!)
+        const course = window.allCourses.find(c => (c.Name || c.name) === courseName);
+        if (course && course.latitude && course.longitude) {
+          // Use stored coordinates - no API call needed!
+          console.log('📍 Using stored coordinates for:', courseName, { lat: course.latitude, lng: course.longitude });
+          
+          let marker = new mapboxgl.Marker({
+            color: markerColor,
+            scale: 1.2
+          })
+          .setLngLat([course.longitude, course.latitude])
+          .setPopup(
+            new mapboxgl.Popup({ offset: 25 })
+              .setHTML(createPopupHTML(courseName, courseId, displayRating, markerColor))
+          )
+          .addTo(courseMap);
+
+          // Store marker with course name and ownership info for search and filter functionality
+          let canEdit = window.allEditPermissions && window.allEditPermissions[courseName] === true;
+          let hasReview = window.allReviewStatus && window.allReviewStatus[courseName] === true;
+          
+          window.allMarkers.push({
+            marker: marker,
+            courseName: courseName.toLowerCase(),
+            canEdit: canEdit,
+            hasReview: hasReview,
+            courseIndex: courseIndex,
+            courseId: courseId,
+            originalCourseName: courseName,
+            visible: window.mapCurrentFilter === 'all' || (window.mapCurrentFilter === 'my' && hasReview)
+          });
+
+          // Hide marker initially if it doesn't match current filter
+          if (window.mapCurrentFilter === 'my' && !hasReview) {
+            marker.remove();
+          }
+
+          // Add click event listener after popup is created
+          marker.getPopup().on('open', () => {
+            let titleElement = document.querySelector('.course-title');
+            if (titleElement) {
+              titleElement.addEventListener('click', function() {
+                let courseId = this.getAttribute('data-course-id');
+                htmx.ajax('GET', `/course/${courseId}`, {
+                  target: '#main-content'
+                });
+              });
+            }
+          });
+          
+          return; // Exit early - we used stored coordinates
+        }
+        
+        // FALLBACK: Use geocoding API only if no stored coordinates and address exists
+        if (!address || address.trim() === '') {
+          console.log('⚠️ No address or coordinates for course:', courseName);
+          return;
+        }
+        
+        console.log('MAP HTML NO STORED COORDINATES:', courseName, 'falling back to geocoding API');
         
         fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token={{ .MapboxToken }}`)
           .then(response => response.json())
