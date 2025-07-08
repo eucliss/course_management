@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 )
@@ -1573,4 +1574,116 @@ func (h *Handlers) ReviewSpecificCourseForm(c echo.Context) error {
 	}
 
 	return c.Render(http.StatusOK, "review-course", data)
+}
+
+// GetAllCoursesAPI returns paginated courses for ultra-fast sidebar loading
+func (h *Handlers) GetAllCoursesAPI(c echo.Context) error {
+	// Parse pagination parameters
+	page := 1
+	limit := 20
+	search := ""
+	filter := "all"
+	
+	if p := c.QueryParam("page"); p != "" {
+		if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
+			page = parsed
+		}
+	}
+	
+	if l := c.QueryParam("limit"); l != "" {
+		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 100 {
+			limit = parsed
+		}
+	}
+	
+	if s := c.QueryParam("search"); s != "" {
+		search = s
+	}
+	
+	if f := c.QueryParam("filter"); f != "" {
+		filter = f
+	}
+	
+	log.Printf("🚀 GetAllCoursesAPI: page=%d, limit=%d, search='%s', filter='%s'", page, limit, search, filter)
+	
+	// Get ownership context that was added by middleware
+	editPermissions := c.Get("EditPermissions").([]bool)
+	reviewStatus := c.Get("ReviewStatus").([]bool)
+	
+	// Filter courses based on search and filter criteria
+	var filteredCourses []Course
+	var filteredEditPermissions []bool
+	var filteredReviewStatus []bool
+	
+	for i, course := range *h.courses {
+		// Apply filter criteria
+		matchesFilter := true
+		if filter == "my" && i < len(reviewStatus) {
+			matchesFilter = reviewStatus[i]
+		}
+		
+		// Apply search criteria
+		matchesSearch := true
+		if search != "" {
+			matchesSearch = false
+			if course.Name != "" && strings.Contains(strings.ToLower(course.Name), strings.ToLower(search)) {
+				matchesSearch = true
+			}
+		}
+		
+		if matchesFilter && matchesSearch {
+			filteredCourses = append(filteredCourses, course)
+			if i < len(editPermissions) {
+				filteredEditPermissions = append(filteredEditPermissions, editPermissions[i])
+			} else {
+				filteredEditPermissions = append(filteredEditPermissions, false)
+			}
+			if i < len(reviewStatus) {
+				filteredReviewStatus = append(filteredReviewStatus, reviewStatus[i])
+			} else {
+				filteredReviewStatus = append(filteredReviewStatus, false)
+			}
+		}
+	}
+	
+	// Calculate pagination
+	totalItems := len(filteredCourses)
+	totalPages := (totalItems + limit - 1) / limit // Ceiling division
+	startIndex := (page - 1) * limit
+	endIndex := startIndex + limit
+	
+	if startIndex > totalItems {
+		startIndex = totalItems
+	}
+	if endIndex > totalItems {
+		endIndex = totalItems
+	}
+	
+	// Get page slice
+	var pageCourses []Course
+	var pageEditPermissions []bool
+	var pageReviewStatus []bool
+	
+	if startIndex < totalItems {
+		pageCourses = filteredCourses[startIndex:endIndex]
+		pageEditPermissions = filteredEditPermissions[startIndex:endIndex]
+		pageReviewStatus = filteredReviewStatus[startIndex:endIndex]
+	}
+	
+	response := map[string]interface{}{
+		"courses":          pageCourses,
+		"editPermissions":  pageEditPermissions,
+		"reviewStatus":     pageReviewStatus,
+		"pagination": map[string]interface{}{
+			"currentPage":  page,
+			"totalPages":   totalPages,
+			"totalItems":   totalItems,
+			"itemsPerPage": limit,
+			"hasNext":      page < totalPages,
+			"hasPrev":      page > 1,
+		},
+	}
+	
+	log.Printf("✅ GetAllCoursesAPI: Returning page %d/%d (%d items, %d total)", page, totalPages, len(pageCourses), totalItems)
+	return c.JSON(http.StatusOK, response)
 }

@@ -279,6 +279,71 @@
     width: 14px;
     height: 14px;
 }
+
+/* Fast pagination controls */
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px 0;
+    border-top: 1px solid rgba(32, 70, 6, 0.1);
+    margin-top: 16px;
+}
+
+.page-btn {
+    padding: 6px 12px;
+    border: 1px solid rgba(32, 70, 6, 0.2);
+    background: white;
+    color: #204606;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: all 0.2s ease;
+}
+
+.page-btn:hover {
+    background: rgba(32, 70, 6, 0.1);
+    border-color: #204606;
+}
+
+.page-btn.active {
+    background: #204606;
+    color: white;
+    font-weight: 600;
+}
+
+.page-info {
+    color: rgba(32, 70, 6, 0.7);
+    font-size: 0.8em;
+    margin-left: 8px;
+}
+
+/* Loading spinner */
+.loading-spinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+    color: rgba(32, 70, 6, 0.7);
+    font-size: 0.9em;
+}
+
+.loading-spinner:before {
+    content: '';
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(32, 70, 6, 0.2);
+    border-top: 2px solid #204606;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
 </style>
 
 <script>
@@ -356,6 +421,274 @@ function filterCourses() {
     console.log(`✅ Filtered courses: ${window.sidebarCurrentFilter} filter, search: "${searchTerm}", visible: ${visibleCount}`);
 }
 
+// True server-side pagination - only loads 20 courses at a time
+window.pagination = {
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 20,
+    currentFilter: 'all',
+    currentSearch: '',
+    loading: false
+};
+
+// Lightning-fast server-side pagination
+function loadCoursePage(page = 1, filter = null, search = null) {
+    if (window.pagination.loading) return; // Prevent double-loading
+    
+    // Update pagination state
+    window.pagination.currentPage = page;
+    if (filter !== null) window.pagination.currentFilter = filter;
+    if (search !== null) window.pagination.currentSearch = search;
+    
+    const container = document.getElementById('all-courses-template');
+    if (!container) return;
+    
+    // Show loading state
+    window.pagination.loading = true;
+    container.innerHTML = '<div class="loading-spinner">Loading courses...</div>';
+    
+    // Build API URL with parameters
+    const params = new URLSearchParams({
+        page: window.pagination.currentPage,
+        limit: window.pagination.itemsPerPage,
+        filter: window.pagination.currentFilter,
+        search: window.pagination.currentSearch
+    });
+    
+    console.time('SERVER_PAGINATION');
+    console.log(`🚀 Loading page ${page} with filter '${window.pagination.currentFilter}' and search '${window.pagination.currentSearch}'`);
+    
+    fetch(`/api/courses/all?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            console.timeEnd('SERVER_PAGINATION');
+            
+            // Update pagination info from server
+            window.pagination.totalPages = data.pagination.totalPages;
+            window.pagination.totalItems = data.pagination.totalItems;
+            
+            // Render the page
+            renderServerPage(data);
+            
+            console.log(`✅ Loaded page ${data.pagination.currentPage}/${data.pagination.totalPages} (${data.courses.length} courses, ${data.pagination.totalItems} total)`);
+        })
+        .catch(error => {
+            console.error('❌ Error loading page:', error);
+            container.innerHTML = '<div class="error-message">Failed to load courses. Try again.</div>';
+        })
+        .finally(() => {
+            window.pagination.loading = false;
+        });
+}
+
+// Alias for backward compatibility
+function loadAllCoursesLazily() {
+    loadCoursePage(1, 'all');
+}
+
+// Render page from server data
+function renderServerPage(data) {
+    console.time('RENDER_SERVER_PAGE');
+    
+    const container = document.getElementById('all-courses-template');
+    if (!container) return;
+    
+    // Generate HTML for the courses
+    const coursesHTML = generateServerPageHTML(data.courses, data.editPermissions, data.reviewStatus);
+    const paginationHTML = generateServerPaginationHTML(data.pagination);
+    
+    // Update DOM in one operation
+    container.innerHTML = coursesHTML + paginationHTML;
+    
+    // Re-initialize HTMX for new content
+    if (typeof htmx !== 'undefined') {
+        htmx.process(container);
+    }
+    
+    console.timeEnd('RENDER_SERVER_PAGE');
+    console.log(`📄 Rendered page ${data.pagination.currentPage}/${data.pagination.totalPages} (${data.courses.length} courses)`);
+}
+
+// Generate HTML for server-side paginated courses
+function generateServerPageHTML(courses, editPermissions, reviewStatus) {
+    if (courses.length === 0) {
+        return `<div class="no-courses-message">
+            <div class="no-courses-content">
+                <p>No courses found</p>
+                <button hx-get="/review-landing" hx-target="#main-content">Add a course</button>
+            </div>
+        </div>`;
+    }
+    
+    return courses.map((course, index) => {
+        const canEdit = editPermissions[index] || false;
+        const hasReview = reviewStatus[index] || false;
+        
+        let actions = '';
+        if (canEdit || hasReview) {
+            actions = '<div class="course-actions">';
+            
+            if (hasReview) {
+                actions += `<button class="edit-review-btn" hx-get="/review-course/${course.ID}" hx-target="#main-content" title="Edit Review">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                </button>
+                <button class="delete-review-btn" hx-delete="/delete-review/${course.ID}" hx-target="#main-content" title="Delete Review">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3,6 5,6 21,6"></polyline>
+                        <path d="m19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1,2-2h4a2,2 0 0,1,2,2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                </button>`;
+            }
+            
+            if (canEdit) {
+                actions += `<button class="edit-btn" hx-get="/edit-course/${course.ID}" hx-target="#main-content" title="Edit Course">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                </button>
+                <button class="delete-btn" hx-delete="/delete-course/${course.ID}" hx-target="#main-content" title="Delete Course">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3,6 5,6 21,6"></polyline>
+                        <path d="m19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1,2-2h4a2,2 0 0,1,2,2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                </button>`;
+            }
+            
+            actions += '</div>';
+        }
+        
+        const courseName = course.Name || 'Unnamed Course';
+        return `<div class="course-item">
+            <div class="course-content" hx-get="/course/${course.ID}" hx-target="#main-content">
+                <h4>${courseName}</h4>
+            </div>
+            ${actions}
+        </div>`;
+    }).join('');
+}
+
+// Generate server-side pagination controls
+function generateServerPaginationHTML(paginationData) {
+    if (paginationData.totalPages <= 1) return '';
+    
+    const current = paginationData.currentPage;
+    const total = paginationData.totalPages;
+    
+    let pagination = '<div class="pagination">';
+    
+    // Previous button
+    if (paginationData.hasPrev) {
+        pagination += `<button onclick="loadCoursePage(${current - 1})" class="page-btn">← Prev</button>`;
+    }
+    
+    // Page numbers (show current, prev, next)
+    const startPage = Math.max(1, current - 1);
+    const endPage = Math.min(total, current + 1);
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const active = i === current ? ' active' : '';
+        pagination += `<button onclick="loadCoursePage(${i})" class="page-btn${active}">${i}</button>`;
+    }
+    
+    // Next button
+    if (paginationData.hasNext) {
+        pagination += `<button onclick="loadCoursePage(${current + 1})" class="page-btn">Next →</button>`;
+    }
+    
+    pagination += `<span class="page-info">Page ${current} of ${total} (${paginationData.totalItems} courses)</span></div>`;
+    
+    return pagination;
+}
+
+// Generate HTML for courses efficiently
+function generateCoursesHTML(courses, editPermissions, reviewStatus) {
+    const fragments = [];
+    
+    courses.forEach((course, index) => {
+        const canEdit = editPermissions[index] || false;
+        const hasReview = reviewStatus[index] || false;
+        
+        let html = `
+            <div class="course-item" data-can-edit="${canEdit}" data-has-review="${hasReview}" data-course-type="all">
+                <div class="course-content" hx-get="/course/${course.ID}" hx-target="#main-content">
+                    <h4>${course.Name}</h4>
+                </div>`;
+        
+        if (canEdit || hasReview) {
+            html += '<div class="course-actions">';
+            
+            if (hasReview) {
+                html += `
+                    <button class="edit-review-btn" hx-get="/review-course/${index}" hx-target="#main-content" title="Edit Review" onclick="event.stopPropagation();">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </button>
+                    <button class="delete-review-btn" hx-delete="/delete-review/${index}" hx-target="#main-content" hx-confirm="Are you sure you want to delete your review for '${course.Name}'? This action cannot be undone." title="Delete Review" onclick="event.stopPropagation();">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3,6 5,6 21,6"></polyline>
+                            <path d="m19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1,2-2h4a2,2 0 0,1,2,2v2"></path>
+                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                    </button>`;
+            }
+            
+            if (canEdit) {
+                html += `
+                    <button class="edit-btn" hx-get="/edit-course/${course.ID}" hx-target="#main-content" title="Edit Course" onclick="event.stopPropagation();">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </button>
+                    <button class="delete-btn" hx-delete="/delete-course/${course.ID}" hx-target="#main-content" hx-confirm="Are you sure you want to delete '${course.Name}'? This action cannot be undone." title="Delete Course" onclick="event.stopPropagation();">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3,6 5,6 21,6"></polyline>
+                            <path d="m19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1,2-2h4a2,2 0 0,1,2,2v2"></path>
+                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                    </button>`;
+            }
+            
+            html += '</div>';
+        }
+        
+        html += '</div>';
+        fragments.push(html);
+    });
+    
+    // Add no-courses message
+    fragments.push(`
+        <div class="no-courses-message" id="no-courses-message">
+            <div class="no-courses-content">
+                <div class="no-courses-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                        <polyline points="14,2 14,8 20,8"></polyline>
+                        <path d="M12 13v-2"></path>
+                        <path d="M12 17h.01"></path>
+                    </svg>
+                </div>
+                <p class="no-courses-text">No reviews found</p>
+                <button class="no-courses-cta" hx-get="/review-landing" hx-target="#main-content">
+                    Add one now!
+                </button>
+            </div>
+        </div>`);
+    
+    return fragments.join('');
+}
+
 // Course toggle functionality
 function initializeCourseToggle() {
     const allCoursesBtn = document.getElementById('all-courses-btn');
@@ -363,25 +696,35 @@ function initializeCourseToggle() {
     
     if (allCoursesBtn && myCoursesBtn) {
         allCoursesBtn.addEventListener('click', function() {
-            console.log('🔘 All Courses button clicked');
+            console.log('🔘 All Courses button clicked - loading with server pagination');
             setActiveFilter('all');
-            filterCourses();
+            loadCoursePage(1, 'all');
         });
         
         myCoursesBtn.addEventListener('click', function() {
-            console.log('🔘 My Reviews button clicked');
+            console.log('🔘 My Reviews button clicked - loading with server pagination');
             setActiveFilter('my');
-            filterCourses();
+            loadCoursePage(1, 'my');
         });
     }
 }
 
-// Course search functionality
+// Server-side search functionality
 function initializeCourseSearch() {
     const searchInput = document.getElementById('course-search');
     if (searchInput) {
+        // Use debounce to avoid too many API calls
+        let searchTimeout;
+        
         searchInput.addEventListener('input', function(e) {
-            filterCourses();
+            clearTimeout(searchTimeout);
+            const searchTerm = e.target.value.trim();
+            
+            // Debounce search requests by 300ms
+            searchTimeout = setTimeout(() => {
+                console.log('🔍 Searching for:', searchTerm);
+                loadCoursePage(1, window.pagination.currentFilter, searchTerm);
+            }, 300);
         });
     }
 }
