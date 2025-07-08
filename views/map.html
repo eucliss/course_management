@@ -1,4 +1,7 @@
 {{ define "map" }}
+<link href="/static/css/map-shared.css" rel="stylesheet" />
+<script src="/static/js/map-utils.js"></script>
+
 <div class="map-content-container">
   <div class="map-controls-container">
     {{ if .User }}
@@ -44,59 +47,7 @@
     height: 100%;
   }
 
-      .marker-popup {
-        padding: 8px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        min-width: 200px;
-      }
-
-      .popup-content {
-        flex: 1;
-      }
-
-      .popup-header h3 {
-        margin: 0;
-        color: #204606;
-        font-size: 16px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        padding: 2px 4px;
-        border-radius: 3px;
-      }
-
-      .popup-header h3:hover {
-        color: #2d6509;
-        background-color: rgba(32, 70, 6, 0.1);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      }
-
-      .marker-popup p {
-        margin: 5px 0 0 0;
-        color: #666;
-        font-size: 12px;
-      }
-
-      .rating-plaque {
-        background-color: #204606;
-        color: white;
-        padding: 8px 12px;
-        border-radius: 4px;
-        font-size: 16px;
-        font-weight: bold;
-        min-width: 32px;
-        text-align: center;
-        flex-shrink: 0;
-        align-self: center;
-      }
-
-      .mapboxgl-popup-content {
-        border-radius: 4px;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-      }
+      /* Popup styles moved to /static/css/map-shared.css */
 
       .map-controls-container {
         position: absolute;
@@ -207,160 +158,9 @@
         height: 16px;
       }
 
-      /* Custom Map Marker Styles */
-      .custom-course-marker {
-        background: white;
-        border: 2px solid white;
-        border-radius: 8px;
-        padding: 6px 10px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        font-family: Arial, sans-serif;
-        font-size: 14px;
-        font-weight: 600;
-        color: white;
-        text-align: center;
-        min-width: 32px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        position: relative;
-        transform-origin: center bottom;
-      }
+      /* Custom marker styles moved to /static/css/map-shared.css */
 
-      .custom-course-marker:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-      }
-
-      .custom-course-marker.rating-S {
-        background: #73FF73;
-        color: #204606;
-      }
-
-      .custom-course-marker.rating-A {
-        background: #B7FF73;
-        color: #204606;
-      }
-
-      .custom-course-marker.rating-B {
-        background: #FFFF73;
-        color: #204606;
-      }
-
-      .custom-course-marker.rating-C {
-        background: #FFDA74;
-        color: #204606;
-      }
-
-      .custom-course-marker.rating-D {
-        background: #FFB774;
-        color: #204606;
-      }
-
-      .custom-course-marker.rating-F {
-        background: #FF7474;
-        color: white;
-      }
-
-      .custom-course-marker.rating-none {
-        background: #BABEBC;
-        color: #204606;
-      }
-
-      /* Enhanced marker popup styling */
-      .enhanced-marker-popup {
-        border-radius: 8px;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-        border: 2px solid rgba(32, 70, 6, 0.2);
-        background: white;
-        padding: 0;
-        max-width: 280px;
-      }
-
-      .enhanced-marker-popup .mapboxgl-popup-content {
-        padding: 16px;
-        border-radius: 8px;
-        background: white;
-        box-shadow: none;
-      }
-
-      .enhanced-marker-popup .popup-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 8px;
-      }
-
-      .enhanced-marker-popup .popup-title {
-        font-size: 16px;
-        font-weight: 600;
-        color: #204606;
-        margin: 0;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        padding: 4px 8px;
-        border-radius: 4px;
-      }
-
-      .enhanced-marker-popup .popup-title:hover {
-        background: rgba(32, 70, 6, 0.1);
-        transform: translateY(-1px);
-      }
-
-      .enhanced-marker-popup .popup-rating-badge {
-        background: #204606;
-        color: white;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 600;
-        min-width: 24px;
-        text-align: center;
-      }
-
-      .enhanced-marker-popup .popup-rating-badge.rating-S {
-        background: #73FF73;
-        color: #204606;
-      }
-
-      .enhanced-marker-popup .popup-rating-badge.rating-A {
-        background: #B7FF73;
-        color: #204606;
-      }
-
-      .enhanced-marker-popup .popup-rating-badge.rating-B {
-        background: #FFFF73;
-        color: #204606;
-      }
-
-      .enhanced-marker-popup .popup-rating-badge.rating-C {
-        background: #FFDA74;
-        color: #204606;
-      }
-
-      .enhanced-marker-popup .popup-rating-badge.rating-D {
-        background: #FFB774;
-        color: #204606;
-      }
-
-      .enhanced-marker-popup .popup-rating-badge.rating-F {
-        background: #FF7474;
-        color: white;
-      }
-
-      .enhanced-marker-popup .popup-rating-badge.rating-none {
-        background: #BABEBC;
-        color: #204606;
-      }
-
-      .enhanced-marker-popup .popup-address {
-        font-size: 12px;
-        color: #666;
-        margin: 4px 0 0 0;
-      }
-
-      .enhanced-marker-popup .mapboxgl-popup-tip {
-        border-top-color: rgba(32, 70, 6, 0.2);
-      }
+      /* Enhanced popup styles moved to /static/css/map-shared.css */
 
       @media (max-width: 768px) {
         .map-controls-container {
@@ -551,28 +351,7 @@
       });
 
 
-      function createEnhancedPopupHTML(courseName, courseId, rating, address) {
-        return `
-          <div class="popup-header">
-            <h3 class="popup-title" data-course-id="${courseId}">${courseName}</h3>
-            <div class="popup-rating-badge rating-${rating === '-' ? 'none' : rating}">${rating || '-'}</div>
-          </div>
-          ${address ? `<p class="popup-address">${address}</p>` : ''}
-        `;
-      }
-
-      function createPopupHTML(courseName, courseId, rating, markerColor) {
-        return `
-          <div class="marker-popup">
-            <div class="popup-content">
-              <div class="popup-header">
-                <h3 class="course-title" data-course-id="${courseId}">${courseName}</h3>
-              </div>
-            </div>
-            <div class="rating-plaque" style="background-color: ${markerColor};">${rating || '-'}</div>
-          </div>
-        `;
-      }
+      // Using shared popup functions from /static/js/map-utils.js
 
       function addGolfCoursesVectorLayer(map, tileUrl) {
         console.log('🗺️ Adding golf courses as vector tiles...');
@@ -653,7 +432,7 @@
           const properties = e.features[0].properties;
           
           // Create enhanced popup content
-          const popupHTML = createEnhancedPopupHTML(
+          const popupHTML = window.MapUtils.createEnhancedPopupHTML(
             properties.name, 
             properties.id, 
             properties.rating, 
@@ -668,30 +447,7 @@
             .addTo(map);
             
           // Add click handler for course title
-          setTimeout(() => {
-            // Use a more specific selector to avoid popup conflicts
-            const titleElements = document.querySelectorAll('.popup-title');
-            const titleElement = titleElements[titleElements.length - 1]; // Get the most recently added popup
-            if (titleElement) {
-              titleElement.addEventListener('click', function() {
-                const courseId = this.getAttribute('data-course-id');
-                console.log('🎯 Course clicked:', courseId, 'typeof:', typeof courseId);
-                
-                // Validate courseId exists and is not undefined/null
-                if (courseId === null || courseId === undefined || courseId === 'undefined') {
-                  console.error('❌ Invalid course ID:', courseId);
-                  return;
-                }
-                
-                const url = `/course/${courseId}`;
-                console.log('🚀 Navigating to:', url);
-                
-                htmx.ajax('GET', url, {
-                  target: '#main-content'
-                });
-              });
-            }
-          }, 100);
+          window.MapUtils.addPopupClickHandler();
         }
 
         map.on('click', 'golf-points', handleVectorTileClick);
@@ -734,47 +490,18 @@
         // Process all courses with coordinates
         window.allCourses.forEach((course, index) => {
           if (course.latitude && course.longitude) {
-            const courseName = course.Name || course.name;
-            const rating = course.OverallRating || course.overallRating || '-';
-            const courseId = course.ID !== undefined ? course.ID : index;
+            const feature = window.MapUtils.createGeoJSONFeature(
+              course, 
+              index, 
+              window.allEditPermissions, 
+              window.allReviewStatus, 
+              window.userReviewMap || {}, 
+              'all'
+            );
             
-            console.log('📍 Processing course for GeoJSON:', {
-              name: courseName,
-              courseId: courseId,
-              courseID_field: course.ID,
-              index: index,
-              rating: rating
-            });
-            
-            // Define rating colors
-            const ratingColors = {
-              'S': '#73FF73',
-              'A': '#B7FF73', 
-              'B': '#FFFF73',
-              'C': '#FFDA74',
-              'D': '#FFB774',
-              'F': '#FF7474',
-              '-': '#BABEBC'
-            };
-            
-            const feature = {
-              type: 'Feature',
-              geometry: {
-                type: 'Point',
-                coordinates: [course.longitude, course.latitude]
-              },
-              properties: {
-                name: courseName,
-                address: course.Address || course.address || '',
-                rating: rating,
-                color: ratingColors[rating] || ratingColors['-'],
-                courseId: courseId,
-                canEdit: window.allEditPermissions && window.allEditPermissions[courseName] === true,
-                hasReview: window.allReviewStatus && window.allReviewStatus[courseName] === true
-              }
-            };
-            
-            geoJSONData.features.push(feature);
+            if (feature) {
+              geoJSONData.features.push(feature);
+            }
           }
         });
 
@@ -893,7 +620,7 @@
           const properties = e.features[0].properties;
           
           // Create enhanced popup content
-          const popupHTML = createEnhancedPopupHTML(
+          const popupHTML = window.MapUtils.createEnhancedPopupHTML(
             properties.name, 
             properties.courseId, 
             properties.rating, 
@@ -908,30 +635,7 @@
             .addTo(map);
             
           // Add click handler for course title
-          setTimeout(() => {
-            // Use a more specific selector to avoid popup conflicts
-            const titleElements = document.querySelectorAll('.popup-title');
-            const titleElement = titleElements[titleElements.length - 1]; // Get the most recently added popup
-            if (titleElement) {
-              titleElement.addEventListener('click', function() {
-                const courseId = this.getAttribute('data-course-id');
-                console.log('🎯 Course clicked:', courseId, 'typeof:', typeof courseId);
-                
-                // Validate courseId exists and is not undefined/null
-                if (courseId === null || courseId === undefined || courseId === 'undefined') {
-                  console.error('❌ Invalid course ID:', courseId);
-                  return;
-                }
-                
-                const url = `/course/${courseId}`;
-                console.log('🚀 Navigating to:', url);
-                
-                htmx.ajax('GET', url, {
-                  target: '#main-content'
-                });
-              });
-            }
-          }, 100);
+          window.MapUtils.addPopupClickHandler();
         }
 
         map.on('click', 'golf-points', handleGolfCourseClick);
