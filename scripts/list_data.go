@@ -27,17 +27,19 @@ type User struct {
 }
 
 type CourseDB struct {
-	ID         uint   `gorm:"primaryKey" json:"id"`
-	Name       string `gorm:"not null" json:"name"`
-	Address    string `json:"address"`
-	Hash       string `gorm:"uniqueIndex;not null" json:"hash"`
-	CourseData string `gorm:"type:jsonb" json:"course_data"`
-	CreatedBy  *uint  `json:"created_by"`
-	UpdatedBy  *uint  `json:"updated_by"`
-	CreatedAt  int64  `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt  int64  `gorm:"autoUpdateTime" json:"updated_at"`
-	Creator    *User  `gorm:"foreignKey:CreatedBy" json:"creator,omitempty"`
-	Updater    *User  `gorm:"foreignKey:UpdatedBy" json:"updater,omitempty"`
+	ID         uint     `gorm:"primaryKey" json:"id"`
+	Name       string   `gorm:"not null" json:"name"`
+	Address    string   `json:"address"`
+	Hash       string   `gorm:"uniqueIndex;not null" json:"hash"`
+	CourseData string   `gorm:"type:jsonb" json:"course_data"`
+	Latitude   *float64 `json:"latitude"`
+	Longitude  *float64 `json:"longitude"`
+	CreatedBy  *uint    `json:"created_by"`
+	UpdatedBy  *uint    `json:"updated_by"`
+	CreatedAt  int64    `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt  int64    `gorm:"autoUpdateTime" json:"updated_at"`
+	Creator    *User    `gorm:"foreignKey:CreatedBy" json:"creator,omitempty"`
+	Updater    *User    `gorm:"foreignKey:UpdatedBy" json:"updater,omitempty"`
 }
 
 type CourseReview struct {
@@ -274,6 +276,40 @@ func main() {
 		}
 	} else {
 		fmt.Println("   No courses found")
+		fmt.Println()
+	}
+
+	// Courses with Coordinates Section
+	fmt.Println("📍 COURSES WITH COORDINATES:")
+	fmt.Println("────────────────────────────")
+	var coursesWithCoords []CourseDB
+	if db.Where("latitude IS NOT NULL AND longitude IS NOT NULL").Find(&coursesWithCoords).Error == nil && len(coursesWithCoords) > 0 {
+		fmt.Printf("   Total courses with coordinates: %d\n", len(coursesWithCoords))
+		fmt.Println()
+
+		// Show first course with coordinates as example
+		if len(coursesWithCoords) > 0 {
+			courseDB := coursesWithCoords[0]
+			var course Course
+			json.Unmarshal([]byte(courseDB.CourseData), &course)
+
+			fmt.Printf("   📍 EXAMPLE COURSE WITH COORDINATES:\n")
+			fmt.Printf("   ═══════════════════════════════════\n")
+			fmt.Printf("   🏌️ Name: %s\n", course.Name)
+			fmt.Printf("   📍 Address: %s\n", course.Address)
+			fmt.Printf("   🌐 Latitude: %.6f\n", *courseDB.Latitude)
+			fmt.Printf("   🌐 Longitude: %.6f\n", *courseDB.Longitude)
+			fmt.Printf("   🏆 Rating: %s\n", func() string {
+				if course.OverallRating == "" {
+					return "-"
+				}
+				return course.OverallRating
+			}())
+			fmt.Printf("   📅 Created: %s\n", formatTime(courseDB.CreatedAt))
+			fmt.Println()
+		}
+	} else {
+		fmt.Println("   No courses with coordinates found")
 		fmt.Println()
 	}
 
