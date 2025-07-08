@@ -1135,6 +1135,7 @@ func (h *Handlers) Map(c echo.Context) error {
 		CoursesJSON               template.JS
 		AllCoursesJSON            template.JS
 		MapboxToken               string
+		VectorTileUrl             string
 		User                      *GoogleUser
 		EditPermissions           map[int]bool
 		AllCoursesEditPermissions map[int]bool
@@ -1146,6 +1147,7 @@ func (h *Handlers) Map(c echo.Context) error {
 		CoursesJSON:               template.JS(coursesJSON),
 		AllCoursesJSON:            template.JS(allCoursesJSON),
 		MapboxToken:               os.Getenv("MAPBOX_ACCESS_TOKEN"),
+		VectorTileUrl:             os.Getenv("VECTOR_TILE_URL"),
 		User:                      user,
 		EditPermissions:           editPermissions,
 		AllCoursesEditPermissions: allCoursesEditPermissions,

@@ -607,17 +607,17 @@
                             
                             const markerColor = ratingColors[rating] || '#204606';
                             
-                            // NEW: Check if we have stored coordinates first
+                            // PRIORITY: Check if we have stored coordinates first (much faster!)
                             const course = courses.find(c => (c.Name || c.name) === courseName);
-                            if (course && course.Latitude && course.Longitude) {
-                                // Use stored coordinates - much faster!
-                                console.log('📍 Using stored coordinates for:', courseName, { lat: course.Latitude, lng: course.Longitude });
+                            if (course && course.latitude && course.longitude) {
+                                // Use stored coordinates - no API call needed!
+                                console.log('📍 Using stored coordinates for:', courseName, { lat: course.latitude, lng: course.longitude });
                                 
                                 let marker = new mapboxgl.Marker({
                                     color: markerColor,
                                     scale: 1.2
                                 })
-                                .setLngLat([course.Longitude, course.Latitude])
+                                .setLngLat([course.longitude, course.latitude])
                                 .setPopup(
                                     new mapboxgl.Popup({ offset: 25 })
                                         .setHTML(`

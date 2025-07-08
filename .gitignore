@@ -17,3 +17,6 @@ scripts/all_city_links_summary.txt*
 scripts/destination_links.txt*
 scripts/scrape_courses.py*
 scripts/clean_course_data.py*
+scripts/*.geojson*
+scripts/*.mbtiles*
+scripts/tiles/
