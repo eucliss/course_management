@@ -526,8 +526,8 @@
                     console.log('✅ HTMX Response:', e.detail.xhr.status);
                 }
                 
-                // Re-initialize components after HTMX content updates
-                setTimeout(initializeComponents, 100);
+                // Don't re-initialize components - let sidebar handle its own state
+                // The sidebar has its own htmx:afterRequest handler that preserves filter state
             });
             
             // Mapbox initialization (only if not already loaded)
