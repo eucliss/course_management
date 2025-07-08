@@ -529,6 +529,8 @@
             initializeMapToggle();
             // Set initial filter state
             setMapActiveFilter(window.mapCurrentFilter);
+            // Apply initial filter to the GeoJSON layer
+            updateGeoJSONLayer(window.mapCurrentFilter);
             filterMapMarkers();
           } catch (e) {
             console.error('Error initializing map features:', e);
@@ -667,11 +669,24 @@
             
           // Add click handler for course title
           setTimeout(() => {
-            const titleElement = document.querySelector('.popup-title');
+            // Use a more specific selector to avoid popup conflicts
+            const titleElements = document.querySelectorAll('.popup-title');
+            const titleElement = titleElements[titleElements.length - 1]; // Get the most recently added popup
             if (titleElement) {
               titleElement.addEventListener('click', function() {
                 const courseId = this.getAttribute('data-course-id');
-                htmx.ajax('GET', `/course/${courseId}`, {
+                console.log('🎯 Course clicked:', courseId, 'typeof:', typeof courseId);
+                
+                // Validate courseId exists and is not undefined/null
+                if (courseId === null || courseId === undefined || courseId === 'undefined') {
+                  console.error('❌ Invalid course ID:', courseId);
+                  return;
+                }
+                
+                const url = `/course/${courseId}`;
+                console.log('🚀 Navigating to:', url);
+                
+                htmx.ajax('GET', url, {
                   target: '#main-content'
                 });
               });
@@ -721,6 +736,15 @@
           if (course.latitude && course.longitude) {
             const courseName = course.Name || course.name;
             const rating = course.OverallRating || course.overallRating || '-';
+            const courseId = course.ID !== undefined ? course.ID : index;
+            
+            console.log('📍 Processing course for GeoJSON:', {
+              name: courseName,
+              courseId: courseId,
+              courseID_field: course.ID,
+              index: index,
+              rating: rating
+            });
             
             // Define rating colors
             const ratingColors = {
@@ -744,7 +768,7 @@
                 address: course.Address || course.address || '',
                 rating: rating,
                 color: ratingColors[rating] || ratingColors['-'],
-                courseId: course.ID || index,
+                courseId: courseId,
                 canEdit: window.allEditPermissions && window.allEditPermissions[courseName] === true,
                 hasReview: window.allReviewStatus && window.allReviewStatus[courseName] === true
               }
@@ -885,11 +909,24 @@
             
           // Add click handler for course title
           setTimeout(() => {
-            const titleElement = document.querySelector('.popup-title');
+            // Use a more specific selector to avoid popup conflicts
+            const titleElements = document.querySelectorAll('.popup-title');
+            const titleElement = titleElements[titleElements.length - 1]; // Get the most recently added popup
             if (titleElement) {
               titleElement.addEventListener('click', function() {
                 const courseId = this.getAttribute('data-course-id');
-                htmx.ajax('GET', `/course/${courseId}`, {
+                console.log('🎯 Course clicked:', courseId, 'typeof:', typeof courseId);
+                
+                // Validate courseId exists and is not undefined/null
+                if (courseId === null || courseId === undefined || courseId === 'undefined') {
+                  console.error('❌ Invalid course ID:', courseId);
+                  return;
+                }
+                
+                const url = `/course/${courseId}`;
+                console.log('🚀 Navigating to:', url);
+                
+                htmx.ajax('GET', url, {
                   target: '#main-content'
                 });
               });
@@ -1083,7 +1120,15 @@
             const courseName = course.Name || course.name;
             const courseAddress = course.Address || course.address;
             const courseRating = course.OverallRating || course.overallRating;
-            const courseID = course.ID || index;
+            const courseID = course.ID !== undefined ? course.ID : index;
+            
+            console.log('🏌️ Processing course for marker:', {
+              name: courseName,
+              courseID: courseID,
+              courseID_field: course.ID,
+              index: index,
+              rating: courseRating
+            });
             
             console.log('Processing course:', courseName, 'Address:', courseAddress, 'Rating:', courseRating);
             if (courseAddress && courseAddress.trim() !== '') {
@@ -1130,6 +1175,9 @@
               rating = userReview.OverallRating || userReview.overallRating || rating;
             }
             
+            // Define courseId properly
+            const courseId = course.ID !== undefined ? course.ID : index;
+            
             // Define rating colors
             const ratingColors = {
               'S': '#73FF73',
@@ -1152,7 +1200,7 @@
                 address: course.Address || course.address || '',
                 rating: rating,
                 color: ratingColors[rating] || ratingColors['-'],
-                courseId: course.ID || index,
+                courseId: courseId,
                 canEdit: window.allEditPermissions && window.allEditPermissions[courseName] === true,
                 hasReview: hasReview
               }
@@ -1230,6 +1278,9 @@
               rating = userReview.OverallRating || userReview.overallRating || rating;
             }
             
+            // Define courseId properly
+            const courseId = course.ID !== undefined ? course.ID : index;
+            
             // Define rating colors
             const ratingColors = {
               'S': '#73FF73',
@@ -1252,7 +1303,7 @@
                 address: course.Address || course.address || '',
                 rating: rating,
                 color: ratingColors[rating] || ratingColors['-'],
-                courseId: course.ID || index,
+                courseId: courseId,
                 canEdit: window.allEditPermissions && window.allEditPermissions[courseName] === true,
                 hasReview: hasReview
               }
