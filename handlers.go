@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 )
@@ -24,6 +25,14 @@ func NewHandlers(courses *[]Course, courseService *CourseService) *Handlers {
 	}
 }
 
+// Helper function to get minimum of two integers
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 func (h *Handlers) Home(c echo.Context) error {
 	sessionService := NewSessionService()
 	user := sessionService.GetUser(c)
@@ -32,6 +41,34 @@ func (h *Handlers) Home(c echo.Context) error {
 	var userID *uint
 	if uid, ok := c.Get("userID").(uint); ok {
 		userID = &uid
+	}
+
+	// Get courses with coordinates from database if available, otherwise use JSON files
+	var allCourses []Course
+	if DB != nil {
+		log.Printf("🔍 Home handler: Database available, attempting to load courses from database")
+		dbService := NewDatabaseService()
+		dbCourses, err := dbService.GetAllCoursesFromDatabase()
+		if err == nil && len(dbCourses) > 0 {
+			allCourses = dbCourses
+			log.Printf("✅ Home handler: Using %d courses from database with coordinates", len(allCourses))
+
+			// Debug: Check first few courses for coordinates
+			for i := 0; i < min(3, len(allCourses)); i++ {
+				course := allCourses[i]
+				if course.Latitude != nil && course.Longitude != nil {
+					log.Printf("🔍 Home handler: Course %d '%s' has coordinates: lat=%f, lng=%f", i, course.Name, *course.Latitude, *course.Longitude)
+				} else {
+					log.Printf("⚠️ Home handler: Course %d '%s' missing coordinates", i, course.Name)
+				}
+			}
+		} else {
+			log.Printf("Warning: failed to load from database: %v, using JSON fallback", err)
+			allCourses = *h.courses
+		}
+	} else {
+		log.Printf("🔍 Home handler: Database not available, using JSON courses")
+		allCourses = *h.courses
 	}
 
 	// Default to showing user's courses if logged in, all courses if not
@@ -46,7 +83,7 @@ func (h *Handlers) Home(c echo.Context) error {
 		if err != nil {
 			log.Printf("Warning: failed to get user reviews: %v", err)
 			// Fallback to all courses if user reviews can't be loaded
-			coursesToShow = *h.courses
+			coursesToShow = allCourses
 		} else {
 			log.Printf("✅ Found %d reviews for user %d in Home handler", len(userReviews), *userID)
 			// Debug: Print review details
@@ -65,7 +102,7 @@ func (h *Handlers) Home(c echo.Context) error {
 			}
 
 			// Build edit permissions for ALL courses (for frontend filtering)
-			for i, course := range *h.courses {
+			for i, course := range allCourses {
 				if userOwnedCourseNames[course.Name] {
 					allCoursesEditPermissions[i] = true
 				}
@@ -73,30 +110,31 @@ func (h *Handlers) Home(c echo.Context) error {
 
 			// Convert each review to a Course struct that the template expects
 			for _, reviewWithCourse := range userReviews {
-				// Find the corresponding course in the JSON array to get the correct index
+				// Find the corresponding course in the all courses array to get the correct index and coordinates
 				var courseArrayIndex int = -1
-				for idx, jsonCourse := range *h.courses {
-					if jsonCourse.Name == reviewWithCourse.CourseName {
+				var baseCourse Course
+				for idx, course := range allCourses {
+					if course.Name == reviewWithCourse.CourseName {
 						courseArrayIndex = idx
+						baseCourse = course
 						break
 					}
 				}
 
-				// If we can't find the course in the JSON array, skip it
+				// If we can't find the course in the all courses array, skip it
 				if courseArrayIndex == -1 {
-					log.Printf("Warning: Course '%s' from review not found in JSON array", reviewWithCourse.CourseName)
+					log.Printf("Warning: Course '%s' from review not found in all courses array", reviewWithCourse.CourseName)
 					continue
 				}
 
-				// Get the original course description from the JSON array
-				originalCourse := (*h.courses)[courseArrayIndex]
-
 				course := Course{
-					ID:            courseArrayIndex, // Use the JSON array index for compatibility
+					ID:            courseArrayIndex, // Use the all courses array index for compatibility
 					Name:          reviewWithCourse.CourseName,
-					Description:   originalCourse.Description, // Use the actual course description
+					Description:   baseCourse.Description, // Use the actual course description
 					OverallRating: safeStringValue(reviewWithCourse.OverallRating),
 					Address:       reviewWithCourse.CourseAddress,
+					Latitude:      baseCourse.Latitude,  // Include coordinates from database
+					Longitude:     baseCourse.Longitude, // Include coordinates from database
 					Ranks: Ranking{
 						Price:              safeStringValue(reviewWithCourse.Price),
 						HandicapDifficulty: safeIntValue(reviewWithCourse.HandicapDifficulty),
@@ -124,19 +162,19 @@ func (h *Handlers) Home(c echo.Context) error {
 
 			// If user has no reviewed courses, show all courses instead
 			if len(coursesToShow) == 0 {
-				coursesToShow = *h.courses
+				coursesToShow = allCourses
 				editPermissions = allCoursesEditPermissions // Use the all courses edit permissions
 			}
 		}
 	} else {
 		// Not logged in, show all courses
-		coursesToShow = *h.courses
+		coursesToShow = allCourses
 	}
 
 	// Debug: Log what we're sending to the template
 	log.Printf("🎯 Home handler sending to template:")
 	log.Printf("   - Courses to show: %d", len(coursesToShow))
-	log.Printf("   - All courses: %d", len(*h.courses))
+	log.Printf("   - All courses: %d", len(allCourses))
 	log.Printf("   - User logged in: %t", userID != nil)
 	log.Printf("   - Default filter: %s", func() string {
 		if userID != nil {
@@ -160,7 +198,7 @@ func (h *Handlers) Home(c echo.Context) error {
 		DefaultFilter             string       // Add default filter indication
 	}{
 		Courses:                   coursesToShow,
-		AllCourses:                *h.courses,
+		AllCourses:                allCourses, // Use courses with coordinates
 		MapboxToken:               os.Getenv("MAPBOX_ACCESS_TOKEN"),
 		User:                      user,
 		EditPermissions:           editPermissions,
@@ -186,7 +224,7 @@ func (h *Handlers) Home(c echo.Context) error {
 			}
 
 			// Mark courses as reviewed in the AllCoursesReviewStatus map
-			for i, course := range *h.courses {
+			for i, course := range allCourses {
 				if reviewedCourseNames[course.Name] {
 					data.AllCoursesReviewStatus[i] = true
 				}
@@ -527,50 +565,15 @@ func (h *Handlers) GetCourse(c echo.Context) error {
 }
 
 func (h *Handlers) CreateCourseForm(c echo.Context) error {
-	// Create a struct that includes both database info and JSON array index
-	type CourseWithIndex struct {
-		CourseDB
-		JSONIndex int // The index in the JSON array for routing
-	}
-
-	var availableCourses []CourseWithIndex
-
-	if DB != nil {
-		// Get ALL courses from database - user should be able to review any course
-		dbService := NewDatabaseService()
-		allDBCourses, err := dbService.GetAllCourses()
-		if err != nil {
-			log.Printf("Warning: failed to get all courses: %v", err)
-		} else {
-			// Map database courses to JSON array indices
-			for _, dbCourse := range allDBCourses {
-				// Find the corresponding index in the JSON array
-				jsonIndex := -1
-				for i, jsonCourse := range *h.courses {
-					if jsonCourse.Name == dbCourse.Name {
-						jsonIndex = i
-						break
-					}
-				}
-
-				if jsonIndex != -1 {
-					availableCourses = append(availableCourses, CourseWithIndex{
-						CourseDB:  dbCourse,
-						JSONIndex: jsonIndex,
-					})
-				}
-			}
-		}
-	}
-
+	// Fast loading - just render the page shell, courses will be loaded via API
 	data := struct {
-		AvailableCourses []CourseWithIndex
 		IsEdit           bool
 		IsReviewMode     bool
+		UsePagination    bool
 	}{
-		AvailableCourses: availableCourses,
 		IsEdit:           false,
 		IsReviewMode:     true,
+		UsePagination:    true, // Signal to use pagination
 	}
 
 	return c.Render(http.StatusOK, "review-landing", data)
@@ -967,6 +970,24 @@ func (h *Handlers) Map(c echo.Context) error {
 		userID = &uid
 	}
 
+	// Get courses with coordinates from database if available, otherwise use JSON files
+	var allCourses []Course
+	if DB != nil {
+		log.Printf("🔍 Map handler: Database available, attempting to load courses from database")
+		dbService := NewDatabaseService()
+		dbCourses, err := dbService.GetAllCoursesFromDatabase()
+		log.Printf("🔍 Map handler: dbCourses[0]: %v", dbCourses[0])
+		if err == nil && len(dbCourses) > 0 {
+			allCourses = dbCourses
+		} else {
+			log.Printf("Warning: failed to load from database: %v, using JSON fallback", err)
+			allCourses = *h.courses
+		}
+	} else {
+		log.Printf("🔍 Map handler: Database not available, using JSON courses")
+		allCourses = *h.courses
+	}
+
 	// Default to showing user's courses if logged in, all courses if not
 	var coursesToShow []Course
 	editPermissions := make(map[int]bool)
@@ -979,7 +1000,7 @@ func (h *Handlers) Map(c echo.Context) error {
 		if err != nil {
 			log.Printf("Warning: failed to get user reviews: %v", err)
 			// Fallback to all courses if user reviews can't be loaded
-			coursesToShow = *h.courses
+			coursesToShow = allCourses
 		} else {
 			log.Printf("✅ Found %d reviews for user %d in Map handler", len(userReviews), *userID)
 
@@ -994,7 +1015,7 @@ func (h *Handlers) Map(c echo.Context) error {
 			}
 
 			// Build edit permissions for ALL courses (for frontend filtering)
-			for i, course := range *h.courses {
+			for i, course := range allCourses {
 				if userOwnedCourseNames[course.Name] {
 					allCoursesEditPermissions[i] = true
 				}
@@ -1002,30 +1023,31 @@ func (h *Handlers) Map(c echo.Context) error {
 
 			// Convert each review to a Course struct that the template expects
 			for _, reviewWithCourse := range userReviews {
-				// Find the corresponding course in the JSON array to get the correct index
+				// Find the corresponding course in the all courses array to get the correct index and coordinates
 				var courseArrayIndex int = -1
-				for idx, jsonCourse := range *h.courses {
-					if jsonCourse.Name == reviewWithCourse.CourseName {
+				var baseCourse Course
+				for idx, course := range allCourses {
+					if course.Name == reviewWithCourse.CourseName {
 						courseArrayIndex = idx
+						baseCourse = course
 						break
 					}
 				}
 
-				// If we can't find the course in the JSON array, skip it
+				// If we can't find the course in the all courses array, skip it
 				if courseArrayIndex == -1 {
-					log.Printf("Warning: Course '%s' from review not found in JSON array", reviewWithCourse.CourseName)
+					log.Printf("Warning: Course '%s' from review not found in all courses array", reviewWithCourse.CourseName)
 					continue
 				}
 
-				// Get the original course description from the JSON array
-				originalCourse := (*h.courses)[courseArrayIndex]
-
 				course := Course{
-					ID:            courseArrayIndex, // Use the JSON array index for compatibility
+					ID:            courseArrayIndex, // Use the all courses array index for compatibility
 					Name:          reviewWithCourse.CourseName,
-					Description:   originalCourse.Description, // Use the actual course description
+					Description:   baseCourse.Description, // Use the actual course description
 					OverallRating: safeStringValue(reviewWithCourse.OverallRating),
 					Address:       reviewWithCourse.CourseAddress,
+					Latitude:      baseCourse.Latitude,  // Include coordinates from database
+					Longitude:     baseCourse.Longitude, // Include coordinates from database
 					Ranks: Ranking{
 						Price:              safeStringValue(reviewWithCourse.Price),
 						HandicapDifficulty: safeIntValue(reviewWithCourse.HandicapDifficulty),
@@ -1053,13 +1075,13 @@ func (h *Handlers) Map(c echo.Context) error {
 
 			// If user has no reviewed courses, show all courses instead
 			if len(coursesToShow) == 0 {
-				coursesToShow = *h.courses
+				coursesToShow = allCourses
 				editPermissions = allCoursesEditPermissions // Use the all courses edit permissions
 			}
 		}
 	} else {
 		// Not logged in, show all courses
-		coursesToShow = *h.courses
+		coursesToShow = allCourses
 	}
 
 	coursesJSON, err := json.Marshal(coursesToShow)
@@ -1068,7 +1090,7 @@ func (h *Handlers) Map(c echo.Context) error {
 	}
 
 	// Also include all courses JSON for frontend filtering
-	allCoursesJSON, err := json.Marshal(*h.courses)
+	allCoursesJSON, err := json.Marshal(allCourses)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to marshal all courses to JSON: "+err.Error())
 	}
@@ -1079,6 +1101,7 @@ func (h *Handlers) Map(c echo.Context) error {
 		CoursesJSON               template.JS
 		AllCoursesJSON            template.JS
 		MapboxToken               string
+		VectorTileUrl             string
 		User                      *GoogleUser
 		EditPermissions           map[int]bool
 		AllCoursesEditPermissions map[int]bool
@@ -1086,10 +1109,11 @@ func (h *Handlers) Map(c echo.Context) error {
 		DefaultFilter             string
 	}{
 		Courses:                   coursesToShow,
-		AllCourses:                *h.courses,
+		AllCourses:                allCourses, // Use courses with coordinates
 		CoursesJSON:               template.JS(coursesJSON),
 		AllCoursesJSON:            template.JS(allCoursesJSON),
 		MapboxToken:               os.Getenv("MAPBOX_ACCESS_TOKEN"),
+		VectorTileUrl:             os.Getenv("VECTOR_TILE_URL"),
 		User:                      user,
 		EditPermissions:           editPermissions,
 		AllCoursesEditPermissions: allCoursesEditPermissions,
@@ -1114,7 +1138,7 @@ func (h *Handlers) Map(c echo.Context) error {
 			}
 
 			// Mark courses as reviewed in the AllCoursesReviewStatus map
-			for i, course := range *h.courses {
+			for i, course := range allCourses {
 				if reviewedCourseNames[course.Name] {
 					data.AllCoursesReviewStatus[i] = true
 				}
@@ -1515,4 +1539,232 @@ func (h *Handlers) ReviewSpecificCourseForm(c echo.Context) error {
 	}
 
 	return c.Render(http.StatusOK, "review-course", data)
+}
+
+// GetAllCoursesAPI returns paginated courses for ultra-fast sidebar loading
+func (h *Handlers) GetAllCoursesAPI(c echo.Context) error {
+	// Parse pagination parameters
+	page := 1
+	limit := 20
+	search := ""
+	filter := "all"
+	
+	if p := c.QueryParam("page"); p != "" {
+		if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
+			page = parsed
+		}
+	}
+	
+	if l := c.QueryParam("limit"); l != "" {
+		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 100 {
+			limit = parsed
+		}
+	}
+	
+	if s := c.QueryParam("search"); s != "" {
+		search = s
+	}
+	
+	if f := c.QueryParam("filter"); f != "" {
+		filter = f
+	}
+	
+	log.Printf("🚀 GetAllCoursesAPI: page=%d, limit=%d, search='%s', filter='%s'", page, limit, search, filter)
+	
+	// Get ownership context that was added by middleware
+	editPermissions := c.Get("EditPermissions").([]bool)
+	reviewStatus := c.Get("ReviewStatus").([]bool)
+	
+	// Filter courses based on search and filter criteria
+	var filteredCourses []Course
+	var filteredEditPermissions []bool
+	var filteredReviewStatus []bool
+	
+	for i, course := range *h.courses {
+		// Apply filter criteria
+		matchesFilter := true
+		if filter == "my" && i < len(reviewStatus) {
+			matchesFilter = reviewStatus[i]
+		}
+		
+		// Apply search criteria
+		matchesSearch := true
+		if search != "" {
+			matchesSearch = false
+			if course.Name != "" && strings.Contains(strings.ToLower(course.Name), strings.ToLower(search)) {
+				matchesSearch = true
+			}
+		}
+		
+		if matchesFilter && matchesSearch {
+			filteredCourses = append(filteredCourses, course)
+			if i < len(editPermissions) {
+				filteredEditPermissions = append(filteredEditPermissions, editPermissions[i])
+			} else {
+				filteredEditPermissions = append(filteredEditPermissions, false)
+			}
+			if i < len(reviewStatus) {
+				filteredReviewStatus = append(filteredReviewStatus, reviewStatus[i])
+			} else {
+				filteredReviewStatus = append(filteredReviewStatus, false)
+			}
+		}
+	}
+	
+	// Calculate pagination
+	totalItems := len(filteredCourses)
+	totalPages := (totalItems + limit - 1) / limit // Ceiling division
+	startIndex := (page - 1) * limit
+	endIndex := startIndex + limit
+	
+	if startIndex > totalItems {
+		startIndex = totalItems
+	}
+	if endIndex > totalItems {
+		endIndex = totalItems
+	}
+	
+	// Get page slice
+	var pageCourses []Course
+	var pageEditPermissions []bool
+	var pageReviewStatus []bool
+	
+	if startIndex < totalItems {
+		pageCourses = filteredCourses[startIndex:endIndex]
+		pageEditPermissions = filteredEditPermissions[startIndex:endIndex]
+		pageReviewStatus = filteredReviewStatus[startIndex:endIndex]
+	}
+	
+	response := map[string]interface{}{
+		"courses":          pageCourses,
+		"editPermissions":  pageEditPermissions,
+		"reviewStatus":     pageReviewStatus,
+		"pagination": map[string]interface{}{
+			"currentPage":  page,
+			"totalPages":   totalPages,
+			"totalItems":   totalItems,
+			"itemsPerPage": limit,
+			"hasNext":      page < totalPages,
+			"hasPrev":      page > 1,
+		},
+	}
+	
+	log.Printf("✅ GetAllCoursesAPI: Returning page %d/%d (%d items, %d total)", page, totalPages, len(pageCourses), totalItems)
+	return c.JSON(http.StatusOK, response)
+}
+
+// GetReviewCoursesAPI returns paginated courses for the review page
+func (h *Handlers) GetReviewCoursesAPI(c echo.Context) error {
+	// Parse pagination parameters
+	page := 1
+	limit := 20
+	search := ""
+	
+	if p := c.QueryParam("page"); p != "" {
+		if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
+			page = parsed
+		}
+	}
+	
+	if l := c.QueryParam("limit"); l != "" {
+		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 100 {
+			limit = parsed
+		}
+	}
+	
+	if s := c.QueryParam("search"); s != "" {
+		search = s
+	}
+	
+	log.Printf("🚀 GetReviewCoursesAPI: page=%d, limit=%d, search='%s'", page, limit, search)
+	
+	// Create a struct that includes both database info and JSON array index
+	type CourseWithIndex struct {
+		CourseDB
+		JSONIndex int `json:"jsonIndex"`
+	}
+	
+	var allAvailableCourses []CourseWithIndex
+	
+	if DB != nil {
+		// Get ALL courses from database - user should be able to review any course
+		dbService := NewDatabaseService()
+		allDBCourses, err := dbService.GetAllCourses()
+		if err != nil {
+			log.Printf("Warning: failed to get all courses: %v", err)
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to load courses from database"})
+		}
+		
+		log.Printf("📊 GetReviewCoursesAPI: Retrieved %d courses from database", len(allDBCourses))
+		
+		// Map database courses to JSON array indices
+		for _, dbCourse := range allDBCourses {
+			// Find the corresponding index in the JSON array
+			jsonIndex := -1
+			for i, jsonCourse := range *h.courses {
+				if jsonCourse.Name == dbCourse.Name {
+					jsonIndex = i
+					break
+				}
+			}
+			
+			if jsonIndex != -1 {
+				allAvailableCourses = append(allAvailableCourses, CourseWithIndex{
+					CourseDB:  dbCourse,
+					JSONIndex: jsonIndex,
+				})
+			}
+		}
+		
+		log.Printf("📊 GetReviewCoursesAPI: Mapped %d courses to JSON indices", len(allAvailableCourses))
+	} else {
+		log.Printf("⚠️ Database is nil, cannot load courses for review")
+		return c.JSON(http.StatusServiceUnavailable, map[string]string{"error": "Database not available"})
+	}
+	
+	// Apply search filter
+	var filteredCourses []CourseWithIndex
+	if search != "" {
+		for _, course := range allAvailableCourses {
+			if strings.Contains(strings.ToLower(course.Name), strings.ToLower(search)) {
+				filteredCourses = append(filteredCourses, course)
+			}
+		}
+	} else {
+		filteredCourses = allAvailableCourses
+	}
+	
+	// Calculate pagination
+	totalItems := len(filteredCourses)
+	totalPages := (totalItems + limit - 1) / limit
+	startIndex := (page - 1) * limit
+	endIndex := startIndex + limit
+	
+	if startIndex > totalItems {
+		startIndex = totalItems
+	}
+	if endIndex > totalItems {
+		endIndex = totalItems
+	}
+	
+	// Get page slice
+	var pageCourses []CourseWithIndex
+	if startIndex < totalItems {
+		pageCourses = filteredCourses[startIndex:endIndex]
+	}
+	
+	response := map[string]interface{}{
+		"courses": pageCourses,
+		"pagination": map[string]interface{}{
+			"currentPage":  page,
+			"totalPages":   totalPages,
+			"totalItems":   totalItems,
+			"itemsPerPage": limit,
+			"hasNext":      page < totalPages,
+			"hasPrev":      page > 1,
+		},
+	}
+	
+	log.Printf("✅ GetReviewCoursesAPI: Returning page %d/%d (%d items, %d total)", page, totalPages, len(pageCourses), totalItems)
+	return c.JSON(http.StatusOK, response)
 }

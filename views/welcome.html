@@ -6,6 +6,8 @@
         <link rel="shortcut icon" type="image/png" href="/static/favicon.ico">
         <script src="https://unpkg.com/htmx.org/dist/htmx.js"></script>
         <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet" />
+        <link href="/static/css/map-shared.css" rel="stylesheet" />
+        <script src="/static/js/map-utils.js"></script>
         <style>
             body {
                 margin: 0;
@@ -166,76 +168,7 @@
                 background-color: #204606;
                 color: #FFFCE7;
             }
-            #map {
-                position: absolute;
-                top: 0;
-                bottom: 0;
-                width: 100%;
-                height: 100%;
-                border-radius: 8px;
-            }
-            .custom-marker {
-                transition: transform 0.2s ease;
-                will-change: transform;
-            }
-            
-            .custom-marker:hover {
-                transform: translate(-50%, -50%) scale(1.2);
-            }
-
-            .marker-popup {
-                padding: 8px;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                min-width: 200px;
-            }
-
-            .popup-content {
-                flex: 1;
-            }
-
-            .popup-header h3 {
-                margin: 0;
-                color: #204606;
-                font-size: 16px;
-                font-weight: 600;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                padding: 2px 4px;
-                border-radius: 3px;
-            }
-
-            .popup-header h3:hover {
-                color: #2d6509;
-                background-color: rgba(32, 70, 6, 0.1);
-                transform: translateY(-1px);
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            }
-
-            .marker-popup p {
-                margin: 5px 0 0 0;
-                color: #666;
-                font-size: 12px;
-            }
-
-            .rating-plaque {
-                background-color: #204606;
-                color: black;
-                padding: 8px 12px;
-                border-radius: 4px;
-                font-size: 16px;
-                font-weight: bold;
-                min-width: 32px;
-                text-align: center;
-                flex-shrink: 0;
-                align-self: center;
-            }
-
-            .mapboxgl-popup-content {
-                border-radius: 4px;
-                box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-            }
+            /* Map styles are now in /static/css/map-shared.css */
 
             .course-content {
                 flex: 1;
@@ -526,8 +459,8 @@
                     console.log('✅ HTMX Response:', e.detail.xhr.status);
                 }
                 
-                // Re-initialize components after HTMX content updates
-                setTimeout(initializeComponents, 100);
+                // Don't re-initialize components - let sidebar handle its own state
+                // The sidebar has its own htmx:afterRequest handler that preserves filter state
             });
             
             // Mapbox initialization (only if not already loaded)
@@ -546,81 +479,88 @@
                             console.log('🗑️ Removed existing map');
                         }
                         
-                        mapboxgl.accessToken = mapboxToken;
+                        mapboxgl.accessToken = mapboxToken || '{{ .MapboxToken }}';
                         
-                        let courseMap = new mapboxgl.Map({
-                            container: 'map',
-                            style: 'mapbox://styles/mapbox/streets-v12',
-                            center: [-98.5795, 39.8283],
-                            zoom: 4.5,
-                            minZoom: 3,
-                            maxZoom: 15
-                        });
-
-                        window.existingMap = courseMap;
-
-                        window.addPinFromAddress = function(address, courseName, rating, courseId) {
-                            if (!address || address.trim() === '') {
-                                console.log('⚠️ No address for:', courseName);
+                        // Function to create map with given center coordinates
+                        function createWelcomeMapWithCenter(centerLng, centerLat) {
+                            // Ensure token is set before creating map
+                            if (!mapboxgl.accessToken || mapboxgl.accessToken === '') {
+                                console.error('❌ Mapbox token is missing in welcome map!');
+                                console.log('Token value:', mapboxgl.accessToken);
                                 return;
                             }
                             
-                            const ratingColors = {
-                                'S': '#73FF73', 'A': '#B7FF73', 'B': '#FFFF73',
-                                'C': '#FFDA74', 'D': '#FFB774', 'F': '#FF7474'
-                            };
-                            
-                            const markerColor = ratingColors[rating] || '#204606';
-                            
-                            fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${mapboxToken}`)
-                                .then(response => response.json())
-                                .then(data => {
-                                    if (data.features && data.features.length > 0) {
-                                        const [lng, lat] = data.features[0].center;
-                                        console.log('📍 Added pin for:', courseName);
-                                        
-                                        let marker = new mapboxgl.Marker({
-                                            color: markerColor,
-                                            scale: 1.2
-                                        })
-                                        .setLngLat([lng, lat])
-                                        .setPopup(
-                                            new mapboxgl.Popup({ offset: 25 })
-                                                .setHTML(`
-                                                    <div class="marker-popup">
-                                                        <div class="popup-content">
-                                                            <div class="popup-header">
-                                                                <h3 class="course-title" data-course-id="${courseId}" style="cursor: pointer; text-decoration: underline;">${courseName}</h3>
-                                                            </div>
-                                                        </div>
-                                                        <div class="rating-plaque" style="background-color: ${markerColor};">${rating || '-'}</div>
-                                                    </div>
-                                                `)
-                                        )
-                                        .addTo(courseMap);
+                            let courseMap = new mapboxgl.Map({
+                                container: 'map',
+                                style: 'mapbox://styles/mapbox/streets-v12',
+                                center: [centerLng, centerLat],
+                                zoom: 4.5,
+                                minZoom: 3,
+                                maxZoom: 15
+                            });
 
-                                        marker.getPopup().on('open', () => {
-                                            setTimeout(() => {
-                                                const titleElement = document.querySelector(`[data-course-id="${courseId}"]`);
-                                                if (titleElement) {
-                                                    titleElement.addEventListener('click', function() {
-                                                        const id = this.getAttribute('data-course-id');
-                                                        console.log('🎯 Course clicked:', id);
-                                                        htmx.ajax('GET', `/course/${id}`, {
-                                                            target: '#main-content'
-                                                        });
-                                                    });
-                                                }
-                                            }, 100);
-                                        });
-                                    } else {
-                                        console.log('❌ Could not geocode:', address);
-                                    }
-                                })
-                                .catch(error => {
-                                    console.error('💥 Geocoding error:', error);
-                                });
-                        };
+                            window.existingMap = courseMap;
+                            setupMapFunctionality(courseMap, courses, mapboxToken);
+                        }
+                        
+                        // Try to get user's location first
+                        if (navigator.geolocation) {
+                            navigator.geolocation.getCurrentPosition(
+                                function(position) {
+                                    // Success: use user's location
+                                    const userLat = position.coords.latitude;
+                                    const userLng = position.coords.longitude;
+                                    console.log('📍 Using user location for welcome map:', { lat: userLat, lng: userLng });
+                                    createWelcomeMapWithCenter(userLng, userLat);
+                                },
+                                function(error) {
+                                    // Error or denied: use default center
+                                    console.log('⚠️ Geolocation failed for welcome map, using default center:', error.message);
+                                    createWelcomeMapWithCenter(-98.5795, 39.8283);
+                                },
+                                {
+                                    enableHighAccuracy: true,
+                                    timeout: 5000,
+                                    maximumAge: 300000 // Cache location for 5 minutes
+                                }
+                            );
+                        } else {
+                            // Geolocation not supported: use default center
+                            console.log('⚠️ Geolocation not supported for welcome map, using default center');
+                            createWelcomeMapWithCenter(-98.5795, 39.8283);
+                        }
+                        
+                        function setupMapFunctionality(courseMap, courses, mapboxToken) {
+                            // Use shared utility for adding pins
+                            window.addPinFromAddress = function(address, courseName, rating, courseId) {
+                                const course = courses.find(c => (c.Name || c.name) === courseName);
+                                if (course && course.latitude && course.longitude) {
+                                    // Use stored coordinates
+                                    console.log('📍 Using stored coordinates for:', courseName, { lat: course.latitude, lng: course.longitude });
+                                    
+                                    const markerColor = window.MapUtils.getMarkerColor(rating);
+                                    
+                                    let marker = new mapboxgl.Marker({
+                                        color: markerColor,
+                                        scale: 1.2
+                                    })
+                                    .setLngLat([course.longitude, course.latitude])
+                                    .setPopup(
+                                        new mapboxgl.Popup({ offset: 25 })
+                                            .setHTML(window.MapUtils.createPopupHTML(courseName, courseId, rating, markerColor))
+                                    )
+                                    .addTo(courseMap);
+
+                                    marker.getPopup().on('open', () => {
+                                        window.MapUtils.addPopupClickHandler();
+                                    });
+                                    
+                                    return;
+                                }
+                                
+                                // Fallback to geocoding
+                                window.MapUtils.addCourseFromAddress(courseMap, address, courseName, rating, courseId, 0, mapboxToken);
+                            };
 
                         courseMap.on('load', () => {
                             console.log('✅ Map loaded, adding pins');
@@ -632,6 +572,8 @@
                                 });
                             }
                         });
+                        
+                        } // Close setupMapFunctionality function
                     };
                 };
                 document.head.appendChild(script);

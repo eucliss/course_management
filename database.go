@@ -30,15 +30,17 @@ type User struct {
 }
 
 type CourseDB struct {
-	ID         uint   `gorm:"primaryKey" json:"id"`
-	Name       string `gorm:"not null" json:"name"`
-	Address    string `json:"address"`
-	Hash       string `gorm:"uniqueIndex;not null" json:"hash"` // Unique hash based on name + address
-	CourseData string `gorm:"type:jsonb" json:"course_data"`    // Store existing JSON structure
-	CreatedBy  *uint  `json:"created_by"`
-	UpdatedBy  *uint  `json:"updated_by"`
-	CreatedAt  int64  `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt  int64  `gorm:"autoUpdateTime" json:"updated_at"`
+	ID         uint     `gorm:"primaryKey" json:"id"`
+	Name       string   `gorm:"not null" json:"name"`
+	Address    string   `json:"address"`
+	Hash       string   `gorm:"uniqueIndex;not null" json:"hash"` // Unique hash based on name + address
+	CourseData string   `gorm:"type:jsonb" json:"course_data"`    // Store existing JSON structure
+	CreatedBy  *uint    `json:"created_by"`
+	UpdatedBy  *uint    `json:"updated_by"`
+	Latitude   *float64 `json:"latitude"`  // Geocoded latitude
+	Longitude  *float64 `json:"longitude"` // Geocoded longitude
+	CreatedAt  int64    `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt  int64    `gorm:"autoUpdateTime" json:"updated_at"`
 
 	// Relationships
 	Creator *User `gorm:"foreignKey:CreatedBy" json:"creator,omitempty"`

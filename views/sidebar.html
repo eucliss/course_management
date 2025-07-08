@@ -30,12 +30,8 @@
                 </div>
             </div>
             <div class="courses-list courses-list-scrollable">
-                <!-- Hide the old reviewed courses template -->
-                <div id="reviewed-courses-template" style="display: none;">
-                    {{ template "courses-map" . }}
-                </div>
-                <!-- Show all courses template by default - filtering will handle visibility -->
-                <div id="all-courses-template">
+                <!-- Static courses as fallback -->
+                <div id="static-courses-list">
                     {{ range $index, $course := .AllCourses }}
                     <div class="course-item" data-can-edit="{{ if index $.AllCoursesEditPermissions $index }}true{{ else }}false{{ end }}" data-has-review="{{ if index $.AllCoursesReviewStatus $index }}true{{ else }}false{{ end }}" data-course-type="all">
                         <div class="course-content" hx-get="/course/{{ $course.ID }}" hx-target="#main-content">
@@ -78,22 +74,31 @@
                         {{ end }}
                     </div>
                     {{ end }}
-                    <!-- Always render no-courses message, JavaScript will show/hide it -->
-                    <div class="no-courses-message" id="no-courses-message">
-                        <div class="no-courses-content">
-                            <div class="no-courses-icon">
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
-                                    <polyline points="14,2 14,8 20,8"></polyline>
-                                    <path d="M12 13v-2"></path>
-                                    <path d="M12 17h.01"></path>
-                                </svg>
-                            </div>
-                            <p class="no-courses-text">No reviews found</p>
-                            <button class="no-courses-cta" hx-get="/review-landing" hx-target="#main-content">
-                                Add one now!
-                            </button>
+                </div>
+                
+                <!-- Dynamic pagination container (initially hidden) -->
+                <div id="sidebar-pagination-container" style="display: none;">
+                    <div id="sidebar-courses-list">
+                        <div class="loading-spinner">Loading courses...</div>
+                    </div>
+                    <div id="sidebar-pagination-controls"></div>
+                </div>
+                
+                <!-- No courses message -->
+                <div class="no-courses-message" id="no-courses-message" style="display: none;">
+                    <div class="no-courses-content">
+                        <div class="no-courses-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                                <polyline points="14,2 14,8 20,8"></polyline>
+                                <path d="M12 13v-2"></path>
+                                <path d="M12 17h.01"></path>
+                            </svg>
                         </div>
+                        <p class="no-courses-text">No reviews found</p>
+                        <button class="no-courses-cta" hx-get="/review-landing" hx-target="#main-content">
+                            Add one now!
+                        </button>
                     </div>
                 </div>
             </div>
@@ -279,6 +284,71 @@
     width: 14px;
     height: 14px;
 }
+
+/* Fast pagination controls */
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px 0;
+    border-top: 1px solid rgba(32, 70, 6, 0.1);
+    margin-top: 16px;
+}
+
+.page-btn {
+    padding: 6px 12px;
+    border: 1px solid rgba(32, 70, 6, 0.2);
+    background: white;
+    color: #204606;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: all 0.2s ease;
+}
+
+.page-btn:hover {
+    background: rgba(32, 70, 6, 0.1);
+    border-color: #204606;
+}
+
+.page-btn.active {
+    background: #204606;
+    color: white;
+    font-weight: 600;
+}
+
+.page-info {
+    color: rgba(32, 70, 6, 0.7);
+    font-size: 0.8em;
+    margin-left: 8px;
+}
+
+/* Loading spinner */
+.loading-spinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+    color: rgba(32, 70, 6, 0.7);
+    font-size: 0.9em;
+}
+
+.loading-spinner:before {
+    content: '';
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(32, 70, 6, 0.2);
+    border-top: 2px solid #204606;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
 </style>
 
 <script>
@@ -288,7 +358,19 @@ window.sidebarDefaultFilter = '{{ .DefaultFilter }}';
 // Current filter state - set from server default (avoid redeclaration)
 window.sidebarCurrentFilter = '{{ .DefaultFilter }}';
 
-// Course filtering functionality
+// Sidebar pagination system (separate from review-landing)
+window.sidebarPagination = {
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 20,
+    currentFilter: '{{ .DefaultFilter }}',
+    currentSearch: '',
+    loading: false,
+    enabled: false // Start with static content, enable on demand
+};
+
+// Course filtering functionality for static content
 function setActiveFilter(filter) {
     window.sidebarCurrentFilter = filter;
     const allBtn = document.getElementById('all-courses-btn');
@@ -298,17 +380,25 @@ function setActiveFilter(filter) {
         allBtn.classList.toggle('active', filter === 'all');
         myBtn.classList.toggle('active', filter === 'my');
     }
+    
+    // If pagination is enabled, use server-side filtering
+    if (window.sidebarPagination.enabled) {
+        loadSidebarPage(1, filter);
+    } else {
+        // Use client-side filtering on static content
+        filterCourses();
+    }
 }
 
 function filterCourses() {
     const searchTerm = document.getElementById('course-search')?.value.toLowerCase().trim() || '';
     let visibleCount = 0;
     
-    console.log(`🔍 Filter: ${window.sidebarCurrentFilter}, Search: "${searchTerm}"`);
+    console.log(`🔍 Sidebar Filter: ${window.sidebarCurrentFilter}, Search: "${searchTerm}"`);
     
-    // Get all course items from both templates (similar to map approach)
-    const allCourseItems = document.querySelectorAll('.course-item');
-    console.log(`📊 Total course items found: ${allCourseItems.length}`);
+    // Get all course items from static list
+    const allCourseItems = document.querySelectorAll('#static-courses-list .course-item');
+    console.log(`📊 Total static course items found: ${allCourseItems.length}`);
     
     allCourseItems.forEach(item => {
         const courseName = item.querySelector('h4');
@@ -317,7 +407,7 @@ function filterCourses() {
             const canEdit = item.getAttribute('data-can-edit') === 'true';
             const hasReview = item.getAttribute('data-has-review') === 'true';
             
-            // Updated logic: all courses OR (my filter AND has review)
+            // Filter logic: all courses OR (my filter AND has review)
             const matchesSearch = courseText.includes(searchTerm) || searchTerm === '';
             const matchesFilter = window.sidebarCurrentFilter === 'all' || (window.sidebarCurrentFilter === 'my' && hasReview);
             
@@ -327,13 +417,11 @@ function filterCourses() {
             } else {
                 item.style.display = 'none';  // Hide course
             }
-        } else {
-            console.log(`   ⚠️ Course item found but no h4 element`);
         }
     });
     
     // Show/hide no courses message based on visible count
-    const noCourseMessage = document.querySelector('.no-courses-message');
+    const noCourseMessage = document.getElementById('no-courses-message');
     if (noCourseMessage) {
         if (visibleCount === 0) {
             noCourseMessage.style.display = 'flex';
@@ -353,7 +441,198 @@ function filterCourses() {
         }
     }
     
-    console.log(`✅ Filtered courses: ${window.sidebarCurrentFilter} filter, search: "${searchTerm}", visible: ${visibleCount}`);
+    console.log(`✅ Filtered sidebar courses: ${window.sidebarCurrentFilter} filter, search: "${searchTerm}", visible: ${visibleCount}`);
+}
+
+// Enable sidebar pagination (switch from static to dynamic)
+function enableSidebarPagination() {
+    if (window.sidebarPagination.enabled) return;
+    
+    console.log('🔄 Enabling sidebar pagination');
+    window.sidebarPagination.enabled = true;
+    
+    // Hide static content, show pagination container
+    document.getElementById('static-courses-list').style.display = 'none';
+    document.getElementById('sidebar-pagination-container').style.display = 'block';
+    
+    // Load first page
+    loadSidebarPage(1, window.sidebarCurrentFilter);
+}
+
+// Load sidebar courses with pagination
+function loadSidebarPage(page = 1, filter = null, search = null) {
+    if (!window.sidebarPagination.enabled) {
+        enableSidebarPagination();
+        return;
+    }
+    
+    if (window.sidebarPagination.loading) return;
+    
+    window.sidebarPagination.currentPage = page;
+    if (filter !== null) window.sidebarPagination.currentFilter = filter;
+    if (search !== null) window.sidebarPagination.currentSearch = search;
+    
+    const coursesList = document.getElementById('sidebar-courses-list');
+    const paginationControls = document.getElementById('sidebar-pagination-controls');
+    
+    if (!coursesList) return;
+    
+    window.sidebarPagination.loading = true;
+    coursesList.innerHTML = '<div class="loading-spinner">Loading courses...</div>';
+    paginationControls.innerHTML = '';
+    
+    const params = new URLSearchParams({
+        page: window.sidebarPagination.currentPage,
+        limit: window.sidebarPagination.itemsPerPage,
+        filter: window.sidebarPagination.currentFilter,
+        search: window.sidebarPagination.currentSearch
+    });
+    
+    console.log(`🚀 Loading sidebar page ${page}, filter: "${window.sidebarPagination.currentFilter}", search: "${window.sidebarPagination.currentSearch}"`);
+    
+    fetch(`/api/courses/all?${params}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (!data.courses || !data.pagination) {
+                throw new Error('Invalid API response structure');
+            }
+            
+            window.sidebarPagination.totalPages = data.pagination.totalPages;
+            window.sidebarPagination.totalItems = data.pagination.totalItems;
+            
+            renderSidebarPage(data);
+            
+            console.log(`✅ Loaded sidebar page ${data.pagination.currentPage}/${data.pagination.totalPages} (${data.courses.length} courses)`);
+        })
+        .catch(error => {
+            console.error('❌ Error loading sidebar courses:', error);
+            coursesList.innerHTML = `<div class="error-message">Failed to load courses: ${error.message}</div>`;
+        })
+        .finally(() => {
+            window.sidebarPagination.loading = false;
+        });
+}
+
+// Render sidebar page
+function renderSidebarPage(data) {
+    const coursesList = document.getElementById('sidebar-courses-list');
+    const paginationControls = document.getElementById('sidebar-pagination-controls');
+    
+    if (!coursesList || !paginationControls) return;
+    
+    // Generate course items HTML
+    const coursesHTML = generateSidebarCoursesHTML(data.courses, data.editPermissions, data.reviewStatus);
+    const paginationHTML = generateSidebarPaginationHTML(data.pagination);
+    
+    coursesList.innerHTML = coursesHTML;
+    paginationControls.innerHTML = paginationHTML;
+    
+    // Re-initialize HTMX for new content
+    if (typeof htmx !== 'undefined') {
+        htmx.process(coursesList);
+        htmx.process(paginationControls);
+    }
+}
+
+// Generate HTML for sidebar course items (not full cards)
+function generateSidebarCoursesHTML(courses, editPermissions, reviewStatus) {
+    if (courses.length === 0) {
+        return `<div class="no-courses-message">
+            <div class="no-courses-content">
+                <p class="no-courses-text">No courses found</p>
+                <button class="no-courses-cta" hx-get="/review-landing" hx-target="#main-content">
+                    Add one now!
+                </button>
+            </div>
+        </div>`;
+    }
+    
+    return courses.map((course, index) => {
+        const canEdit = editPermissions && editPermissions[index] || false;
+        const hasReview = reviewStatus && reviewStatus[index] || false;
+        
+        let actions = '';
+        if (canEdit || hasReview) {
+            actions = '<div class="course-actions">';
+            
+            if (hasReview) {
+                actions += `<button class="edit-review-btn" hx-get="/review-course/${course.jsonIndex || index}" hx-target="#main-content" title="Edit Review" onclick="event.stopPropagation();">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                </button>
+                <button class="delete-review-btn" hx-delete="/delete-review/${course.jsonIndex || index}" hx-target="#main-content" hx-confirm="Are you sure you want to delete your review for '${course.Name}'? This action cannot be undone." title="Delete Review" onclick="event.stopPropagation();">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3,6 5,6 21,6"></polyline>
+                        <path d="m19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1,2-2h4a2,2 0 0,1,2,2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                </button>`;
+            }
+            
+            if (canEdit) {
+                actions += `<button class="edit-btn" hx-get="/edit-course/${course.ID}" hx-target="#main-content" title="Edit Course" onclick="event.stopPropagation();">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                </button>
+                <button class="delete-btn" hx-delete="/delete-course/${course.ID}" hx-target="#main-content" hx-confirm="Are you sure you want to delete '${course.Name}'? This action cannot be undone." title="Delete Course" onclick="event.stopPropagation();">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3,6 5,6 21,6"></polyline>
+                        <path d="m19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1,2-2h4a2,2 0 0,1,2,2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                </button>`;
+            }
+            
+            actions += '</div>';
+        }
+        
+        return `<div class="course-item">
+            <div class="course-content" hx-get="/course/${course.ID}" hx-target="#main-content">
+                <h4>${course.Name || course.name}</h4>
+            </div>
+            ${actions}
+        </div>`;
+    }).join('');
+}
+
+// Generate pagination HTML for sidebar
+function generateSidebarPaginationHTML(paginationData) {
+    if (paginationData.totalPages <= 1) return '';
+    
+    const current = paginationData.currentPage;
+    const total = paginationData.totalPages;
+    
+    let pagination = '<div class="pagination sidebar-pagination">';
+    
+    if (paginationData.hasPrev) {
+        pagination += `<button onclick="loadSidebarPage(${current - 1})" class="page-btn">← Prev</button>`;
+    }
+    
+    const startPage = Math.max(1, current - 1);
+    const endPage = Math.min(total, current + 1);
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const active = i === current ? ' active' : '';
+        pagination += `<button onclick="loadSidebarPage(${i})" class="page-btn${active}">${i}</button>`;
+    }
+    
+    if (paginationData.hasNext) {
+        pagination += `<button onclick="loadSidebarPage(${current + 1})" class="page-btn">Next →</button>`;
+    }
+    
+    pagination += `<span class="page-info">${current}/${total} (${paginationData.totalItems})</span></div>`;
+    
+    return pagination;
 }
 
 // Course toggle functionality
@@ -365,45 +644,58 @@ function initializeCourseToggle() {
         allCoursesBtn.addEventListener('click', function() {
             console.log('🔘 All Courses button clicked');
             setActiveFilter('all');
-            filterCourses();
         });
         
         myCoursesBtn.addEventListener('click', function() {
             console.log('🔘 My Reviews button clicked');
             setActiveFilter('my');
-            filterCourses();
         });
     }
 }
 
-// Course search functionality
+// Search functionality
 function initializeCourseSearch() {
     const searchInput = document.getElementById('course-search');
     if (searchInput) {
+        let searchTimeout;
+        
         searchInput.addEventListener('input', function(e) {
-            filterCourses();
+            clearTimeout(searchTimeout);
+            const searchTerm = e.target.value.trim();
+            
+            searchTimeout = setTimeout(() => {
+                console.log('🔍 Sidebar search:', searchTerm);
+                
+                if (window.sidebarPagination.enabled) {
+                    loadSidebarPage(1, window.sidebarPagination.currentFilter, searchTerm);
+                } else {
+                    filterCourses(); // Use static filtering
+                }
+            }, 300);
         });
     }
 }
 
-// Initialize components
+// Initialize sidebar components
 function initializeSidebarComponents() {
     initializeCourseSearch();
     initializeCourseToggle();
     
-    // Debug: Check course count
-    const allCourseItems = document.querySelectorAll('.course-item');
-    console.log(`🔍 Sidebar initialized: ${allCourseItems.length} total courses, filter: ${window.sidebarCurrentFilter}`);
-    
     // Set the correct active filter button on initialization
     setActiveFilter(window.sidebarCurrentFilter);
-    filterCourses(); // Apply initial filter
+    
+    // Apply initial filter to static content
+    if (!window.sidebarPagination.enabled) {
+        filterCourses();
+    }
+    
+    console.log(`🔍 Sidebar initialized: filter: ${window.sidebarCurrentFilter}, pagination: ${window.sidebarPagination.enabled}`);
 }
 
 // Make setActiveFilter available globally for welcome.html compatibility
 window.setActiveFilter = setActiveFilter;
 
-// Initialize on DOM load and after HTMX updates
+// Initialize on DOM load
 document.addEventListener('DOMContentLoaded', function() {
     initializeSidebarComponents();
 });

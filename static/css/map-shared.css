@@ -1,0 +1,227 @@
+/* Shared map styles */
+#map {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+}
+
+.custom-marker {
+  transition: transform 0.2s ease;
+  will-change: transform;
+}
+
+.custom-marker:hover {
+  transform: translate(-50%, -50%) scale(1.2);
+}
+
+.marker-popup {
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 200px;
+}
+
+.popup-content {
+  flex: 1;
+}
+
+.popup-header h3 {
+  margin: 0;
+  color: #204606;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.popup-header h3:hover {
+  color: #2d6509;
+  background-color: rgba(32, 70, 6, 0.1);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.marker-popup p {
+  margin: 5px 0 0 0;
+  color: #666;
+  font-size: 12px;
+}
+
+.rating-plaque {
+  background-color: #204606;
+  color: black;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: bold;
+  min-width: 32px;
+  text-align: center;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.mapboxgl-popup-content {
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* Enhanced marker popup styling */
+.enhanced-marker-popup {
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  border: 2px solid rgba(32, 70, 6, 0.2);
+  background: white;
+  padding: 0;
+  max-width: 280px;
+}
+
+.enhanced-marker-popup .mapboxgl-popup-content {
+  padding: 16px;
+  border-radius: 8px;
+  background: white;
+  box-shadow: none;
+}
+
+.enhanced-marker-popup .popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.enhanced-marker-popup .popup-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #204606;
+  margin: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.enhanced-marker-popup .popup-title:hover {
+  background: rgba(32, 70, 6, 0.1);
+  transform: translateY(-1px);
+}
+
+.enhanced-marker-popup .popup-rating-badge {
+  background: #204606;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 24px;
+  text-align: center;
+}
+
+.enhanced-marker-popup .popup-rating-badge.rating-S {
+  background: #73FF73;
+  color: #204606;
+}
+
+.enhanced-marker-popup .popup-rating-badge.rating-A {
+  background: #B7FF73;
+  color: #204606;
+}
+
+.enhanced-marker-popup .popup-rating-badge.rating-B {
+  background: #FFFF73;
+  color: #204606;
+}
+
+.enhanced-marker-popup .popup-rating-badge.rating-C {
+  background: #FFDA74;
+  color: #204606;
+}
+
+.enhanced-marker-popup .popup-rating-badge.rating-D {
+  background: #FFB774;
+  color: #204606;
+}
+
+.enhanced-marker-popup .popup-rating-badge.rating-F {
+  background: #FF7474;
+  color: white;
+}
+
+.enhanced-marker-popup .popup-rating-badge.rating-none {
+  background: #BABEBC;
+  color: #204606;
+}
+
+.enhanced-marker-popup .popup-address {
+  font-size: 12px;
+  color: #666;
+  margin: 4px 0 0 0;
+}
+
+.enhanced-marker-popup .mapboxgl-popup-tip {
+  border-top-color: rgba(32, 70, 6, 0.2);
+}
+
+/* Custom Map Marker Styles */
+.custom-course-marker {
+  background: white;
+  border: 2px solid white;
+  border-radius: 8px;
+  padding: 6px 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  text-align: center;
+  min-width: 32px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  transform-origin: center bottom;
+}
+
+.custom-course-marker:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+
+.custom-course-marker.rating-S {
+  background: #73FF73;
+  color: #204606;
+}
+
+.custom-course-marker.rating-A {
+  background: #B7FF73;
+  color: #204606;
+}
+
+.custom-course-marker.rating-B {
+  background: #FFFF73;
+  color: #204606;
+}
+
+.custom-course-marker.rating-C {
+  background: #FFDA74;
+  color: #204606;
+}
+
+.custom-course-marker.rating-D {
+  background: #FFB774;
+  color: #204606;
+}
+
+.custom-course-marker.rating-F {
+  background: #FF7474;
+  color: white;
+}
+
+.custom-course-marker.rating-none {
+  background: #BABEBC;
+  color: #204606;
+}
