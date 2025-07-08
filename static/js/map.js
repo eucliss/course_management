@@ -191,18 +191,66 @@ window.CourseMap = {
     
     destroy() {
         if (this.map) {
-            this.map.remove();
-            this.map = null;
-            this.initialized = false;
-            console.log('🗑️ Map destroyed');
+            try {
+                // Check if canvas exists before removing
+                if (this.map.getCanvas()) {
+                    this.map.remove();
+                    console.log('🗑️ Map destroyed');
+                }
+            } catch (e) {
+                console.log('🗑️ Error destroying map or canvas already gone:', e);
+            } finally {
+                this.map = null;
+                this.initialized = false;
+            }
         }
     }
 };
 
-// HTMX integration
+// Enhanced HTMX integration for map cleanup
 document.addEventListener('htmx:beforeSwap', function(e) {
-    // Clean up map when navigating away
+    // Clean up map when navigating away from map page
     if (window.CourseMap && window.CourseMap.initialized) {
         window.CourseMap.destroy();
+    }
+    
+    // Also clean up dedicated map instances
+    if (window.currentMapInstance) {
+        try {
+            if (!window.currentMapInstance._removed && window.currentMapInstance.getCanvas()) {
+                window.currentMapInstance.remove();
+            }
+        } catch (e) {
+            console.log('🗑️ Error cleaning up current map instance:', e);
+        }
+        window.currentMapInstance = null;
+    }
+});
+
+// Additional cleanup for HTMX navigation
+document.addEventListener('htmx:beforeRequest', function(e) {
+    // Only cleanup if we're navigating away from a map page
+    const currentUrl = window.location.pathname;
+    const targetUrl = e.detail.requestConfig.url || e.detail.requestConfig.path;
+    
+    if (currentUrl.includes('/map') && targetUrl && !targetUrl.includes('/map')) {
+        console.log('🚀 Navigating away from map page, cleaning up...');
+        
+        // Clean up shared map
+        if (window.CourseMap && window.CourseMap.initialized) {
+            window.CourseMap.destroy();
+        }
+        
+        // Clean up dedicated map instances
+        if (window.currentMapInstance) {
+            try {
+                if (!window.currentMapInstance._removed && window.currentMapInstance.getCanvas()) {
+                    window.currentMapInstance.remove();
+                }
+            } catch (e) {
+                console.log('🗑️ Error cleaning up during navigation:', e);
+            }
+            window.currentMapInstance = null;
+        }
     }
 }); 

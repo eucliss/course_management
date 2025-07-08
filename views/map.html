@@ -207,6 +207,161 @@
         height: 16px;
       }
 
+      /* Custom Map Marker Styles */
+      .custom-course-marker {
+        background: white;
+        border: 2px solid white;
+        border-radius: 8px;
+        padding: 6px 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        color: white;
+        text-align: center;
+        min-width: 32px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+        transform-origin: center bottom;
+      }
+
+      .custom-course-marker:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      }
+
+      .custom-course-marker.rating-S {
+        background: #73FF73;
+        color: #204606;
+      }
+
+      .custom-course-marker.rating-A {
+        background: #B7FF73;
+        color: #204606;
+      }
+
+      .custom-course-marker.rating-B {
+        background: #FFFF73;
+        color: #204606;
+      }
+
+      .custom-course-marker.rating-C {
+        background: #FFDA74;
+        color: #204606;
+      }
+
+      .custom-course-marker.rating-D {
+        background: #FFB774;
+        color: #204606;
+      }
+
+      .custom-course-marker.rating-F {
+        background: #FF7474;
+        color: white;
+      }
+
+      .custom-course-marker.rating-none {
+        background: #BABEBC;
+        color: #204606;
+      }
+
+      /* Enhanced marker popup styling */
+      .enhanced-marker-popup {
+        border-radius: 8px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        border: 2px solid rgba(32, 70, 6, 0.2);
+        background: white;
+        padding: 0;
+        max-width: 280px;
+      }
+
+      .enhanced-marker-popup .mapboxgl-popup-content {
+        padding: 16px;
+        border-radius: 8px;
+        background: white;
+        box-shadow: none;
+      }
+
+      .enhanced-marker-popup .popup-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+
+      .enhanced-marker-popup .popup-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #204606;
+        margin: 0;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        padding: 4px 8px;
+        border-radius: 4px;
+      }
+
+      .enhanced-marker-popup .popup-title:hover {
+        background: rgba(32, 70, 6, 0.1);
+        transform: translateY(-1px);
+      }
+
+      .enhanced-marker-popup .popup-rating-badge {
+        background: #204606;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        min-width: 24px;
+        text-align: center;
+      }
+
+      .enhanced-marker-popup .popup-rating-badge.rating-S {
+        background: #73FF73;
+        color: #204606;
+      }
+
+      .enhanced-marker-popup .popup-rating-badge.rating-A {
+        background: #B7FF73;
+        color: #204606;
+      }
+
+      .enhanced-marker-popup .popup-rating-badge.rating-B {
+        background: #FFFF73;
+        color: #204606;
+      }
+
+      .enhanced-marker-popup .popup-rating-badge.rating-C {
+        background: #FFDA74;
+        color: #204606;
+      }
+
+      .enhanced-marker-popup .popup-rating-badge.rating-D {
+        background: #FFB774;
+        color: #204606;
+      }
+
+      .enhanced-marker-popup .popup-rating-badge.rating-F {
+        background: #FF7474;
+        color: white;
+      }
+
+      .enhanced-marker-popup .popup-rating-badge.rating-none {
+        background: #BABEBC;
+        color: #204606;
+      }
+
+      .enhanced-marker-popup .popup-address {
+        font-size: 12px;
+        color: #666;
+        margin: 4px 0 0 0;
+      }
+
+      .enhanced-marker-popup .mapboxgl-popup-tip {
+        border-top-color: rgba(32, 70, 6, 0.2);
+      }
+
       @media (max-width: 768px) {
         .map-controls-container {
           width: calc(100% - 20px);
@@ -240,13 +395,29 @@
       /* eslint-disable */
       // @ts-nocheck
       
-      mapboxgl.accessToken = '{{ .MapboxToken }}';
+      // Prevent script re-execution issues
+      (function initializeMapPage() {
+        
+        // Clean up any existing map instances with canvas check
+        if (window.currentMapInstance) {
+          try {
+            if (!window.currentMapInstance._removed && window.currentMapInstance.getCanvas()) {
+              console.log('🔄 Cleaning up existing map instance');
+              window.currentMapInstance.remove();
+            }
+          } catch (e) {
+            console.log('🗑️ Map already removed or error during cleanup:', e);
+          }
+          window.currentMapInstance = null;
+        }
+        
+        mapboxgl.accessToken = '{{ .MapboxToken }}';
 
-      // Check if token is actually set
-      if (!mapboxgl.accessToken || mapboxgl.accessToken === '') {
-          console.error('Mapbox token is missing!');
-          alert('Mapbox token not configured');
-      }
+        // Check if token is actually set
+        if (!mapboxgl.accessToken || mapboxgl.accessToken === '') {
+            console.error('Mapbox token is missing!');
+            alert('Mapbox token not configured');
+        }
 
       // Current filter state for map - set from server default
       window.mapCurrentFilter = '{{ .DefaultFilter }}';
@@ -266,10 +437,10 @@
       })));
       
       // Count courses with coordinates
-      const coursesWithCoords = window.allCourses.filter(c => 
+      window.coursesWithCoords = window.allCourses.filter(c => 
         (c.Latitude && c.Longitude) || (c.latitude && c.longitude)
       ).length;
-      console.log('📍 Courses with stored coordinates:', coursesWithCoords, 'out of', window.allCourses.length);
+      console.log('📍 Courses with stored coordinates:', window.coursesWithCoords, 'out of', window.allCourses.length);
       
       // Initialize allMarkers array early to avoid undefined errors
       window.allMarkers = [];
@@ -296,13 +467,37 @@
         window.editPermissions = {{ .EditPermissions }};
       }
       
-      // Clean up any existing map to avoid conflicts
+      // Clean up any existing map to avoid conflicts with canvas check
       if (window.existingMap) {
-        window.existingMap.remove();
-        console.log('🗑️ Removed existing map');
+        try {
+          if (window.existingMap.getCanvas()) {
+            window.existingMap.remove();
+            console.log('🗑️ Removed existing map');
+          }
+        } catch (e) {
+          console.log('🗑️ Error removing existing map or canvas already gone:', e);
+        }
+        window.existingMap = null;
       }
 
-      // Use a unique variable name to avoid redeclaration
+      // Clean up existing markers
+      if (window.allMarkers) {
+        window.allMarkers.forEach(markerData => {
+          if (markerData.marker) {
+            markerData.marker.remove();
+          }
+        });
+      }
+      window.allMarkers = [];
+
+      // Ensure map container exists before creating map
+      const mapContainer = document.getElementById('map');
+      if (!mapContainer) {
+        console.error('Map container not found');
+        return;
+      }
+
+      // Create new map instance
       var dedicatedCourseMap = new mapboxgl.Map({
           container: 'map',
           style: 'mapbox://styles/mapbox/streets-v12',
@@ -315,6 +510,8 @@
           preserveDrawingBuffer: false
       });
 
+      // Store references for cleanup
+      window.currentMapInstance = dedicatedCourseMap;
       window.existingMap = dedicatedCourseMap;
       
       dedicatedCourseMap.on('error', function(e) {
@@ -324,15 +521,43 @@
       dedicatedCourseMap.on('load', function() {
           console.log('Dedicated map loaded successfully');
           
-          // Add golf courses as GeoJSON source for better performance
-          addGolfCoursesLayer(dedicatedCourseMap);
-          
-          initializeMapSearch();
-          initializeMapToggle();
-          // Set initial filter state
-          setMapActiveFilter(window.mapCurrentFilter);
-          filterMapMarkers();
+          try {
+            // Add golf courses as GeoJSON source for better performance
+            addGolfCoursesLayer(dedicatedCourseMap);
+            
+            initializeMapSearch();
+            initializeMapToggle();
+            // Set initial filter state
+            setMapActiveFilter(window.mapCurrentFilter);
+            filterMapMarkers();
+          } catch (e) {
+            console.error('Error initializing map features:', e);
+          }
       });
+
+      // Add cleanup when page is about to unload
+      window.addEventListener('beforeunload', function() {
+        if (window.currentMapInstance && !window.currentMapInstance._removed) {
+          try {
+            if (window.currentMapInstance.getCanvas()) {
+              window.currentMapInstance.remove();
+            }
+          } catch (e) {
+            console.log('Error during page unload cleanup:', e);
+          }
+        }
+      });
+
+
+      function createEnhancedPopupHTML(courseName, courseId, rating, address) {
+        return `
+          <div class="popup-header">
+            <h3 class="popup-title" data-course-id="${courseId}">${courseName}</h3>
+            <div class="popup-rating-badge rating-${rating === '-' ? 'none' : rating}">${rating || '-'}</div>
+          </div>
+          ${address ? `<p class="popup-address">${address}</p>` : ''}
+        `;
+      }
 
       function createPopupHTML(courseName, courseId, rating, markerColor) {
         return `
@@ -358,7 +583,7 @@
           maxzoom: 14
         });
 
-        // Add golf course points layer
+        // Add golf course points layer - styled as badges
         map.addLayer({
           id: 'golf-points',
           type: 'circle',
@@ -369,9 +594,9 @@
               'interpolate',
               ['linear'],
               ['zoom'],
-              3, 4,
-              10, 8,
-              14, 12
+              3, 6,
+              10, 12,
+              14, 16
             ],
             'circle-color': [
               'case',
@@ -385,31 +610,64 @@
             ],
             'circle-stroke-width': 2,
             'circle-stroke-color': '#ffffff',
-            'circle-opacity': 0.8
+            'circle-opacity': 0.9
           }
         });
 
-        // Add click handler for vector tiles
-        map.on('click', 'golf-points', function (e) {
+        // Add rating text overlay for vector tiles
+        map.addLayer({
+          id: 'golf-ratings',
+          type: 'symbol',
+          source: 'golf-courses',
+          'source-layer': 'golf',
+          layout: {
+            'text-field': ['get', 'rating'],
+            'text-font': ['DIN Offc Pro Bold', 'Arial Unicode MS Bold'],
+            'text-size': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              3, 10,
+              10, 14,
+              14, 18
+            ],
+            'text-allow-overlap': true,
+            'text-ignore-placement': true
+          },
+          paint: {
+            'text-color': [
+              'case',
+              ['==', ['get', 'rating'], 'F'], '#ffffff',
+              ['==', ['get', 'rating'], '-'], '#204606',
+              '#204606'
+            ],
+            'text-opacity': 1
+          }
+        });
+
+        // Click handler for vector tiles (both circles and text)
+        function handleVectorTileClick(e) {
           const coordinates = e.features[0].geometry.coordinates.slice();
           const properties = e.features[0].properties;
           
-          // Create popup content
-          const popupHTML = createPopupHTML(
+          // Create enhanced popup content
+          const popupHTML = createEnhancedPopupHTML(
             properties.name, 
             properties.id, 
             properties.rating, 
-            properties.color || '#BABEBC'
+            properties.address || ''
           );
           
-          new mapboxgl.Popup()
+          new mapboxgl.Popup({
+            className: 'enhanced-marker-popup'
+          })
             .setLngLat(coordinates)
             .setHTML(popupHTML)
             .addTo(map);
             
           // Add click handler for course title
           setTimeout(() => {
-            const titleElement = document.querySelector('.course-title');
+            const titleElement = document.querySelector('.popup-title');
             if (titleElement) {
               titleElement.addEventListener('click', function() {
                 const courseId = this.getAttribute('data-course-id');
@@ -419,13 +677,22 @@
               });
             }
           }, 100);
-        });
+        }
+
+        map.on('click', 'golf-points', handleVectorTileClick);
+        map.on('click', 'golf-ratings', handleVectorTileClick);
 
         // Change cursor on hover
         map.on('mouseenter', 'golf-points', function () {
           map.getCanvas().style.cursor = 'pointer';
         });
         map.on('mouseleave', 'golf-points', function () {
+          map.getCanvas().style.cursor = '';
+        });
+        map.on('mouseenter', 'golf-ratings', function () {
+          map.getCanvas().style.cursor = 'pointer';
+        });
+        map.on('mouseleave', 'golf-ratings', function () {
           map.getCanvas().style.cursor = '';
         });
       }
@@ -539,7 +806,7 @@
           }
         });
 
-        // Add individual golf course points
+        // Add individual golf course points - styled as badges
         map.addLayer({
           id: 'golf-points',
           type: 'circle',
@@ -547,9 +814,34 @@
           filter: ['!', ['has', 'point_count']],
           paint: {
             'circle-color': ['get', 'color'],
-            'circle-radius': 8,
+            'circle-radius': 12,
             'circle-stroke-width': 2,
-            'circle-stroke-color': '#ffffff'
+            'circle-stroke-color': '#ffffff',
+            'circle-opacity': 0.9
+          }
+        });
+
+        // Add rating text overlay on top of circles
+        map.addLayer({
+          id: 'golf-ratings',
+          type: 'symbol',
+          source: 'golf-courses',
+          filter: ['!', ['has', 'point_count']],
+          layout: {
+            'text-field': ['get', 'rating'],
+            'text-font': ['DIN Offc Pro Bold', 'Arial Unicode MS Bold'],
+            'text-size': 14,
+            'text-allow-overlap': true,
+            'text-ignore-placement': true
+          },
+          paint: {
+            'text-color': [
+              'case',
+              ['==', ['get', 'rating'], 'F'], '#ffffff',
+              ['==', ['get', 'rating'], '-'], '#204606',
+              '#204606'
+            ],
+            'text-opacity': 1
           }
         });
 
@@ -571,26 +863,29 @@
           );
         });
 
-        map.on('click', 'golf-points', function (e) {
+        // Click handler for both circles and text
+        function handleGolfCourseClick(e) {
           const coordinates = e.features[0].geometry.coordinates.slice();
           const properties = e.features[0].properties;
           
-          // Create popup content
-          const popupHTML = createPopupHTML(
+          // Create enhanced popup content
+          const popupHTML = createEnhancedPopupHTML(
             properties.name, 
             properties.courseId, 
             properties.rating, 
-            properties.color
+            properties.address
           );
           
-          new mapboxgl.Popup()
+          new mapboxgl.Popup({
+            className: 'enhanced-marker-popup'
+          })
             .setLngLat(coordinates)
             .setHTML(popupHTML)
             .addTo(map);
             
           // Add click handler for course title
           setTimeout(() => {
-            const titleElement = document.querySelector('.course-title');
+            const titleElement = document.querySelector('.popup-title');
             if (titleElement) {
               titleElement.addEventListener('click', function() {
                 const courseId = this.getAttribute('data-course-id');
@@ -600,7 +895,10 @@
               });
             }
           }, 100);
-        });
+        }
+
+        map.on('click', 'golf-points', handleGolfCourseClick);
+        map.on('click', 'golf-ratings', handleGolfCourseClick);
 
         // Change cursor on hover
         map.on('mouseenter', 'clusters', function () {
@@ -613,6 +911,12 @@
           map.getCanvas().style.cursor = 'pointer';
         });
         map.on('mouseleave', 'golf-points', function () {
+          map.getCanvas().style.cursor = '';
+        });
+        map.on('mouseenter', 'golf-ratings', function () {
+          map.getCanvas().style.cursor = 'pointer';
+        });
+        map.on('mouseleave', 'golf-ratings', function () {
           map.getCanvas().style.cursor = '';
         });
       }
@@ -793,6 +1097,7 @@
         }
       }
 
+
       function updateGeoJSONLayer(filter) {
         // Only update if we're using GeoJSON (not vector tiles)
         const source = dedicatedCourseMap.getSource('golf-courses');
@@ -895,37 +1200,6 @@
         }
       }
 
-      function filterMapMarkers() {
-        const searchTerm = document.getElementById('map-course-search')?.value.toLowerCase().trim() || '';
-        
-        // If using GeoJSON layer, update the data source instead of individual markers
-        const source = dedicatedCourseMap.getSource('golf-courses');
-        if (source && source.type === 'geojson') {
-          updateGeoJSONLayerWithSearch(window.mapCurrentFilter, searchTerm);
-          return;
-        }
-        
-        // Fallback to individual marker filtering (for backward compatibility)
-        window.allMarkers.forEach(markerData => {
-          const matchesSearch = searchTerm === '' || markerData.courseName.includes(searchTerm);
-          const matchesFilter = window.mapCurrentFilter === 'all' || (window.mapCurrentFilter === 'my' && markerData.hasReview);
-          
-          if (matchesSearch && matchesFilter) {
-            // Show marker
-            if (!markerData.visible) {
-              markerData.marker.addTo(dedicatedCourseMap);
-              markerData.visible = true;
-            }
-          } else {
-            // Hide marker
-            if (markerData.visible) {
-              markerData.marker.remove();
-              markerData.visible = false;
-            }
-          }
-        });
-      }
-
       function updateGeoJSONLayerWithSearch(filter, searchTerm) {
         // Create filtered GeoJSON data
         const geoJSONData = {
@@ -995,6 +1269,38 @@
         source.setData(geoJSONData);
       }
 
+      function filterMapMarkers() {
+        const searchTerm = document.getElementById('map-course-search')?.value.toLowerCase().trim() || '';
+        
+        // If using GeoJSON layer, update the data source instead of individual markers
+        const source = dedicatedCourseMap.getSource('golf-courses');
+        if (source && source.type === 'geojson') {
+          updateGeoJSONLayerWithSearch(window.mapCurrentFilter, searchTerm);
+          return;
+        }
+        
+        // Fallback to individual marker filtering (for backward compatibility)
+        window.allMarkers.forEach(markerData => {
+          const matchesSearch = searchTerm === '' || markerData.courseName.includes(searchTerm);
+          const matchesFilter = window.mapCurrentFilter === 'all' || (window.mapCurrentFilter === 'my' && markerData.hasReview);
+          
+          if (matchesSearch && matchesFilter) {
+            // Show marker
+            if (!markerData.visible) {
+              markerData.marker.addTo(dedicatedCourseMap);
+              markerData.visible = true;
+            }
+          } else {
+            // Hide marker
+            if (markerData.visible) {
+              markerData.marker.remove();
+              markerData.visible = false;
+            }
+          }
+        });
+      }
+
+
 
 
       function initializeMapSearch() {
@@ -1005,5 +1311,7 @@
           });
         }
       }
+      
+      })(); // End of initializeMapPage function
     </script>
 {{ end }}
