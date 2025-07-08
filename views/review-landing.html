@@ -16,6 +16,15 @@
                 </svg>
             </div>
         </div>
+        {{ if .UsePagination }}
+        <div id="courses-container">
+            <div class="loading-spinner">Loading courses...</div>
+        </div>
+        <div id="debug-info" style="padding: 20px; background: #f0f0f0; margin: 20px 0; font-size: 12px;">
+            <p>Debug: UsePagination = {{ .UsePagination }}</p>
+            <p>If courses don't load, check console for errors.</p>
+        </div>
+        {{ else }}
         <div class="courses-grid">
             {{ range $index, $course := .AvailableCourses }}
             <div class="course-card clickable-card" 
@@ -28,6 +37,7 @@
             </div>
             {{ end }}
         </div>
+        {{ end }}
     </div>
 </div>
 
@@ -1027,6 +1037,90 @@
             grid-column: 1;
         }
     }
+
+    /* Review page pagination styles */
+    .pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 20px 0;
+        border-top: 1px solid rgba(32, 70, 6, 0.1);
+        margin-top: 20px;
+    }
+
+    .page-btn {
+        padding: 8px 16px;
+        border: 1px solid rgba(32, 70, 6, 0.2);
+        background: white;
+        color: #204606;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9em;
+        transition: all 0.2s ease;
+    }
+
+    .page-btn:hover {
+        background: rgba(32, 70, 6, 0.1);
+        border-color: #204606;
+    }
+
+    .page-btn.active {
+        background: #204606;
+        color: white;
+        font-weight: 600;
+    }
+
+    .page-info {
+        color: rgba(32, 70, 6, 0.7);
+        font-size: 0.85em;
+        margin-left: 12px;
+    }
+
+    .loading-spinner {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 60px;
+        color: rgba(32, 70, 6, 0.7);
+        font-size: 1em;
+    }
+
+    .loading-spinner:before {
+        content: '';
+        width: 24px;
+        height: 24px;
+        border: 3px solid rgba(32, 70, 6, 0.2);
+        border-top: 3px solid #204606;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 12px;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .error-message {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 60px;
+        color: #e53e3e;
+        text-align: center;
+        font-size: 1em;
+    }
+
+    .no-courses-message {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 60px;
+        color: rgba(32, 70, 6, 0.7);
+        text-align: center;
+        font-size: 1em;
+    }
 </style>
 
 <script>
@@ -1042,8 +1136,169 @@
     // Check if we're editing
     var isEdit = {{ if .IsEdit }}true{{ else }}false{{ end }};
     var courseId = {{ if .IsEdit }}{{ .Course.ID }}{{ else }}null{{ end }};
+    var usePagination = {{ if .UsePagination }}true{{ else }}false{{ end }};
 
-    console.log('📋 Form initialized:', { isEdit, courseId, holeCount, scoreCount });
+    console.log('📋 Form initialized:', { isEdit, courseId, holeCount, scoreCount, usePagination });
+
+    // Review course pagination system
+    if (usePagination) {
+        window.reviewPagination = {
+            currentPage: 1,
+            totalPages: 1,
+            totalItems: 0,
+            itemsPerPage: 20,
+            currentSearch: '',
+            loading: false
+        };
+
+        // Load courses with pagination
+        function loadReviewCoursePage(page = 1, search = null) {
+            if (window.reviewPagination.loading) return;
+            
+            window.reviewPagination.currentPage = page;
+            if (search !== null) window.reviewPagination.currentSearch = search;
+            
+            const container = document.getElementById('courses-container');
+            if (!container) return;
+            
+            window.reviewPagination.loading = true;
+            container.innerHTML = '<div class="loading-spinner">Loading courses...</div>';
+            
+            const params = new URLSearchParams({
+                page: window.reviewPagination.currentPage,
+                limit: window.reviewPagination.itemsPerPage,
+                search: window.reviewPagination.currentSearch
+            });
+            
+            console.log(`🚀 Loading review courses page ${page}, search: "${window.reviewPagination.currentSearch}"`);
+            
+            fetch(`/api/courses/review?${params}`)
+                .then(response => {
+                    console.log('📡 API Response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('📦 API Data received:', data);
+                    
+                    if (!data.courses || !data.pagination) {
+                        throw new Error('Invalid API response structure');
+                    }
+                    
+                    window.reviewPagination.totalPages = data.pagination.totalPages;
+                    window.reviewPagination.totalItems = data.pagination.totalItems;
+                    
+                    renderReviewCoursePage(data);
+                    
+                    console.log(`✅ Loaded review page ${data.pagination.currentPage}/${data.pagination.totalPages} (${data.courses.length} courses)`);
+                })
+                .catch(error => {
+                    console.error('❌ Error loading review courses:', error);
+                    container.innerHTML = `<div class="error-message">Failed to load courses: ${error.message}</div>`;
+                })
+                .finally(() => {
+                    window.reviewPagination.loading = false;
+                });
+        }
+
+        // Render review courses page
+        function renderReviewCoursePage(data) {
+            const container = document.getElementById('courses-container');
+            if (!container) return;
+            
+            const coursesHTML = generateReviewCoursesHTML(data.courses);
+            const paginationHTML = generateReviewPaginationHTML(data.pagination);
+            
+            container.innerHTML = `<div class="courses-grid">${coursesHTML}</div>${paginationHTML}`;
+            
+            // Re-initialize HTMX for new content
+            if (typeof htmx !== 'undefined') {
+                htmx.process(container);
+            }
+        }
+
+        // Generate HTML for review courses
+        function generateReviewCoursesHTML(courses) {
+            if (courses.length === 0) {
+                return '<div class="no-courses-message"><p>No courses found</p></div>';
+            }
+            
+            return courses.map(course => `
+                <div class="course-card clickable-card" 
+                     hx-get="/review-course/${course.jsonIndex}" 
+                     hx-target="#main-content">
+                    <div class="course-card-header">
+                        <h3>${course.Name || course.name}</h3>
+                        <span class="course-address">${course.Address || course.address || ''}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Generate pagination HTML
+        function generateReviewPaginationHTML(paginationData) {
+            if (paginationData.totalPages <= 1) return '';
+            
+            const current = paginationData.currentPage;
+            const total = paginationData.totalPages;
+            
+            let pagination = '<div class="pagination">';
+            
+            if (paginationData.hasPrev) {
+                pagination += `<button onclick="loadReviewCoursePage(${current - 1})" class="page-btn">← Prev</button>`;
+            }
+            
+            const startPage = Math.max(1, current - 1);
+            const endPage = Math.min(total, current + 1);
+            
+            for (let i = startPage; i <= endPage; i++) {
+                const active = i === current ? ' active' : '';
+                pagination += `<button onclick="loadReviewCoursePage(${i})" class="page-btn${active}">${i}</button>`;
+            }
+            
+            if (paginationData.hasNext) {
+                pagination += `<button onclick="loadReviewCoursePage(${current + 1})" class="page-btn">Next →</button>`;
+            }
+            
+            pagination += `<span class="page-info">Page ${current} of ${total} (${paginationData.totalItems} courses)</span></div>`;
+            
+            return pagination;
+        }
+
+        // Initialize search with debounce
+        function initializeReviewSearch() {
+            const searchInput = document.getElementById('course-selection-search');
+            if (searchInput) {
+                let searchTimeout;
+                
+                searchInput.addEventListener('input', function(e) {
+                    clearTimeout(searchTimeout);
+                    const searchTerm = e.target.value.trim();
+                    
+                    searchTimeout = setTimeout(() => {
+                        console.log('🔍 Review search:', searchTerm);
+                        loadReviewCoursePage(1, searchTerm);
+                    }, 300);
+                });
+            }
+        }
+
+        // Initialize immediately since we're already in the page
+        function initializeReviewPage() {
+            console.log('🎯 Initializing review page pagination');
+            loadReviewCoursePage(1);
+            initializeReviewSearch();
+        }
+        
+        // Initialize on page load or immediately if DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeReviewPage);
+        } else {
+            initializeReviewPage();
+        }
+    }
 
     // Function to add a new hole
     function addHole(holeData = null) {

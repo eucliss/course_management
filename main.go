@@ -249,6 +249,7 @@ func main() {
 	e.GET("/api/status/database", handlers.DatabaseStatus)
 	e.POST("/api/migrate/courses", handlers.MigrateCourses)
 	e.GET("/api/courses/all", handlers.GetAllCoursesAPI, AddOwnershipContext(sessionService))
+	e.GET("/api/courses/review", handlers.GetReviewCoursesAPI, RequireAuth(sessionService))
 	// Serve static files
 	e.Static("/static", "static")
 	e.File("/favicon.ico", "static/favicon.ico")

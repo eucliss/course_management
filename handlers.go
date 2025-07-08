@@ -565,50 +565,15 @@ func (h *Handlers) GetCourse(c echo.Context) error {
 }
 
 func (h *Handlers) CreateCourseForm(c echo.Context) error {
-	// Create a struct that includes both database info and JSON array index
-	type CourseWithIndex struct {
-		CourseDB
-		JSONIndex int // The index in the JSON array for routing
-	}
-
-	var availableCourses []CourseWithIndex
-
-	if DB != nil {
-		// Get ALL courses from database - user should be able to review any course
-		dbService := NewDatabaseService()
-		allDBCourses, err := dbService.GetAllCourses()
-		if err != nil {
-			log.Printf("Warning: failed to get all courses: %v", err)
-		} else {
-			// Map database courses to JSON array indices
-			for _, dbCourse := range allDBCourses {
-				// Find the corresponding index in the JSON array
-				jsonIndex := -1
-				for i, jsonCourse := range *h.courses {
-					if jsonCourse.Name == dbCourse.Name {
-						jsonIndex = i
-						break
-					}
-				}
-
-				if jsonIndex != -1 {
-					availableCourses = append(availableCourses, CourseWithIndex{
-						CourseDB:  dbCourse,
-						JSONIndex: jsonIndex,
-					})
-				}
-			}
-		}
-	}
-
+	// Fast loading - just render the page shell, courses will be loaded via API
 	data := struct {
-		AvailableCourses []CourseWithIndex
 		IsEdit           bool
 		IsReviewMode     bool
+		UsePagination    bool
 	}{
-		AvailableCourses: availableCourses,
 		IsEdit:           false,
 		IsReviewMode:     true,
+		UsePagination:    true, // Signal to use pagination
 	}
 
 	return c.Render(http.StatusOK, "review-landing", data)
@@ -1685,5 +1650,121 @@ func (h *Handlers) GetAllCoursesAPI(c echo.Context) error {
 	}
 	
 	log.Printf("✅ GetAllCoursesAPI: Returning page %d/%d (%d items, %d total)", page, totalPages, len(pageCourses), totalItems)
+	return c.JSON(http.StatusOK, response)
+}
+
+// GetReviewCoursesAPI returns paginated courses for the review page
+func (h *Handlers) GetReviewCoursesAPI(c echo.Context) error {
+	// Parse pagination parameters
+	page := 1
+	limit := 20
+	search := ""
+	
+	if p := c.QueryParam("page"); p != "" {
+		if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
+			page = parsed
+		}
+	}
+	
+	if l := c.QueryParam("limit"); l != "" {
+		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 100 {
+			limit = parsed
+		}
+	}
+	
+	if s := c.QueryParam("search"); s != "" {
+		search = s
+	}
+	
+	log.Printf("🚀 GetReviewCoursesAPI: page=%d, limit=%d, search='%s'", page, limit, search)
+	
+	// Create a struct that includes both database info and JSON array index
+	type CourseWithIndex struct {
+		CourseDB
+		JSONIndex int `json:"jsonIndex"`
+	}
+	
+	var allAvailableCourses []CourseWithIndex
+	
+	if DB != nil {
+		// Get ALL courses from database - user should be able to review any course
+		dbService := NewDatabaseService()
+		allDBCourses, err := dbService.GetAllCourses()
+		if err != nil {
+			log.Printf("Warning: failed to get all courses: %v", err)
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to load courses from database"})
+		}
+		
+		log.Printf("📊 GetReviewCoursesAPI: Retrieved %d courses from database", len(allDBCourses))
+		
+		// Map database courses to JSON array indices
+		for _, dbCourse := range allDBCourses {
+			// Find the corresponding index in the JSON array
+			jsonIndex := -1
+			for i, jsonCourse := range *h.courses {
+				if jsonCourse.Name == dbCourse.Name {
+					jsonIndex = i
+					break
+				}
+			}
+			
+			if jsonIndex != -1 {
+				allAvailableCourses = append(allAvailableCourses, CourseWithIndex{
+					CourseDB:  dbCourse,
+					JSONIndex: jsonIndex,
+				})
+			}
+		}
+		
+		log.Printf("📊 GetReviewCoursesAPI: Mapped %d courses to JSON indices", len(allAvailableCourses))
+	} else {
+		log.Printf("⚠️ Database is nil, cannot load courses for review")
+		return c.JSON(http.StatusServiceUnavailable, map[string]string{"error": "Database not available"})
+	}
+	
+	// Apply search filter
+	var filteredCourses []CourseWithIndex
+	if search != "" {
+		for _, course := range allAvailableCourses {
+			if strings.Contains(strings.ToLower(course.Name), strings.ToLower(search)) {
+				filteredCourses = append(filteredCourses, course)
+			}
+		}
+	} else {
+		filteredCourses = allAvailableCourses
+	}
+	
+	// Calculate pagination
+	totalItems := len(filteredCourses)
+	totalPages := (totalItems + limit - 1) / limit
+	startIndex := (page - 1) * limit
+	endIndex := startIndex + limit
+	
+	if startIndex > totalItems {
+		startIndex = totalItems
+	}
+	if endIndex > totalItems {
+		endIndex = totalItems
+	}
+	
+	// Get page slice
+	var pageCourses []CourseWithIndex
+	if startIndex < totalItems {
+		pageCourses = filteredCourses[startIndex:endIndex]
+	}
+	
+	response := map[string]interface{}{
+		"courses": pageCourses,
+		"pagination": map[string]interface{}{
+			"currentPage":  page,
+			"totalPages":   totalPages,
+			"totalItems":   totalItems,
+			"itemsPerPage": limit,
+			"hasNext":      page < totalPages,
+			"hasPrev":      page > 1,
+		},
+	}
+	
+	log.Printf("✅ GetReviewCoursesAPI: Returning page %d/%d (%d items, %d total)", page, totalPages, len(pageCourses), totalItems)
 	return c.JSON(http.StatusOK, response)
 }
