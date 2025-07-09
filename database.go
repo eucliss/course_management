@@ -7,7 +7,9 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -49,28 +51,54 @@ type CourseDB struct {
 
 
 type DatabaseConfig struct {
-	Host     string
-	Port     string
-	User     string
-	Password string
-	DBName   string
-	SSLMode  string
+	Host            string
+	Port            string
+	User            string
+	Password        string
+	DBName          string
+	SSLMode         string
+	MaxOpenConns    int
+	MaxIdleConns    int
+	ConnMaxLifetime time.Duration
+	ConnMaxIdleTime time.Duration
 }
 
 func LoadDatabaseConfig() *DatabaseConfig {
 	return &DatabaseConfig{
-		Host:     getEnvOrDefault("DB_HOST", "localhost"),
-		Port:     getEnvOrDefault("DB_PORT", "5432"),
-		User:     getEnvOrDefault("DB_USER", "postgres"),
-		Password: getEnvOrDefault("DB_PASSWORD", ""),
-		DBName:   getEnvOrDefault("DB_NAME", "course_management_dev"),
-		SSLMode:  getEnvOrDefault("DB_SSLMODE", "disable"),
+		Host:            getEnvOrDefault("DB_HOST", "localhost"),
+		Port:            getEnvOrDefault("DB_PORT", "5432"),
+		User:            getEnvOrDefault("DB_USER", "postgres"),
+		Password:        getEnvOrDefault("DB_PASSWORD", ""),
+		DBName:          getEnvOrDefault("DB_NAME", "course_management_dev"),
+		SSLMode:         getEnvOrDefault("DB_SSLMODE", "disable"),
+		MaxOpenConns:    getIntOrDefault("DB_MAX_OPEN_CONNS", 25),
+		MaxIdleConns:    getIntOrDefault("DB_MAX_IDLE_CONNS", 25),
+		ConnMaxLifetime: getDurationOrDefault("DB_CONN_MAX_LIFETIME", 5*time.Minute),
+		ConnMaxIdleTime: getDurationOrDefault("DB_CONN_MAX_IDLE_TIME", 5*time.Minute),
 	}
 }
 
 func getEnvOrDefault(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
+	}
+	return defaultValue
+}
+
+func getIntOrDefault(key string, defaultValue int) int {
+	if value := os.Getenv(key); value != "" {
+		if parsed, err := strconv.Atoi(value); err == nil {
+			return parsed
+		}
+	}
+	return defaultValue
+}
+
+func getDurationOrDefault(key string, defaultValue time.Duration) time.Duration {
+	if value := os.Getenv(key); value != "" {
+		if parsed, err := time.ParseDuration(value); err == nil {
+			return parsed
+		}
 	}
 	return defaultValue
 }
@@ -110,6 +138,22 @@ func InitDatabase() error {
 	}
 
 	log.Printf("✅ Connected to PostgreSQL database: %s", config.DBName)
+
+	// Configure connection pool
+	sqlDB, err := DB.DB()
+	if err != nil {
+		log.Printf("⚠️ Failed to get underlying database connection: %v", err)
+		return fmt.Errorf("failed to get underlying database connection: %w", err)
+	}
+
+	// Apply connection pool configuration
+	sqlDB.SetMaxOpenConns(config.MaxOpenConns)
+	sqlDB.SetMaxIdleConns(config.MaxIdleConns)
+	sqlDB.SetConnMaxLifetime(config.ConnMaxLifetime)
+	sqlDB.SetConnMaxIdleTime(config.ConnMaxIdleTime)
+
+	log.Printf("🔧 Connection pool configured: MaxOpen=%d, MaxIdle=%d, MaxLifetime=%v, MaxIdleTime=%v",
+		config.MaxOpenConns, config.MaxIdleConns, config.ConnMaxLifetime, config.ConnMaxIdleTime)
 
 	// Auto-migrate the schema
 	if err := AutoMigrate(); err != nil {

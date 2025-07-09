@@ -36,3 +36,5 @@ scripts/clean_course_data.py*
 scripts/*.geojson*
 scripts/*.mbtiles*
 scripts/tiles/
+
+*.rdb
