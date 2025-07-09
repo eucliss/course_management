@@ -47,6 +47,7 @@ type CourseDB struct {
 	Updater *User `gorm:"foreignKey:UpdatedBy" json:"updater,omitempty"`
 }
 
+
 type DatabaseConfig struct {
 	Host     string
 	Port     string

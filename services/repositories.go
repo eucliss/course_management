@@ -38,14 +38,23 @@ type UserDB struct {
 }
 
 type CourseReviewDB struct {
-	ID         uint   `gorm:"primaryKey" json:"id"`
-	UserID     uint   `gorm:"not null;index" json:"user_id"`
-	CourseID   uint   `gorm:"not null;index" json:"course_id"`
-	CourseName string `gorm:"not null" json:"course_name"`
-	Review     string `gorm:"type:text" json:"review"`
-	Rating     int    `gorm:"check:rating >= 1 AND rating <= 5" json:"rating"`
-	CreatedAt  int64  `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt  int64  `gorm:"autoUpdateTime" json:"updated_at"`
+	ID                 uint    `gorm:"primaryKey" json:"id"`
+	CourseID           uint    `gorm:"not null" json:"course_id"`
+	UserID             uint    `gorm:"not null" json:"user_id"`
+	OverallRating      *string `gorm:"type:varchar(1)" json:"overall_rating"`
+	Price              *string `gorm:"type:varchar(10)" json:"price"`
+	HandicapDifficulty *int    `json:"handicap_difficulty"`
+	HazardDifficulty   *int    `json:"hazard_difficulty"`
+	Merch              *string `gorm:"type:varchar(1)" json:"merch"`
+	Condition          *string `gorm:"type:varchar(1)" json:"condition"`
+	EnjoymentRating    *string `gorm:"type:varchar(1)" json:"enjoyment_rating"`
+	Vibe               *string `gorm:"type:varchar(1)" json:"vibe"`
+	RangeRating        *string `gorm:"type:varchar(1)" json:"range_rating"`
+	Amenities          *string `gorm:"type:varchar(1)" json:"amenities"`
+	Glizzies           *string `gorm:"type:varchar(1)" json:"glizzies"`
+	ReviewText         *string `gorm:"type:text" json:"review_text"`
+	CreatedAt          int64   `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt          int64   `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
 type UserCourseScoreDB struct {
@@ -160,7 +169,7 @@ func (r *courseRepository) GetAll(ctx context.Context) ([]Course, error) {
 			log.Printf("Warning: failed to unmarshal course %d: %v", courseDB.ID, err)
 			continue
 		}
-		course.ID = i // Maintain array index for compatibility
+		course.ID = uint(i) // Maintain array index for compatibility
 		courses = append(courses, *course)
 	}
 
@@ -262,7 +271,7 @@ func (r *courseRepository) GetWithPagination(ctx context.Context, offset, limit 
 			log.Printf("Warning: failed to unmarshal course %d: %v", courseDB.ID, err)
 			continue
 		}
-		course.ID = offset + i // Maintain consistent indexing
+		course.ID = uint(offset + i) // Maintain consistent indexing
 		courses = append(courses, *course)
 	}
 
@@ -484,11 +493,20 @@ func NewReviewRepository(db *gorm.DB) ReviewRepository {
 
 func (r *reviewRepository) Create(ctx context.Context, review CourseReview) error {
 	reviewDB := CourseReviewDB{
-		UserID:     review.UserID,
-		CourseID:   review.CourseID,
-		CourseName: review.CourseName,
-		Review:     review.Review,
-		Rating:     review.Rating,
+		CourseID:           review.CourseID,
+		UserID:             review.UserID,
+		OverallRating:      review.OverallRating,
+		Price:              review.Price,
+		HandicapDifficulty: review.HandicapDifficulty,
+		HazardDifficulty:   review.HazardDifficulty,
+		Merch:              review.Merch,
+		Condition:          review.Condition,
+		EnjoymentRating:    review.EnjoymentRating,
+		Vibe:               review.Vibe,
+		RangeRating:        review.RangeRating,
+		Amenities:          review.Amenities,
+		Glizzies:           review.Glizzies,
+		ReviewText:         review.ReviewText,
 	}
 
 	return r.db.WithContext(ctx).Create(&reviewDB).Error
@@ -548,8 +566,18 @@ func (r *reviewRepository) GetByUserAndCourse(ctx context.Context, userID, cours
 
 func (r *reviewRepository) Update(ctx context.Context, review CourseReview) error {
 	updates := map[string]interface{}{
-		"review": review.Review,
-		"rating": review.Rating,
+		"overall_rating":      review.OverallRating,
+		"price":               review.Price,
+		"handicap_difficulty": review.HandicapDifficulty,
+		"hazard_difficulty":   review.HazardDifficulty,
+		"merch":               review.Merch,
+		"condition":           review.Condition,
+		"enjoyment_rating":    review.EnjoymentRating,
+		"vibe":                review.Vibe,
+		"range_rating":        review.RangeRating,
+		"amenities":           review.Amenities,
+		"glizzies":            review.Glizzies,
+		"review_text":         review.ReviewText,
 	}
 
 	result := r.db.WithContext(ctx).Model(&CourseReviewDB{}).Where("id = ?", review.ID).Updates(updates)
@@ -664,13 +692,22 @@ func (r *reviewRepository) GetUserHoleScores(ctx context.Context, userID uint) (
 
 func (r *reviewRepository) dbToReview(reviewDB CourseReviewDB) *CourseReview {
 	return &CourseReview{
-		ID:         reviewDB.ID,
-		UserID:     reviewDB.UserID,
-		CourseID:   reviewDB.CourseID,
-		CourseName: reviewDB.CourseName,
-		Review:     reviewDB.Review,
-		Rating:     reviewDB.Rating,
-		CreatedAt:  reviewDB.CreatedAt,
-		UpdatedAt:  reviewDB.UpdatedAt,
+		ID:                 reviewDB.ID,
+		CourseID:           reviewDB.CourseID,
+		UserID:             reviewDB.UserID,
+		OverallRating:      reviewDB.OverallRating,
+		Price:              reviewDB.Price,
+		HandicapDifficulty: reviewDB.HandicapDifficulty,
+		HazardDifficulty:   reviewDB.HazardDifficulty,
+		Merch:              reviewDB.Merch,
+		Condition:          reviewDB.Condition,
+		EnjoymentRating:    reviewDB.EnjoymentRating,
+		Vibe:               reviewDB.Vibe,
+		RangeRating:        reviewDB.RangeRating,
+		Amenities:          reviewDB.Amenities,
+		Glizzies:           reviewDB.Glizzies,
+		ReviewText:         reviewDB.ReviewText,
+		CreatedAt:          reviewDB.CreatedAt,
+		UpdatedAt:          reviewDB.UpdatedAt,
 	}
 }

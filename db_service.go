@@ -179,6 +179,10 @@ func (ds *DatabaseService) SaveCourseToDatabase(course Course, createdBy *uint) 
 }
 
 func (ds *DatabaseService) GetAllCoursesFromDatabase() ([]Course, error) {
+	if ds.db == nil {
+		return nil, fmt.Errorf("database not connected")
+	}
+	
 	var coursesDB []CourseDB
 	result := ds.db.Find(&coursesDB)
 

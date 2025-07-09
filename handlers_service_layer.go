@@ -244,17 +244,16 @@ func (h *ServiceLayerHandlers) CreateReview(c echo.Context) error {
 		return c.String(http.StatusBadRequest, "Invalid course ID")
 	}
 	
-	rating, err := strconv.Atoi(c.FormValue("rating"))
-	if err != nil {
-		return c.String(http.StatusBadRequest, "Invalid rating")
-	}
 	
 	// Create review object
+	reviewText := c.FormValue("review")
+	overallRating := c.FormValue("overall_rating")
+	
 	review := services.CourseReview{
-		UserID:   *userID,
-		CourseID: uint(courseID),
-		Review:   c.FormValue("review"),
-		Rating:   rating,
+		UserID:        *userID,
+		CourseID:      uint(courseID),
+		ReviewText:    &reviewText,
+		OverallRating: &overallRating,
 	}
 	
 	// Create review using service layer

@@ -38,9 +38,6 @@ func (s *reviewService) CreateReview(ctx context.Context, review CourseReview) e
 		return fmt.Errorf("course not found: %w", err)
 	}
 
-	// Set course name from course data
-	review.CourseName = course.Name
-
 	// Create the review
 	if err := s.reviewRepo.Create(ctx, review); err != nil {
 		return fmt.Errorf("failed to create review: %w", err)
@@ -49,8 +46,8 @@ func (s *reviewService) CreateReview(ctx context.Context, review CourseReview) e
 	// Record activity
 	if err := s.RecordActivity(ctx, review.UserID, "review_created", map[string]interface{}{
 		"course_id":   review.CourseID,
-		"course_name": review.CourseName,
-		"rating":      review.Rating,
+		"course_name": course.Name,
+		"rating":      review.OverallRating,
 	}); err != nil {
 		// Log but don't fail the review creation
 		fmt.Printf("Warning: failed to record activity: %v\n", err)
@@ -107,12 +104,18 @@ func (s *reviewService) UpdateReview(ctx context.Context, review CourseReview) e
 		return fmt.Errorf("failed to update review: %w", err)
 	}
 
+	// Get course info for activity logging
+	course, err := s.courseRepo.GetByID(ctx, review.CourseID)
+	if err != nil {
+		return fmt.Errorf("course not found: %w", err)
+	}
+
 	// Record activity
 	if err := s.RecordActivity(ctx, review.UserID, "review_updated", map[string]interface{}{
 		"review_id":   review.ID,
 		"course_id":   review.CourseID,
-		"course_name": review.CourseName,
-		"rating":      review.Rating,
+		"course_name": course.Name,
+		"rating":      review.OverallRating,
 	}); err != nil {
 		// Log but don't fail the review update
 		fmt.Printf("Warning: failed to record activity: %v\n", err)
@@ -132,6 +135,12 @@ func (s *reviewService) DeleteReview(ctx context.Context, id uint, userID uint) 
 		return fmt.Errorf("user does not have permission to delete this review")
 	}
 
+	// Get course info for activity logging
+	course, err := s.courseRepo.GetByID(ctx, existingReview.CourseID)
+	if err != nil {
+		return fmt.Errorf("course not found: %w", err)
+	}
+
 	// Delete the review
 	if err := s.reviewRepo.Delete(ctx, id); err != nil {
 		return fmt.Errorf("failed to delete review: %w", err)
@@ -141,7 +150,7 @@ func (s *reviewService) DeleteReview(ctx context.Context, id uint, userID uint) 
 	if err := s.RecordActivity(ctx, userID, "review_deleted", map[string]interface{}{
 		"review_id":   id,
 		"course_id":   existingReview.CourseID,
-		"course_name": existingReview.CourseName,
+		"course_name": course.Name,
 	}); err != nil {
 		// Log but don't fail the review deletion
 		fmt.Printf("Warning: failed to record activity: %v\n", err)
@@ -268,16 +277,16 @@ func (s *reviewService) validateReview(review CourseReview) error {
 	if review.CourseID == 0 {
 		return fmt.Errorf("course ID is required")
 	}
-	if strings.TrimSpace(review.Review) == "" {
+	if review.ReviewText == nil || strings.TrimSpace(*review.ReviewText) == "" {
 		return fmt.Errorf("review text is required")
 	}
-	if review.Rating < 1 || review.Rating > 5 {
-		return fmt.Errorf("rating must be between 1 and 5")
+	if review.OverallRating == nil {
+		return fmt.Errorf("overall rating is required")
 	}
-	if len(review.Review) < 10 {
+	if len(*review.ReviewText) < 10 {
 		return fmt.Errorf("review must be at least 10 characters long")
 	}
-	if len(review.Review) > 2000 {
+	if len(*review.ReviewText) > 2000 {
 		return fmt.Errorf("review must be less than 2000 characters")
 	}
 

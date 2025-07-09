@@ -9,7 +9,7 @@ import (
 // Core domain models - these should be moved to a separate package eventually
 type Course struct {
 	Name          string   `json:"name"`
-	ID            int      `json:"ID"`
+	ID            uint     `json:"ID"`
 	Description   string   `json:"description"`
 	Ranks         Ranking  `json:"ranks"`
 	OverallRating string   `json:"overallRating"`
@@ -190,14 +190,31 @@ type AuthConfig struct {
 }
 
 type CourseReview struct {
-	ID         uint     `json:"id"`
-	UserID     uint     `json:"user_id"`
-	CourseID   uint     `json:"course_id"`
-	CourseName string   `json:"course_name"`
-	Review     string   `json:"review"`
-	Rating     int      `json:"rating"`
-	CreatedAt  int64    `json:"created_at"`
-	UpdatedAt  int64    `json:"updated_at"`
+	ID       uint `json:"id"`
+	CourseID uint `json:"course_id"`
+	UserID   uint `json:"user_id"`
+
+	// Overall rating
+	OverallRating *string `json:"overall_rating"`
+
+	// Individual ratings
+	Price              *string `json:"price"`
+	HandicapDifficulty *int    `json:"handicap_difficulty"`
+	HazardDifficulty   *int    `json:"hazard_difficulty"`
+	Merch              *string `json:"merch"`
+	Condition          *string `json:"condition"`
+	EnjoymentRating    *string `json:"enjoyment_rating"`
+	Vibe               *string `json:"vibe"`
+	RangeRating        *string `json:"range_rating"`
+	Amenities          *string `json:"amenities"`
+	Glizzies           *string `json:"glizzies"`
+
+	// Review text
+	ReviewText *string `json:"review_text"`
+
+	// Timestamps
+	CreatedAt int64 `json:"created_at"`
+	UpdatedAt int64 `json:"updated_at"`
 }
 
 type UserCourseScore struct {
