@@ -38,9 +38,12 @@ This is a Go-based golf course management system that allows users to track cour
 
 ### Development Practices
 - Air is used for hot reloading - do not manually restart the application
+- **CRITICAL**: After making any code changes, ALWAYS run `go build .` followed by `go test ./...` to ensure the application builds and all tests pass
+- **Test Flexibility**: Use test flags as needed: `go test -v ./...` (verbose), `go test -cover ./...` (coverage), `go test -run TestName ./...` (specific tests), `go test -timeout 30s ./...` (custom timeout), `go test -count=1 ./...` (disable cache)
+- If tests fail, fix the code to make them pass OR update the tests to reflect the updated logic in the codebase
 - Write code but avoid running/starting the app unless specifically requested
 - Place all documentation in the `docs/` folder
-- Use existing patterns found in handlers.go and models.go
+- Use existing patterns found in handlers.go and models.go. If they are insuffiecient, create new patterns that align with the existing codebase and deprecate or update the old patters.
 
 ### Key Files and Directories
 

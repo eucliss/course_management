@@ -7,6 +7,20 @@ course_management
 
 .env
 .env.prod
+
+# Configuration secrets - never commit these!
+config/*.secrets.env
+config/development
+config/development.env
+config/testing.env
+config/staging.env
+
+# Allow production.env template (contains only placeholders)
+!config/production.env
+
+# Docker secrets
+.docker/secrets/
+docker-compose.override.yml
 .vscode/
 logs/
 .cursor/
@@ -22,3 +36,5 @@ scripts/clean_course_data.py*
 scripts/*.geojson*
 scripts/*.mbtiles*
 scripts/tiles/
+
+*.rdb

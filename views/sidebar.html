@@ -6,9 +6,9 @@
         </div>
         <div class="sidebar-header">
             <div class="nav-item">
-                <button id="how-it-works-button" hx-get="/introduction" hx-target="#main-content">Course Rules</button>
-                <button class="create-course-btn" hx-get="/review-landing" hx-target="#main-content">Review a Course</button>
-                <button class="map-btn" hx-get="/map" hx-target="#main-content">View Map</button>
+                <button id="how-it-works-button" class="btn btn-outline" hx-get="/introduction" hx-target="#main-content">Course Rules</button>
+                <button class="create-course-btn btn btn-outline" hx-get="/review-landing" hx-target="#main-content">Review a Course</button>
+                <button class="map-btn btn btn-outline" hx-get="/map" hx-target="#main-content">View Map</button>
             </div>
         </div>
         <div class="courses-section">
@@ -106,9 +106,9 @@
     </div>
     <div class="sidebar-footer">
         {{ if .User }}
-            <button class="login-btn" hx-get="/profile" hx-target="#main-content">Profile</button>
+            <button class="login-btn btn btn-secondary" hx-get="/profile" hx-target="#main-content">Profile</button>
         {{ else }}
-            <button class="login-btn" hx-get="/login" hx-target="#main-content">Login</button>
+            <button class="login-btn btn btn-secondary" hx-get="/login" hx-target="#main-content">Login</button>
         {{ end }}
     </div>
 </div>
@@ -561,12 +561,12 @@ function generateSidebarCoursesHTML(courses, editPermissions, reviewStatus) {
             actions = '<div class="course-actions">';
             
             if (hasReview) {
-                actions += `<button class="edit-review-btn" hx-get="/review-course/${course.jsonIndex || index}" hx-target="#main-content" title="Edit Review" onclick="event.stopPropagation();">
+                actions += `<button class="edit-review-btn" hx-get="/review-course/${course.databaseIndex || index}" hx-target="#main-content" title="Edit Review" onclick="event.stopPropagation();">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                     </svg>
                 </button>
-                <button class="delete-review-btn" hx-delete="/delete-review/${course.jsonIndex || index}" hx-target="#main-content" hx-confirm="Are you sure you want to delete your review for '${course.Name}'? This action cannot be undone." title="Delete Review" onclick="event.stopPropagation();">
+                <button class="delete-review-btn" hx-delete="/delete-review/${course.databaseIndex || index}" hx-target="#main-content" hx-confirm="Are you sure you want to delete your review for '${course.Name}'? This action cannot be undone." title="Delete Review" onclick="event.stopPropagation();">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="3,6 5,6 21,6"></polyline>
                         <path d="m19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1,2-2h4a2,2 0 0,1,2,2v2"></path>

@@ -947,22 +947,25 @@ func (h *Handlers) AddScore(c echo.Context) error {
 		return c.String(http.StatusNotFound, "Course not found")
 	}
 
-	// Parse score data
-	outScore, _ := strconv.Atoi(c.FormValue("outScore"))
-	inScore, _ := strconv.Atoi(c.FormValue("inScore"))
-	totalScore, _ := strconv.Atoi(c.FormValue("totalScore"))
-	handicap, _ := strconv.ParseFloat(c.FormValue("handicap"), 64)
-
-	if totalScore <= 0 {
-		return c.String(http.StatusBadRequest, "Invalid total score")
+	// Parse and validate score data
+	validator := NewValidator()
+	scoreResult, validationErrors := validator.ValidateScore(
+		c.FormValue("totalScore"),
+		c.FormValue("outScore"),
+		c.FormValue("inScore"),
+		c.FormValue("handicap"),
+	)
+	
+	if len(validationErrors) > 0 {
+		return c.String(http.StatusBadRequest, validationErrors.Error())
 	}
 
 	// Create score data
 	scoreData := ScoreFormData{
-		Score:    totalScore,
-		Handicap: handicap,
-		OutScore: outScore,
-		InScore:  inScore,
+		Score:    scoreResult.TotalScore,
+		Handicap: scoreResult.Handicap,
+		OutScore: scoreResult.OutScore,
+		InScore:  scoreResult.InScore,
 	}
 
 	// Save the score
@@ -973,23 +976,12 @@ func (h *Handlers) AddScore(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Failed to save score: "+err.Error())
 	}
 
-	log.Printf("[ADD_SCORE] ✅ Score %d saved for user %d, course %d", totalScore, *userID, dbCourse.ID)
+	log.Printf("[ADD_SCORE] ✅ Score %d saved for user %d, course %d", scoreResult.TotalScore, *userID, dbCourse.ID)
 
 	// Return success response
 	return c.String(http.StatusOK, "Score added successfully!")
 }
 
-// Helper function to parse integers safely
-func parseInt(s string) int {
-	if s == "" {
-		return 0
-	}
-	val, err := strconv.Atoi(s)
-	if err != nil {
-		return 0
-	}
-	return val
-}
 
 func (h *Handlers) Map(c echo.Context) error {
 	// Get user information for ownership context
@@ -1197,19 +1189,13 @@ func (h *Handlers) UpdateHandicap(c echo.Context) error {
 		return c.String(http.StatusServiceUnavailable, "Database not available")
 	}
 
-	// Parse handicap from form
+	// Parse and validate handicap from form
 	handicapStr := c.FormValue("handicap")
-	if handicapStr == "" {
-		return c.String(http.StatusBadRequest, "Handicap value required")
-	}
-
-	handicap, err := strconv.ParseFloat(handicapStr, 64)
-	if err != nil {
-		return c.String(http.StatusBadRequest, "Invalid handicap value")
-	}
-
-	if handicap < 0 || handicap > 54 {
-		return c.String(http.StatusBadRequest, "Handicap must be between 0 and 54")
+	validator := NewValidator()
+	
+	handicap, validationErr := validator.ValidateHandicap(handicapStr)
+	if validationErr != nil {
+		return c.String(http.StatusBadRequest, validationErr.Message)
 	}
 
 	// Update handicap in database
@@ -1241,9 +1227,13 @@ func (h *Handlers) UpdateDisplayName(c echo.Context) error {
 		return c.String(http.StatusServiceUnavailable, "Database not available")
 	}
 
-	// Parse display name from form
+	// Parse and validate display name from form
 	displayName := c.FormValue("display_name")
-	// Allow empty display name to clear it
+	validator := NewValidator()
+	
+	if validationErr := validator.ValidateDisplayName(displayName); validationErr != nil {
+		return c.String(http.StatusBadRequest, validationErr.Message)
+	}
 
 	// Update display name in database
 	dbService := NewDatabaseService()
@@ -1295,44 +1285,32 @@ func (h *Handlers) CanEditCourse(courseIndex int, userID *uint) bool {
 }
 
 func (h *Handlers) parseFormToCourse(c echo.Context, existingID int) (Course, error) {
-	name := c.FormValue("name")
-	description := c.FormValue("description")
-	overallRating := c.FormValue("overallRating")
-	price := c.FormValue("price")
-	handicapDifficulty, _ := strconv.Atoi(c.FormValue("handicapDifficulty"))
-	hazardDifficulty, _ := strconv.Atoi(c.FormValue("hazardDifficulty"))
-	condition := c.FormValue("condition")
-	merch := c.FormValue("merch")
-	enjoymentRating := c.FormValue("enjoymentRating")
-	vibe := c.FormValue("vibe")
-	rangeRating := c.FormValue("range")
-	amenities := c.FormValue("amenities")
-	glizzies := c.FormValue("glizzies")
-	review := c.FormValue("review")
-	address := c.FormValue("address")
-
-	if name == "" || description == "" || overallRating == "" {
-		return Course{}, fmt.Errorf("missing required fields")
+	validator := NewValidator()
+	
+	// Validate course data using the new validation system
+	courseData, validationErrors := validator.ValidateCourseData(c)
+	if len(validationErrors) > 0 {
+		return Course{}, fmt.Errorf("validation failed: %s", validationErrors.Error())
 	}
 
 	course := Course{
 		ID:            existingID,
-		Name:          name,
-		Description:   description,
-		OverallRating: overallRating,
-		Review:        review,
-		Address:       address,
+		Name:          courseData.Name,
+		Description:   courseData.Description,
+		OverallRating: courseData.OverallRating,
+		Review:        courseData.Review,
+		Address:       courseData.Address,
 		Ranks: Ranking{
-			Price:              price,
-			HandicapDifficulty: handicapDifficulty,
-			HazardDifficulty:   hazardDifficulty,
-			Merch:              merch,
-			Condition:          condition,
-			EnjoymentRating:    enjoymentRating,
-			Vibe:               vibe,
-			Range:              rangeRating,
-			Amenities:          amenities,
-			Glizzies:           glizzies,
+			Price:              courseData.Price,
+			HandicapDifficulty: courseData.HandicapDifficulty,
+			HazardDifficulty:   courseData.HazardDifficulty,
+			Merch:              courseData.Merch,
+			Condition:          courseData.Condition,
+			EnjoymentRating:    courseData.EnjoymentRating,
+			Vibe:               courseData.Vibe,
+			Range:              courseData.Range,
+			Amenities:          courseData.Amenities,
+			Glizzies:           courseData.Glizzies,
 		},
 		Holes:  []Hole{},
 		Scores: []Score{},
@@ -1405,13 +1383,6 @@ func (h *Handlers) MigrateCourses(c echo.Context) error {
 	})
 }
 
-// Helper method to get ownership context from middleware
-func (h *Handlers) getOwnershipContext(c echo.Context) (userID *uint, authenticated bool) {
-	if uid, ok := c.Get("userID").(uint); ok {
-		return &uid, true
-	}
-	return nil, c.Get("authenticated").(bool)
-}
 
 // Helper functions for safely converting nullable values to template-friendly formats
 func safeStringValue(value *string) string {

@@ -179,6 +179,10 @@ func (ds *DatabaseService) SaveCourseToDatabase(course Course, createdBy *uint) 
 }
 
 func (ds *DatabaseService) GetAllCoursesFromDatabase() ([]Course, error) {
+	if ds.db == nil {
+		return nil, fmt.Errorf("database not connected")
+	}
+	
 	var coursesDB []CourseDB
 	result := ds.db.Find(&coursesDB)
 
@@ -282,8 +286,8 @@ func (ds *DatabaseService) MigrateJSONFilesToDatabase(courses []Course) error {
 	return nil
 }
 
-func (ds *DatabaseService) GetDatabaseStats() (map[string]int, error) {
-	stats := make(map[string]int)
+func (ds *DatabaseService) GetDatabaseStats() (map[string]interface{}, error) {
+	stats := make(map[string]interface{})
 
 	var userCount int64
 	if err := ds.db.Model(&User{}).Count(&userCount).Error; err != nil {
@@ -296,6 +300,22 @@ func (ds *DatabaseService) GetDatabaseStats() (map[string]int, error) {
 		return nil, err
 	}
 	stats["courses"] = int(courseCount)
+
+	// Add connection pool statistics
+	if sqlDB, err := ds.db.DB(); err == nil {
+		poolStats := sqlDB.Stats()
+		stats["connection_pool"] = map[string]interface{}{
+			"max_open_connections":     poolStats.MaxOpenConnections,
+			"open_connections":         poolStats.OpenConnections,
+			"connections_in_use":       poolStats.InUse,
+			"idle_connections":         poolStats.Idle,
+			"wait_count":              poolStats.WaitCount,
+			"wait_duration":           poolStats.WaitDuration.String(),
+			"max_idle_closed":         poolStats.MaxIdleClosed,
+			"max_idle_time_closed":    poolStats.MaxIdleTimeClosed,
+			"max_lifetime_closed":     poolStats.MaxLifetimeClosed,
+		}
+	}
 
 	return stats, nil
 }
