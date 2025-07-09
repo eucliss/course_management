@@ -1,21 +1,57 @@
-FROM golang:1.24-alpine
+# Build stage
+FROM golang:1.21-alpine AS builder
 
+# Install build dependencies
+RUN apk add --no-cache git ca-certificates
+
+# Set working directory
 WORKDIR /app
 
-# Copy go mod and sum files
+# Copy go mod files
 COPY go.mod go.sum ./
 
-# Download all dependencies
+# Download dependencies
 RUN go mod download
 
-# Copy the source code
+# Copy source code
 COPY . .
 
 # Build the application
-RUN go build -o main .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+
+# Final stage
+FROM alpine:3.18
+
+# Install runtime dependencies
+RUN apk add --no-cache ca-certificates tzdata curl
+
+# Create non-root user
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -u 1001 -S appuser -G appgroup
+
+# Set working directory
+WORKDIR /app
+
+# Copy built binary from builder stage
+COPY --from=builder /app/main .
+
+# Copy static files and templates
+COPY --chown=appuser:appgroup views ./views
+COPY --chown=appuser:appgroup static ./static
+COPY --chown=appuser:appgroup config ./config
+
+# Create uploads directory
+RUN mkdir -p /app/uploads && chown -R appuser:appgroup /app/uploads
+
+# Switch to non-root user
+USER appuser
 
 # Expose port
-EXPOSE 42069
+EXPOSE 8080
 
-# Command to run the executable
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# Run the application
 CMD ["./main"] 

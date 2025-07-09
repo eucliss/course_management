@@ -7,6 +7,20 @@ course_management
 
 .env
 .env.prod
+
+# Configuration secrets - never commit these!
+config/*.secrets.env
+config/*.env
+#ignore all .env files
+config/development
+config/development.env
+config/testing.env
+config/production.env
+config/staging.env
+
+# Docker secrets
+.docker/secrets/
+docker-compose.override.yml
 .vscode/
 logs/
 .cursor/
