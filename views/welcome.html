@@ -6,6 +6,7 @@
         <link rel="shortcut icon" type="image/png" href="/static/favicon.ico">
         <script src="https://unpkg.com/htmx.org/dist/htmx.js"></script>
         <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet" />
+        <link href="/static/css/design-system.css" rel="stylesheet" />
         <link href="/static/css/map-shared.css" rel="stylesheet" />
         <script src="/static/js/map-utils.js"></script>
         <style>
@@ -22,17 +23,18 @@
             }
             .sidebar {
                 width: 20%;
-                background-color: #FFFCE7;
-                padding: 20px;
-                box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+                background-color: var(--color-neutral-50);
+                padding: var(--space-6);
+                box-shadow: var(--shadow-lg);
                 position: fixed;
                 left: 0;
                 top: 0;
                 height: 100vh;
-                z-index: 100;
+                z-index: var(--z-sticky);
                 display: flex;
                 flex-direction: column;
                 box-sizing: border-box;
+                border-right: 1px solid var(--color-neutral-300);
             }
             .sidebar-content {
                 flex: 1;
@@ -43,25 +45,12 @@
             }
             .sidebar-footer {
                 flex-shrink: 0;
-                padding-top: 20px;
-                border-top: 1px solid rgba(32, 70, 6, 0.1);
-                background-color: #FFFCE7;
+                padding-top: var(--space-6);
+                border-top: 1px solid var(--color-neutral-300);
+                background-color: var(--color-neutral-50);
             }
             .sidebar-footer .login-btn {
-                padding: 8px 16px;
-                background-color: #F0ED0C;
-                color: #204606;
-                border: 1px solid #204606;
-                border-radius: 4px;
-                cursor: pointer;
-                transition: all 0.2s;
-                font-size: 1.1em;
-                font-weight: 500;
                 width: 100%;
-            }
-            .sidebar-footer .login-btn:hover {
-                background-color: #204606;
-                color: #FFFCE7;
             }
             .main-content {
                 width: 80%;
@@ -75,18 +64,22 @@
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                padding: 8px 12px;
-                margin-bottom: 8px;
-                border-radius: 4px;
-                transition: background-color 0.2s ease;
+                padding: var(--space-3) var(--space-4);
+                margin-bottom: var(--space-2);
+                border-radius: var(--radius-base);
+                transition: all var(--transition-base);
+                border: 1px solid transparent;
             }
             .course-item:hover {
-                background-color: rgba(32, 70, 6, 0.1);
+                background-color: var(--color-primary-50);
+                border-color: var(--color-primary-200);
+                transform: translateX(2px);
             }
             .course-item h4 {
                 margin: 0;
-                font-size: 1.1em;
-                color: #204606;
+                font-size: var(--font-size-base);
+                color: var(--color-primary-700);
+                font-weight: var(--font-weight-medium);
             }
             .introduction {
                 max-width: 800px;
@@ -122,51 +115,15 @@
                 display: flex;
                 flex-direction: column;
                 margin-bottom: 20px;
+                margin-top: var(--space-8);
             }
             .sidebar-header h1 {
                 margin: 0 0 15px 0;
                 font-size: 1.5em;
             }
             .nav-item button {
-                padding: 8px 16px;
-                background: none;
-                color: #204606;
-                border: 1px solid #204606;
-                border-radius: 4px;
-                cursor: pointer;
-                transition: all 0.2s;
-                font-size: 1.1em;
-                font-weight: 500;
-                margin-bottom: 10px;
+                margin-bottom: var(--space-3);
                 width: 100%;
-            }
-            .nav-item button:hover {
-                background-color: #204606;
-                color: #FFFCE7;
-            }
-            .create-course-btn {
-                background-color: #F0ED0C;
-                color: #204606;
-            }
-            .create-course-btn:hover {
-                background-color: #204606;
-                color: #FFFCE7;
-            }
-            .map-btn {
-                background-color: #204606;
-                color: #FFFCE7;
-            }
-            .map-btn:hover {
-                background-color: #2d6509;
-                color: #FFFCE7;
-            }
-            .login-btn {
-                background-color: #F0ED0C;
-                color: #204606;
-            }
-            .login-btn:hover {
-                background-color: #204606;
-                color: #FFFCE7;
             }
             /* Map styles are now in /static/css/map-shared.css */
 
@@ -189,39 +146,41 @@
 
             .edit-btn, .delete-btn {
                 background: none;
-                border: none;
+                border: 1px solid transparent;
                 cursor: pointer;
-                padding: 4px;
-                border-radius: 4px;
-                transition: all 0.2s ease;
+                padding: var(--space-2);
+                border-radius: var(--radius-base);
+                transition: all var(--transition-base);
                 opacity: 0.7;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                min-width: 24px;
-                height: 24px;
+                min-width: 32px;
+                height: 32px;
             }
 
             .edit-btn {
-                color: #204606;
+                color: var(--color-primary-600);
             }
 
             .edit-btn:hover {
-                background-color: #204606;
-                color: #FFFCE7;
+                background-color: var(--color-primary-600);
+                color: var(--color-neutral-50);
                 opacity: 1;
-                transform: scale(1.1);
+                transform: scale(1.05);
+                border-color: var(--color-primary-600);
             }
 
             .delete-btn {
-                color: #dc3545;
+                color: var(--color-error-500);
             }
 
             .delete-btn:hover {
-                background-color: #dc3545;
-                color: #FFFCE7;
+                background-color: var(--color-error-500);
+                color: var(--color-neutral-50);
                 opacity: 1;
-                transform: scale(1.1);
+                transform: scale(1.05);
+                border-color: var(--color-error-500);
             }
 
             .edit-btn svg, .delete-btn svg {
@@ -256,32 +215,32 @@
 
             .search-input {
                 width: 100%;
-                padding: 10px 40px 10px 15px;
-                border: 2px solid rgba(32, 70, 6, 0.3);
-                border-radius: 8px;
-                font-size: 0.9em;
-                background-color: #FFFCE7;
-                color: #204606;
-                transition: all 0.2s ease;
+                padding: var(--space-3) var(--space-10) var(--space-3) var(--space-4);
+                border: 1px solid var(--color-neutral-400);
+                border-radius: var(--radius-base);
+                font-size: var(--font-size-sm);
+                background-color: var(--color-neutral-50);
+                color: var(--color-neutral-900);
+                transition: all var(--transition-base);
                 box-sizing: border-box;
             }
 
             .search-input:focus {
                 outline: none;
-                border-color: #204606;
-                box-shadow: 0 0 0 2px rgba(32, 70, 6, 0.1);
+                border-color: var(--color-primary-500);
+                box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
             }
 
             .search-input::placeholder {
-                color: rgba(32, 70, 6, 0.6);
+                color: var(--color-neutral-500);
             }
 
             .search-icon {
                 position: absolute;
-                right: 12px;
+                right: var(--space-3);
                 top: 50%;
                 transform: translateY(-50%);
-                color: rgba(32, 70, 6, 0.6);
+                color: var(--color-neutral-500);
                 pointer-events: none;
             }
 
@@ -296,41 +255,144 @@
             /* Course Toggle Styles */
             .course-toggle {
                 display: flex;
-                gap: 4px;
-                margin-top: 8px;
-                background-color: rgba(32, 70, 6, 0.1);
-                border-radius: 8px;
-                padding: 4px;
+                gap: var(--space-1);
+                margin-top: var(--space-2);
+                background-color: var(--color-neutral-200);
+                border-radius: var(--radius-md);
+                padding: var(--space-1);
             }
 
             .toggle-btn {
                 flex: 1;
-                padding: 8px 12px;
+                padding: var(--space-2) var(--space-3);
                 border: none;
-                border-radius: 6px;
+                border-radius: var(--radius-base);
                 background: transparent;
-                color: rgba(32, 70, 6, 0.7);
-                font-size: 0.85em;
-                font-weight: 500;
+                color: var(--color-neutral-600);
+                font-size: var(--font-size-sm);
+                font-weight: var(--font-weight-medium);
                 cursor: pointer;
-                transition: all 0.2s ease;
+                transition: all var(--transition-base);
                 text-align: center;
             }
 
             .toggle-btn:hover {
-                color: #204606;
-                background-color: rgba(32, 70, 6, 0.05);
+                color: var(--color-primary-700);
+                background-color: var(--color-neutral-100);
             }
 
             .toggle-btn.active {
-                background-color: #204606;
-                color: #FFFCE7;
-                font-weight: 600;
+                background-color: var(--color-primary-600);
+                color: var(--color-neutral-50);
+                font-weight: var(--font-weight-semibold);
+                box-shadow: var(--shadow-sm);
             }
 
             .toggle-btn.active:hover {
-                background-color: #1a3a05;
-                color: #FFFCE7;
+                background-color: var(--color-primary-700);
+            }
+
+            /* Responsive Design */
+            @media (max-width: 768px) {
+                .container {
+                    flex-direction: column;
+                }
+                
+                .sidebar {
+                    position: relative;
+                    width: 100%;
+                    height: auto;
+                    min-height: auto;
+                    padding: var(--space-4);
+                    box-shadow: none;
+                    border-right: none;
+                    border-bottom: 1px solid var(--color-neutral-300);
+                }
+                
+                .sidebar-content {
+                    overflow-y: visible;
+                    min-height: auto;
+                }
+                
+                .courses-section {
+                    margin-top: var(--space-4);
+                }
+                
+                .courses-list-scrollable {
+                    max-height: 300px;
+                    overflow-y: auto;
+                }
+                
+                .main-content {
+                    width: 100%;
+                    margin-left: 0;
+                    padding: var(--space-4);
+                    height: auto;
+                }
+                
+                .course-item {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: var(--space-2);
+                }
+                
+                .course-actions {
+                    width: 100%;
+                    justify-content: flex-end;
+                }
+                
+                .nav-item button {
+                    font-size: var(--font-size-sm);
+                    padding: var(--space-2) var(--space-3);
+                    margin-bottom: var(--space-2);
+                }
+                
+                .search-input {
+                    font-size: var(--font-size-sm);
+                    padding: var(--space-2) var(--space-8) var(--space-2) var(--space-3);
+                }
+                
+                .course-toggle {
+                    margin-top: var(--space-3);
+                }
+                
+                .toggle-btn {
+                    font-size: var(--font-size-xs);
+                    padding: var(--space-2);
+                }
+            }
+            
+            @media (max-width: 480px) {
+                .sidebar {
+                    padding: var(--space-3);
+                }
+                
+                .sidebar-header h1 {
+                    font-size: var(--font-size-lg);
+                }
+                
+                .main-content {
+                    padding: var(--space-3);
+                }
+                
+                .course-item {
+                    padding: var(--space-2) var(--space-3);
+                }
+                
+                .course-item h4 {
+                    font-size: var(--font-size-sm);
+                }
+                
+                .edit-btn, .delete-btn {
+                    min-width: 28px;
+                    height: 28px;
+                    padding: var(--space-1);
+                }
+                
+                .edit-btn svg, .delete-btn svg {
+                    width: 14px;
+                    height: 14px;
+                }
             }
         </style>
     </head>

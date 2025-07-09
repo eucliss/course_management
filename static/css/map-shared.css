@@ -1,3 +1,6 @@
+/* Import design system for consistency */
+@import url('design-system.css');
+
 /* Shared map styles */
 #map {
   position: absolute;
@@ -5,23 +8,25 @@
   bottom: 0;
   width: 100%;
   height: 100%;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
 }
 
 .custom-marker {
-  transition: transform 0.2s ease;
+  transition: transform var(--transition-base) ease;
   will-change: transform;
 }
 
 .custom-marker:hover {
-  transform: translate(-50%, -50%) scale(1.2);
+  transform: translate(-50%, -50%) scale(1.15);
 }
 
 .marker-popup {
-  padding: 8px;
+  padding: var(--space-2);
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
   min-width: 200px;
 }
 
@@ -31,35 +36,35 @@
 
 .popup-header h3 {
   margin: 0;
-  color: #204606;
-  font-size: 16px;
-  font-weight: 600;
+  color: var(--color-primary-700);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: all 0.2s ease;
-  padding: 2px 4px;
-  border-radius: 3px;
+  transition: all var(--transition-base);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
 }
 
 .popup-header h3:hover {
-  color: #2d6509;
-  background-color: rgba(32, 70, 6, 0.1);
+  color: var(--color-primary-800);
+  background-color: var(--color-primary-100);
   transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .marker-popup p {
-  margin: 5px 0 0 0;
-  color: #666;
-  font-size: 12px;
+  margin: var(--space-1) 0 0 0;
+  color: var(--color-neutral-600);
+  font-size: var(--font-size-xs);
 }
 
 .rating-plaque {
-  background-color: #204606;
-  color: black;
-  padding: 8px 12px;
-  border-radius: 4px;
-  font-size: 16px;
-  font-weight: bold;
+  background-color: var(--color-primary-600);
+  color: var(--color-neutral-50);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-base);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
   min-width: 32px;
   text-align: center;
   flex-shrink: 0;
@@ -67,24 +72,24 @@
 }
 
 .mapboxgl-popup-content {
-  border-radius: 4px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  border-radius: var(--radius-base);
+  box-shadow: var(--shadow-base);
 }
 
 /* Enhanced marker popup styling */
 .enhanced-marker-popup {
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-  border: 2px solid rgba(32, 70, 6, 0.2);
-  background: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  border: 2px solid var(--color-primary-200);
+  background: var(--color-neutral-50);
   padding: 0;
   max-width: 280px;
 }
 
 .enhanced-marker-popup .mapboxgl-popup-content {
-  padding: 16px;
-  border-radius: 8px;
-  background: white;
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-neutral-50);
   box-shadow: none;
 }
 
@@ -192,36 +197,36 @@
 }
 
 .custom-course-marker.rating-S {
-  background: #73FF73;
-  color: #204606;
+  background: var(--color-rating-s);
+  color: var(--color-neutral-50);
 }
 
 .custom-course-marker.rating-A {
-  background: #B7FF73;
-  color: #204606;
+  background: var(--color-rating-a);
+  color: var(--color-neutral-50);
 }
 
 .custom-course-marker.rating-B {
-  background: #FFFF73;
-  color: #204606;
+  background: var(--color-rating-b);
+  color: var(--color-neutral-900);
 }
 
 .custom-course-marker.rating-C {
-  background: #FFDA74;
-  color: #204606;
+  background: var(--color-rating-c);
+  color: var(--color-neutral-50);
 }
 
 .custom-course-marker.rating-D {
-  background: #FFB774;
-  color: #204606;
+  background: var(--color-rating-d);
+  color: var(--color-neutral-50);
 }
 
 .custom-course-marker.rating-F {
-  background: #FF7474;
-  color: white;
+  background: var(--color-rating-f);
+  color: var(--color-neutral-50);
 }
 
 .custom-course-marker.rating-none {
-  background: #BABEBC;
-  color: #204606;
+  background: var(--color-neutral-500);
+  color: var(--color-neutral-50);
 }

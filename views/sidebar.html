@@ -6,9 +6,9 @@
         </div>
         <div class="sidebar-header">
             <div class="nav-item">
-                <button id="how-it-works-button" hx-get="/introduction" hx-target="#main-content">Course Rules</button>
-                <button class="create-course-btn" hx-get="/review-landing" hx-target="#main-content">Review a Course</button>
-                <button class="map-btn" hx-get="/map" hx-target="#main-content">View Map</button>
+                <button id="how-it-works-button" class="btn btn-outline" hx-get="/introduction" hx-target="#main-content">Course Rules</button>
+                <button class="create-course-btn btn btn-outline" hx-get="/review-landing" hx-target="#main-content">Review a Course</button>
+                <button class="map-btn btn btn-outline" hx-get="/map" hx-target="#main-content">View Map</button>
             </div>
         </div>
         <div class="courses-section">
@@ -106,9 +106,9 @@
     </div>
     <div class="sidebar-footer">
         {{ if .User }}
-            <button class="login-btn" hx-get="/profile" hx-target="#main-content">Profile</button>
+            <button class="login-btn btn btn-secondary" hx-get="/profile" hx-target="#main-content">Profile</button>
         {{ else }}
-            <button class="login-btn" hx-get="/login" hx-target="#main-content">Login</button>
+            <button class="login-btn btn btn-secondary" hx-get="/login" hx-target="#main-content">Login</button>
         {{ end }}
     </div>
 </div>
