@@ -10,13 +10,13 @@ course_management
 
 # Configuration secrets - never commit these!
 config/*.secrets.env
-config/*.env
-#ignore all .env files
 config/development
 config/development.env
 config/testing.env
-config/production.env
 config/staging.env
+
+# Allow production.env template (contains only placeholders)
+!config/production.env
 
 # Docker secrets
 .docker/secrets/
