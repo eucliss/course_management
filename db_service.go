@@ -48,10 +48,11 @@ func (ds *DatabaseService) GetUserByGoogleID(googleID string) (*User, error) {
 	result := ds.db.Where("google_id = ?", googleID).First(&user)
 
 	if result.Error != nil {
-		if result.Error.Error() == "record not found" {
+		if result.Error == gorm.ErrRecordNotFound {
 			return nil, nil // User doesn't exist
 		}
-		return nil, fmt.Errorf("failed to find user: %v", result.Error)
+		log.Printf("🚨 [SECURITY] Database error in GetUserByGoogleID: %v", result.Error)
+		return nil, fmt.Errorf("failed to find user")
 	}
 
 	return &user, nil
@@ -62,10 +63,11 @@ func (ds *DatabaseService) GetUserByEmail(email string) (*User, error) {
 	result := ds.db.Where("email = ?", email).First(&user)
 
 	if result.Error != nil {
-		if result.Error.Error() == "record not found" {
+		if result.Error == gorm.ErrRecordNotFound {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("failed to find user: %v", result.Error)
+		log.Printf("🚨 [SECURITY] Database error in GetUserByEmail: %v", result.Error)
+		return nil, fmt.Errorf("failed to find user")
 	}
 
 	return &user, nil
@@ -76,10 +78,11 @@ func (ds *DatabaseService) GetUserByID(userID uint) (*User, error) {
 	result := ds.db.First(&user, userID)
 
 	if result.Error != nil {
-		if result.Error.Error() == "record not found" {
+		if result.Error == gorm.ErrRecordNotFound {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("failed to find user: %v", result.Error)
+		log.Printf("🚨 [SECURITY] Database error in GetUserByID: %v", result.Error)
+		return nil, fmt.Errorf("failed to find user")
 	}
 
 	return &user, nil
@@ -303,11 +306,15 @@ func (ds *DatabaseService) GetAllCourses() ([]CourseDB, error) {
 		return nil, fmt.Errorf("database not connected")
 	}
 
+	log.Printf("🔒 [SECURITY] GetAllCourses called - returns all courses without user preloading")
+
 	var courses []CourseDB
-	result := ds.db.Preload("Creator").Preload("Updater").Find(&courses)
+	// SECURITY: Removed Preload("Creator") and Preload("Updater") to prevent data exposure
+	result := ds.db.Find(&courses)
 
 	if result.Error != nil {
-		return nil, fmt.Errorf("failed to fetch courses: %v", result.Error)
+		log.Printf("🚨 [SECURITY] Database error in GetAllCourses: %v", result.Error)
+		return nil, fmt.Errorf("failed to fetch courses")
 	}
 
 	return courses, nil
@@ -318,14 +325,18 @@ func (ds *DatabaseService) GetCourseByID(courseID uint) (*CourseDB, error) {
 		return nil, fmt.Errorf("database not connected")
 	}
 
+	log.Printf("🔒 [SECURITY] GetCourseByID called for course_id=%d", courseID)
+
 	var courseDB CourseDB
-	result := ds.db.Preload("Creator").Preload("Updater").First(&courseDB, courseID)
+	// SECURITY: Removed Preload("Creator") and Preload("Updater") to prevent data exposure
+	result := ds.db.First(&courseDB, courseID)
 
 	if result.Error != nil {
-		if result.Error.Error() == "record not found" {
+		if result.Error == gorm.ErrRecordNotFound {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("failed to find course: %v", result.Error)
+		log.Printf("🚨 [SECURITY] Database error in GetCourseByID: %v", result.Error)
+		return nil, fmt.Errorf("failed to find course")
 	}
 
 	return &courseDB, nil
@@ -336,14 +347,39 @@ func (ds *DatabaseService) GetCourseByName(courseName string) (*CourseDB, error)
 		return nil, fmt.Errorf("database not connected")
 	}
 
+	log.Printf("🔒 [SECURITY] GetCourseByName called for course='%s'", courseName)
+
 	var courseDB CourseDB
 	result := ds.db.Where("name = ?", courseName).First(&courseDB)
 
 	if result.Error != nil {
-		if result.Error.Error() == "record not found" {
+		if result.Error == gorm.ErrRecordNotFound {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("failed to find course: %v", result.Error)
+		log.Printf("🚨 [SECURITY] Database error in GetCourseByName: %v", result.Error)
+		return nil, fmt.Errorf("failed to find course")
+	}
+
+	return &courseDB, nil
+}
+
+// GetCourseByNameAndAddress provides more specific course identification
+func (ds *DatabaseService) GetCourseByNameAndAddress(courseName, courseAddress string) (*CourseDB, error) {
+	if ds.db == nil {
+		return nil, fmt.Errorf("database not connected")
+	}
+
+	log.Printf("🔒 [SECURITY] GetCourseByNameAndAddress called for course='%s' at address='%s'", courseName, courseAddress)
+
+	var courseDB CourseDB
+	result := ds.db.Where("name = ? AND address = ?", courseName, courseAddress).First(&courseDB)
+
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		log.Printf("🚨 [SECURITY] Database error in GetCourseByNameAndAddress: %v", result.Error)
+		return nil, fmt.Errorf("failed to find course")
 	}
 
 	return &courseDB, nil
@@ -493,11 +529,35 @@ func (ds *DatabaseService) GetCoursesWithOwnership() ([]CourseDB, error) {
 		return nil, fmt.Errorf("database not connected")
 	}
 
+	log.Printf("🚨 [SECURITY] GetCoursesWithOwnership called - DEPRECATED: use GetCoursesWithOwnershipForUser instead")
+
 	var courses []CourseDB
-	result := ds.db.Preload("Creator").Preload("Updater").Find(&courses)
+	// SECURITY: Removed Preload("Creator") and Preload("Updater") to prevent data exposure
+	result := ds.db.Find(&courses)
 
 	if result.Error != nil {
-		return nil, fmt.Errorf("failed to fetch courses with ownership: %v", result.Error)
+		log.Printf("🚨 [SECURITY] Database error in GetCoursesWithOwnership: %v", result.Error)
+		return nil, fmt.Errorf("failed to fetch courses with ownership")
+	}
+
+	return courses, nil
+}
+
+// GetCoursesWithOwnershipForUser - Secure version that only returns ownership info for requesting user
+func (ds *DatabaseService) GetCoursesWithOwnershipForUser(requestingUserID uint) ([]CourseDB, error) {
+	if ds.db == nil {
+		return nil, fmt.Errorf("database not connected")
+	}
+
+	log.Printf("🔒 [SECURITY] GetCoursesWithOwnershipForUser called for user_id=%d", requestingUserID)
+
+	var courses []CourseDB
+	// Only load creator info for courses owned by the requesting user
+	result := ds.db.Preload("Creator", "id = ?", requestingUserID).Find(&courses)
+
+	if result.Error != nil {
+		log.Printf("🚨 [SECURITY] Database error in GetCoursesWithOwnershipForUser: %v", result.Error)
+		return nil, fmt.Errorf("failed to fetch courses")
 	}
 
 	return courses, nil
@@ -538,10 +598,11 @@ func (ds *DatabaseService) IsUserCourseOwner(userID uint, courseName string) (bo
 	result := ds.db.Where("name = ? AND created_by = ?", courseName, userID).First(&courseDB)
 
 	if result.Error != nil {
-		if result.Error.Error() == "record not found" {
+		if result.Error == gorm.ErrRecordNotFound {
 			return false, nil // User doesn't own this course
 		}
-		return false, fmt.Errorf("failed to check course ownership: %v", result.Error)
+		log.Printf("🚨 [SECURITY] Database error in IsUserCourseOwner: %v", result.Error)
+		return false, fmt.Errorf("failed to check course ownership")
 	}
 
 	return true, nil

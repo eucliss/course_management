@@ -217,16 +217,22 @@ func (h *Handlers) Home(c echo.Context) error {
 		reviewService := NewReviewService()
 		userReviews, err := reviewService.GetUserReviews(*userID)
 		if err == nil {
-			// Create a map of reviewed course names
-			reviewedCourseNames := make(map[string]bool)
+			// Create a map of reviewed course IDs
+			reviewedCourseIDs := make(map[uint]bool)
 			for _, review := range userReviews {
-				reviewedCourseNames[review.CourseName] = true
+				reviewedCourseIDs[review.CourseID] = true
 			}
 
-			// Mark courses as reviewed in the AllCoursesReviewStatus map
+			// Mark courses as reviewed by checking each course's database ID
+			dbService := NewDatabaseService()
 			for i, course := range allCourses {
-				if reviewedCourseNames[course.Name] {
-					data.AllCoursesReviewStatus[i] = true
+				// Find database course ID by name and address
+				dbCourse, err := dbService.GetCourseByNameAndAddress(course.Name, course.Address)
+				if err == nil && dbCourse != nil {
+					// Check if this specific course ID has been reviewed
+					if reviewedCourseIDs[dbCourse.ID] {
+						data.AllCoursesReviewStatus[i] = true
+					}
 				}
 			}
 		}
@@ -456,8 +462,8 @@ func (h *Handlers) GetCourse(c echo.Context) error {
 		// Get the user's review for this course
 		reviewService := NewReviewService()
 
-		// First, find the database course ID by name
-		dbCourse, err := dbService.GetCourseByName(baseCourse.Name)
+		// First, find the database course ID by name and address
+		dbCourse, err := dbService.GetCourseByNameAndAddress(baseCourse.Name, baseCourse.Address)
 		if err == nil && dbCourse != nil {
 			log.Printf("🔍 [GETCOURSE] Looking for review by user %d for course %d (%s)", *userID, dbCourse.ID, baseCourse.Name)
 			userReview, err := reviewService.GetUserReviewForCourse(*userID, dbCourse.ID)
@@ -741,17 +747,19 @@ func (h *Handlers) DeleteReview(c echo.Context) error {
 		return c.String(http.StatusBadRequest, "Invalid course ID")
 	}
 
-	// Get the course name from the JSON array
-	courseName := (*h.courses)[courseIndex].Name
+	// Get the course from the JSON array
+	course := (*h.courses)[courseIndex]
+	courseName := course.Name
+	courseAddress := course.Address
 
 	// Validate that the database is available
 	if DB == nil {
 		return c.String(http.StatusServiceUnavailable, "Database not available")
 	}
 
-	// Find the database course by name
+	// Find the database course by name and address
 	dbService := NewDatabaseService()
-	dbCourse, err := dbService.GetCourseByName(courseName)
+	dbCourse, err := dbService.GetCourseByNameAndAddress(courseName, courseAddress)
 	if err != nil {
 		log.Printf("[DELETE_REVIEW] ERROR: Course not found in database: %v", err)
 		return c.String(http.StatusNotFound, "Course not found")
@@ -900,16 +908,18 @@ func (h *Handlers) AddScore(c echo.Context) error {
 		return c.String(http.StatusBadRequest, "Invalid course ID")
 	}
 
-	// Get the course name to find the database course
-	courseName := (*h.courses)[courseIndex].Name
+	// Get the course from the JSON array
+	course := (*h.courses)[courseIndex]
+	courseName := course.Name
+	courseAddress := course.Address
 
-	// Find the database course by name
+	// Find the database course by name and address
 	if DB == nil {
 		return c.String(http.StatusServiceUnavailable, "Database not available")
 	}
 
 	dbService := NewDatabaseService()
-	dbCourse, err := dbService.GetCourseByName(courseName)
+	dbCourse, err := dbService.GetCourseByNameAndAddress(courseName, courseAddress)
 	if err != nil {
 		log.Printf("[ADD_SCORE] ERROR: Course not found in database: %v", err)
 		return c.String(http.StatusNotFound, "Course not found")
@@ -1131,16 +1141,22 @@ func (h *Handlers) Map(c echo.Context) error {
 		reviewService := NewReviewService()
 		userReviews, err := reviewService.GetUserReviews(*userID)
 		if err == nil {
-			// Create a map of reviewed course names
-			reviewedCourseNames := make(map[string]bool)
+			// Create a map of reviewed course IDs
+			reviewedCourseIDs := make(map[uint]bool)
 			for _, review := range userReviews {
-				reviewedCourseNames[review.CourseName] = true
+				reviewedCourseIDs[review.CourseID] = true
 			}
 
-			// Mark courses as reviewed in the AllCoursesReviewStatus map
+			// Mark courses as reviewed by checking each course's database ID
+			dbService := NewDatabaseService()
 			for i, course := range allCourses {
-				if reviewedCourseNames[course.Name] {
-					data.AllCoursesReviewStatus[i] = true
+				// Find database course ID by name and address
+				dbCourse, err := dbService.GetCourseByNameAndAddress(course.Name, course.Address)
+				if err == nil && dbCourse != nil {
+					// Check if this specific course ID has been reviewed
+					if reviewedCourseIDs[dbCourse.ID] {
+						data.AllCoursesReviewStatus[i] = true
+					}
 				}
 			}
 		}
@@ -1442,12 +1458,15 @@ func (h *Handlers) ReviewSpecificCourseForm(c echo.Context) error {
 	var dbCourseID uint
 	if DB != nil {
 		dbService := NewDatabaseService()
-		dbCourse, err := dbService.GetCourseByName(course.Name)
+		// Use name + address for unique identification
+		dbCourse, err := dbService.GetCourseByNameAndAddress(course.Name, course.Address)
 		if err == nil && dbCourse != nil {
 			dbCourseID = dbCourse.ID
+			log.Printf("✅ [REVIEW_COURSE] Found unique course: '%s' at '%s' with ID %d", course.Name, course.Address, dbCourseID)
 		} else {
 			// Fallback to a computed ID if course not in database
 			dbCourseID = uint(courseIndex + 1)
+			log.Printf("⚠️ [REVIEW_COURSE] Course '%s' at '%s' not found in database, using fallback ID %d", course.Name, course.Address, dbCourseID)
 		}
 	} else {
 		dbCourseID = uint(courseIndex + 1)
@@ -1467,7 +1486,7 @@ func (h *Handlers) ReviewSpecificCourseForm(c echo.Context) error {
 
 	if DB != nil {
 		dbService := NewDatabaseService()
-		dbCourse, err := dbService.GetCourseByName(course.Name)
+		dbCourse, err := dbService.GetCourseByNameAndAddress(course.Name, course.Address)
 		if err == nil && dbCourse != nil {
 			reviewService := NewReviewService()
 

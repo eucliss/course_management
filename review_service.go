@@ -162,10 +162,13 @@ func (rs *ReviewService) DeleteUserReview(userID uint, courseID uint) error {
 }
 
 // GetUserReviews gets all reviews by a specific user
+// SECURITY: This method should only be called with the current user's ID
 func (rs *ReviewService) GetUserReviews(userID uint) ([]UserReviewWithCourse, error) {
 	if rs.db == nil {
 		return nil, fmt.Errorf("database not connected")
 	}
+
+	log.Printf("🔒 [SECURITY] GetUserReviews called for user_id=%d", userID)
 
 	var reviews []UserReviewWithCourse
 	result := rs.db.Table("course_reviews").
@@ -179,22 +182,60 @@ func (rs *ReviewService) GetUserReviews(userID uint) ([]UserReviewWithCourse, er
 		return nil, fmt.Errorf("failed to get user reviews: %v", result.Error)
 	}
 
+	log.Printf("🔒 [SECURITY] Returning %d reviews for user_id=%d", len(reviews), userID)
+	return reviews, nil
+}
+
+// GetUserReviewsWithAuth gets all reviews by a specific user with authorization check
+// SECURITY: This method validates that the requesting user can access the reviews
+func (rs *ReviewService) GetUserReviewsWithAuth(requestingUserID uint, targetUserID uint) ([]UserReviewWithCourse, error) {
+	if rs.db == nil {
+		return nil, fmt.Errorf("database not connected")
+	}
+
+	// SECURITY CHECK: Users can only access their own reviews
+	if requestingUserID != targetUserID {
+		log.Printf("🚨 [SECURITY] Access denied: user %d attempted to access reviews for user %d", requestingUserID, targetUserID)
+		return nil, fmt.Errorf("access denied: you can only access your own reviews")
+	}
+
+	log.Printf("🔒 [SECURITY] GetUserReviewsWithAuth: user %d accessing own reviews", requestingUserID)
+
+	var reviews []UserReviewWithCourse
+	result := rs.db.Table("course_reviews").
+		Select("course_reviews.*, course_dbs.name as course_name, course_dbs.address as course_address").
+		Joins("JOIN course_dbs ON course_reviews.course_id = course_dbs.id").
+		Where("course_reviews.user_id = ?", targetUserID).
+		Order("course_reviews.created_at DESC").
+		Scan(&reviews)
+
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed to get user reviews: %v", result.Error)
+	}
+
+	log.Printf("🔒 [SECURITY] Returning %d reviews for user_id=%d", len(reviews), targetUserID)
 	return reviews, nil
 }
 
 // GetCourseReviews gets all reviews for a specific course
+// SECURITY WARNING: This function returns ALL reviews for a course including user information
+// Consider using GetCourseReviewSummary for public data or implement proper authorization
 func (rs *ReviewService) GetCourseReviews(courseID uint) ([]CourseReview, error) {
 	if rs.db == nil {
 		return nil, fmt.Errorf("database not connected")
 	}
 
+	log.Printf("🚨 [SECURITY] GetCourseReviews called for course_id=%d - returns all user reviews", courseID)
+
 	var reviews []CourseReview
-	result := rs.db.Preload("User").Where("course_id = ?", courseID).Order("created_at DESC").Find(&reviews)
+	// SECURITY: Removed Preload("User") to avoid exposing user personal information
+	result := rs.db.Where("course_id = ?", courseID).Order("created_at DESC").Find(&reviews)
 
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed to get course reviews: %v", result.Error)
 	}
 
+	log.Printf("🚨 [SECURITY] Returning %d reviews for course_id=%d", len(reviews), courseID)
 	return reviews, nil
 }
 
@@ -287,7 +328,7 @@ func (rs *ReviewService) AddScore(userID uint, courseID uint, formData ScoreForm
 	log.Printf("✅ Added score %d for user %d, course %d", formData.Score, userID, courseID)
 
 	// Create activity record
-	rs.createActivity(userID, "score_posted", &courseID, map[string]interface{}{
+	rs.createActivity(userID, "score_posted", &courseID, map[string]any{
 		"score": formData.Score,
 	})
 
@@ -344,7 +385,7 @@ func (rs *ReviewService) AddScores(userID uint, courseID uint, scores []ScoreFor
 
 	// Create activity record for the first score
 	if len(scores) > 0 {
-		rs.createActivity(userID, "score_posted", &courseID, map[string]interface{}{
+		rs.createActivity(userID, "score_posted", &courseID, map[string]any{
 			"score": scores[0].Score,
 		})
 	}
@@ -483,7 +524,7 @@ func (rs *ReviewService) GetAvailableCoursesForReview(userID uint) ([]CourseDB, 
 }
 
 // Helper function to create activity records
-func (rs *ReviewService) createActivity(userID uint, activityType string, courseID *uint, data interface{}) {
+func (rs *ReviewService) createActivity(userID uint, activityType string, courseID *uint, data any) {
 	if rs.db == nil {
 		return
 	}
@@ -565,7 +606,7 @@ func ParseScoreFormData(getFormValue func(string) string) []ScoreFormData {
 	}
 
 	// Parse scores array - look for scores[0].score, scores[1].score, etc.
-	for i := 0; i < 10; i++ { // Max 10 scores (reasonable limit)
+	for i := range 10 { // Max 10 scores (reasonable limit)
 		scoreStr := getFormValue(fmt.Sprintf("scores[%d].score", i))
 		if scoreStr == "" {
 			continue // No more scores
@@ -605,7 +646,7 @@ func ParseHoleFormData(getFormValue func(string) string) []HoleFormData {
 	}
 
 	// Parse holes array - look for holes[0].number, holes[1].number, etc.
-	for i := 0; i < 18; i++ { // Max 18 holes
+	for i := range 18 { // Max 18 holes
 		numberStr := getFormValue(fmt.Sprintf("holes[%d].number", i))
 		if numberStr == "" {
 			continue // No more holes
