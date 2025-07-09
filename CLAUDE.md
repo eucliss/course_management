@@ -38,9 +38,10 @@ This is a Go-based golf course management system that allows users to track cour
 
 ### Development Practices
 - Air is used for hot reloading - do not manually restart the application
+- Build the application with `go build .` to ensure no errors
 - Write code but avoid running/starting the app unless specifically requested
 - Place all documentation in the `docs/` folder
-- Use existing patterns found in handlers.go and models.go
+- Use existing patterns found in handlers.go and models.go. If they are insuffiecient, create new patterns that align with the existing codebase and deprecate or update the old patters.
 
 ### Key Files and Directories
 

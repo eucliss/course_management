@@ -24,7 +24,7 @@
         <div class="courses-grid">
             {{ range $index, $course := .AvailableCourses }}
             <div class="course-card clickable-card" 
-                 hx-get="/review-course/{{ $course.JSONIndex }}" 
+                 hx-get="/review-course/{{ $index }}" 
                  hx-target="#main-content">
                 <div class="course-card-header">
                     <h3>{{ $course.Name }}</h3>
@@ -1022,7 +1022,7 @@
             
             return courses.map(course => `
                 <div class="course-card clickable-card" 
-                     hx-get="/review-course/${course.jsonIndex}" 
+                     hx-get="/review-course/${course.databaseIndex}" 
                      hx-target="#main-content">
                     <div class="course-card-header">
                         <h3>${course.Name || course.name}</h3>
