@@ -141,12 +141,16 @@ func (suite *CourseServiceTestSuite) SetupSuite() {
 // SetupTest sets up each individual test
 func (suite *CourseServiceTestSuite) SetupTest() {
 	suite.mockRepo = new(MockCourseRepository)
-	suite.service = &courseService{courseRepo: suite.mockRepo}
+	mockUserRepo := new(MockUserRepository)
+	suite.service = NewCourseService(suite.mockRepo, mockUserRepo)
 }
 
 // TearDownTest cleans up after each test
 func (suite *CourseServiceTestSuite) TearDownTest() {
 	suite.mockRepo.AssertExpectations(suite.T())
+	// Clear any remaining mock expectations
+	suite.mockRepo.ExpectedCalls = nil
+	suite.mockRepo.Calls = nil
 }
 
 // TestCreateCourse tests course creation
@@ -238,28 +242,25 @@ func (suite *CourseServiceTestSuite) TestCreateCourse() {
 		testingPkg.LogTestStart(suite.T(), "CourseService.CreateCourse_RepositoryError")
 
 		course := Course{
-			Name:        "Test Course",
-			Address:     "123 Test St",
+			Name:        "Test Course Repo Error",
+			Address:     "123 Test St Repo Error",
 			Description: "A test course",
 			OverallRating: "A",
 		}
 		userID := uint(1)
 
-		expectedErr := assert.AnError
-		suite.mockRepo.On("Exists", suite.ctx, "Test Course", "123 Test St").Return(false, nil)
-		suite.mockRepo.On("Create", suite.ctx, mock.AnythingOfType("Course"), &userID).Return(expectedErr)
+		expectedErr := fmt.Errorf("repository error")
+		suite.mockRepo.On("Exists", suite.ctx, "Test Course Repo Error", "123 Test St Repo Error").Return(false, nil)
+		suite.mockRepo.On("Create", suite.ctx, mock.AnythingOfType("Course"), mock.AnythingOfType("*uint")).Return(expectedErr)
 
 		// Test validation passes
 		err := validateCourseBasic(course)
 		testingPkg.AssertNoError(suite.T(), err, "Course should pass validation")
 
-		// Test repository error propagation
-		_, err = suite.mockRepo.Exists(suite.ctx, course.Name, course.Address)
-		testingPkg.AssertNoError(suite.T(), err, "Exists check should succeed")
-		
-		err = suite.mockRepo.Create(suite.ctx, course, &userID)
+		// Test repository error propagation through service
+		err = suite.service.CreateCourse(suite.ctx, course, &userID)
 		testingPkg.AssertError(suite.T(), err, "Should propagate repository error")
-		testingPkg.AssertEqual(suite.T(), expectedErr, err, "Error should match expected error")
+		testingPkg.AssertContains(suite.T(), err.Error(), "failed to create course", "Error should mention course creation failure")
 
 		testingPkg.LogTestEnd(suite.T(), "CourseService.CreateCourse_RepositoryError")
 	})

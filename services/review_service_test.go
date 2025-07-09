@@ -112,11 +112,13 @@ func (suite *ReviewServiceTestSuite) TestCreateReview() {
 	suite.Run("Success", func() {
 		testingPkg.LogTestStart(suite.T(), "ReviewService.CreateReview_Success")
 
+		reviewText := "Great course!"
+		overallRating := "A"
 		review := CourseReview{
-			UserID:   1,
-			CourseID: 1,
-			Review:   "Great course!",
-			Rating:   5,
+			UserID:        1,
+			CourseID:      1,
+			ReviewText:    &reviewText,
+			OverallRating: &overallRating,
 		}
 
 		suite.mockRepo.On("Create", suite.ctx, review).Return(nil)
@@ -130,11 +132,13 @@ func (suite *ReviewServiceTestSuite) TestCreateReview() {
 	suite.Run("ValidationError", func() {
 		testingPkg.LogTestStart(suite.T(), "ReviewService.CreateReview_Validation")
 
+		reviewText := ""
+		overallRating := "F" // Invalid: rating too high
 		review := CourseReview{
 			UserID:   0, // Invalid: no user ID
 			CourseID: 1,
-			Review:   "",
-			Rating:   6, // Invalid: rating too high
+			ReviewText: &reviewText,
+			OverallRating: &overallRating,
 		}
 
 		err := validateReview(review)
@@ -150,9 +154,11 @@ func (suite *ReviewServiceTestSuite) TestGetUserReviews() {
 		testingPkg.LogTestStart(suite.T(), "ReviewService.GetUserReviews_Success")
 
 		userID := uint(1)
+		rating1 := "B"
+		rating2 := "A"
 		expectedReviews := []CourseReview{
-			{ID: 1, UserID: userID, CourseID: 1, Rating: 4},
-			{ID: 2, UserID: userID, CourseID: 2, Rating: 5},
+			{ID: 1, UserID: userID, CourseID: 1, OverallRating: &rating1},
+			{ID: 2, UserID: userID, CourseID: 2, OverallRating: &rating2},
 		}
 
 		suite.mockRepo.On("GetByUser", suite.ctx, userID).Return(expectedReviews, nil)
@@ -184,12 +190,14 @@ func (suite *ReviewServiceTestSuite) TestUpdateReview() {
 	suite.Run("Success", func() {
 		testingPkg.LogTestStart(suite.T(), "ReviewService.UpdateReview_Success")
 
+		reviewText := "Updated review text"
+		overallRating := "B"
 		review := CourseReview{
 			ID:       1,
 			UserID:   1,
 			CourseID: 1,
-			Review:   "Updated review text",
-			Rating:   4,
+			ReviewText: &reviewText,
+			OverallRating: &overallRating,
 		}
 
 		suite.mockRepo.On("Update", suite.ctx, review).Return(nil)
@@ -285,7 +293,7 @@ func validateReview(review CourseReview) error {
 	if review.CourseID == 0 {
 		return assert.AnError
 	}
-	if review.Rating < 1 || review.Rating > 5 {
+	if review.OverallRating == nil || *review.OverallRating == "F" {
 		return assert.AnError
 	}
 	return nil
@@ -304,6 +312,18 @@ func TestReviewService(t *testing.T) {
 func TestReviewValidation(t *testing.T) {
 	testingPkg.SkipIfShort(t)
 
+	// Declare variables for pointers
+	reviewText1 := "Great course!"
+	overallRating1 := "A"
+	reviewText2 := "Great course!"
+	overallRating2 := "A"
+	reviewText3 := "Great course!"
+	overallRating3 := "A"
+	reviewText4 := "Poor course"
+	overallRating4 := "F"
+	reviewText5 := "Amazing course"
+	overallRating5 := "F" // Invalid rating
+
 	testCases := []struct {
 		name        string
 		review      CourseReview
@@ -315,8 +335,8 @@ func TestReviewValidation(t *testing.T) {
 			review: CourseReview{
 				UserID:   1,
 				CourseID: 1,
-				Review:   "Great course!",
-				Rating:   5,
+				ReviewText: &reviewText1,
+				OverallRating: &overallRating1,
 			},
 			shouldError: false,
 		},
@@ -325,8 +345,8 @@ func TestReviewValidation(t *testing.T) {
 			review: CourseReview{
 				UserID:   0,
 				CourseID: 1,
-				Review:   "Great course!",
-				Rating:   5,
+				ReviewText: &reviewText2,
+				OverallRating: &overallRating2,
 			},
 			shouldError: true,
 		},
@@ -335,8 +355,8 @@ func TestReviewValidation(t *testing.T) {
 			review: CourseReview{
 				UserID:   1,
 				CourseID: 0,
-				Review:   "Great course!",
-				Rating:   5,
+				ReviewText: &reviewText3,
+				OverallRating: &overallRating3,
 			},
 			shouldError: true,
 		},
@@ -345,8 +365,8 @@ func TestReviewValidation(t *testing.T) {
 			review: CourseReview{
 				UserID:   1,
 				CourseID: 1,
-				Review:   "Poor course",
-				Rating:   0,
+				ReviewText: &reviewText4,
+				OverallRating: &overallRating4,
 			},
 			shouldError: true,
 		},
@@ -355,8 +375,8 @@ func TestReviewValidation(t *testing.T) {
 			review: CourseReview{
 				UserID:   1,
 				CourseID: 1,
-				Review:   "Amazing course",
-				Rating:   6,
+				ReviewText: &reviewText5,
+				OverallRating: &overallRating5,
 			},
 			shouldError: true,
 		},

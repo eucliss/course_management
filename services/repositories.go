@@ -163,13 +163,13 @@ func (r *courseRepository) GetAll(ctx context.Context) ([]Course, error) {
 	}
 
 	courses := make([]Course, 0, len(coursesDB))
-	for i, courseDB := range coursesDB {
+	for _, courseDB := range coursesDB {
 		course, err := r.dbToCourse(courseDB)
 		if err != nil {
 			log.Printf("Warning: failed to unmarshal course %d: %v", courseDB.ID, err)
 			continue
 		}
-		course.ID = uint(i) // Maintain array index for compatibility
+		course.ID = courseDB.ID // Use actual database ID
 		courses = append(courses, *course)
 	}
 

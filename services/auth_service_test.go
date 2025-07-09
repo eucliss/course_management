@@ -288,7 +288,7 @@ func TestGoogleTokenValidation(t *testing.T) {
 		},
 		{
 			name:        "ValidFormat",
-			token:       "eyJhbGciOiJSUzI1NiIsImtpZCI6IjdkYzAyYzk5ZjQ4ZjZiOGQzOGNkMzJhNjcxOWY2ZGE0Nzg4MzJhZjkiLCJ0eXAiOiJKV1QifQ",
+			token:       "eyJhbGciOiJSUzI1NiIsImtpZCI6IjdkYzAyYzk5ZjQ4ZjZiOGQzOGNkMzJhNjcxOWY2ZGE0Nzg4MzJhZjkiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJhY2NvdW50cy5nb29nbGUuY29tIiwiYXVkIjoiY2xpZW50LWlkLmdvb2dsZXVzZXJjb250ZW50LmNvbSJ9.signature-part",
 			shouldError: false, // Would normally validate with Google, but we'll assume format is good
 		},
 	}
