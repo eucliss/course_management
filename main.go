@@ -222,6 +222,23 @@ func main() {
 		}
 	}
 
+	// Initialize cache service
+	cacheConfig := &CacheConfig{
+		RedisURL:     cfg.Cache.RedisURL,
+		EnableRedis:  cfg.Cache.EnableRedis,
+		EnableMemory: cfg.Cache.EnableMemory,
+		DefaultTTL:   cfg.Cache.DefaultTTL,
+		MaxMemoryMB:  cfg.Cache.MaxMemoryMB,
+	}
+	
+	cacheService := InitCacheService(cacheConfig)
+	log.Printf("✅ Cache service initialized")
+	
+	// Test cache health
+	if err := cacheService.HealthCheck(); err != nil {
+		log.Printf("⚠️ Cache health check failed: %v", err)
+	}
+
 	sessionService := NewSessionService()
 	handlers := NewHandlers()
 

@@ -19,6 +19,7 @@ type Config struct {
 	Mapbox      MapboxConfig   `mapstructure:"mapbox"`
 	Logging     LoggingConfig  `mapstructure:"logging"`
 	Paths       PathsConfig    `mapstructure:"paths"`
+	Cache       CacheConfig    `mapstructure:"cache"`
 }
 
 // ServerConfig contains server-related configuration
@@ -88,6 +89,15 @@ type PathsConfig struct {
 	TemplatesDir string `mapstructure:"templates_dir"`
 }
 
+// CacheConfig contains cache configuration
+type CacheConfig struct {
+	RedisURL     string        `mapstructure:"redis_url"`
+	EnableRedis  bool          `mapstructure:"enable_redis"`
+	EnableMemory bool          `mapstructure:"enable_memory"`
+	DefaultTTL   time.Duration `mapstructure:"default_ttl"`
+	MaxMemoryMB  int           `mapstructure:"max_memory_mb"`
+}
+
 // LoadConfig loads configuration from environment variables with validation
 func LoadConfig() (*Config, error) {
 	config := &Config{
@@ -144,6 +154,13 @@ func LoadConfig() (*Config, error) {
 			StaticDir:    getEnvOrDefault("STATIC_DIR", "static"),
 			UploadsDir:   getEnvOrDefault("UPLOADS_DIR", "uploads"),
 			TemplatesDir: getEnvOrDefault("TEMPLATES_DIR", "templates"),
+		},
+		Cache: CacheConfig{
+			RedisURL:     getEnvOrDefault("REDIS_URL", "redis://localhost:6379"),
+			EnableRedis:  getBoolOrDefault("CACHE_ENABLE_REDIS", true),
+			EnableMemory: getBoolOrDefault("CACHE_ENABLE_MEMORY", true),
+			DefaultTTL:   getDurationOrDefault("CACHE_DEFAULT_TTL", 30*time.Minute),
+			MaxMemoryMB:  getIntOrDefault("CACHE_MAX_MEMORY_MB", 100),
 		},
 	}
 
