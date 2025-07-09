@@ -47,46 +47,27 @@ func (h *Handlers) HomeOptimized(c echo.Context) error {
 }
 
 func (h *Handlers) loadCoursesOptimized(offset, limit int, userID *uint) ([]Course, int64, error) {
-	if h.courseService.useDB && h.courseService.dbService != nil {
-		// Use optimized database loading
-		coursesDB, totalCount, err := h.courseService.dbService.GetCoursesWithPagination(offset, limit, false)
-		if err != nil {
-			return nil, 0, err
-		}
-
-		var courses []Course
-		for i, courseDB := range coursesDB {
-			var course Course
-			if err := json.Unmarshal([]byte(courseDB.CourseData), &course); err != nil {
-				log.Printf("Warning: failed to unmarshal course %d: %v", courseDB.ID, err)
-				continue
-			}
-			course.ID = offset + i // Maintain consistent indexing
-			courses = append(courses, course)
-		}
-
-		log.Printf("✅ Loaded %d courses from database (page %d-%d of %d total)",
-			len(courses), offset, offset+limit, totalCount)
-		return courses, totalCount, nil
-	}
-
-	// Fallback to existing method for JSON files
-	allCourses, err := h.courseService.LoadCoursesFromJSON()
+	// Use optimized database loading
+	dbService := NewDatabaseService()
+	coursesDB, totalCount, err := dbService.GetCoursesWithPagination(offset, limit, false)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	// Simulate pagination for JSON files
-	start := offset
-	end := offset + limit
-	if start >= len(allCourses) {
-		return []Course{}, int64(len(allCourses)), nil
-	}
-	if end > len(allCourses) {
-		end = len(allCourses)
+	var courses []Course
+	for i, courseDB := range coursesDB {
+		var course Course
+		if err := json.Unmarshal([]byte(courseDB.CourseData), &course); err != nil {
+			log.Printf("Warning: failed to unmarshal course %d: %v", courseDB.ID, err)
+			continue
+		}
+		course.ID = offset + i // Maintain consistent indexing
+		courses = append(courses, course)
 	}
 
-	return allCourses[start:end], int64(len(allCourses)), nil
+	log.Printf("✅ Loaded %d courses from database (page %d-%d of %d total)",
+		len(courses), offset, offset+limit, totalCount)
+	return courses, totalCount, nil
 }
 
 func (h *Handlers) buildEditPermissions(courses []Course, userID *uint) map[int]bool {
@@ -103,11 +84,12 @@ func (h *Handlers) buildEditPermissions(courses []Course, userID *uint) map[int]
 
 // Optimized version of CanEditCourse
 func (h *Handlers) CanEditCourseOptimized(courseID uint, userID *uint) bool {
-	if userID == nil || h.courseService.dbService == nil {
+	if userID == nil {
 		return false
 	}
 
-	canEdit, err := h.courseService.dbService.CanEditCourseOptimized(courseID, *userID)
+	dbService := NewDatabaseService()
+	canEdit, err := dbService.CanEditCourseOptimized(courseID, *userID)
 	if err != nil {
 		log.Printf("Error checking course ownership: %v", err)
 		return false

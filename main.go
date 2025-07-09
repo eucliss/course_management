@@ -94,7 +94,7 @@ func RequireAuth(sessionService *SessionService) echo.MiddlewareFunc {
 }
 
 // RequireOwnership middleware checks if user owns the course they're trying to edit
-func RequireOwnership(sessionService *SessionService, courseService *CourseService, courses *[]Course) echo.MiddlewareFunc {
+func RequireOwnership(sessionService *SessionService) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			// First check authentication
@@ -115,20 +115,20 @@ func RequireOwnership(sessionService *SessionService, courseService *CourseServi
 				return c.String(http.StatusUnauthorized, "User not found in database")
 			}
 
-			// Check if database is available
-			if DB == nil {
-				return c.String(http.StatusServiceUnavailable, "Database not available")
-			}
-
 			// Check ownership using database service
 			dbService := NewDatabaseService()
 
-			// OPTIMIZED: Get course name from in-memory array and check ownership directly
-			if courseIndex < 0 || courseIndex >= len(*courses) {
+			// Get all courses from database to get the course name
+			allCourses, err := dbService.GetAllCoursesFromDatabase()
+			if err != nil {
+				return c.String(http.StatusInternalServerError, "Failed to load courses")
+			}
+
+			if courseIndex < 0 || courseIndex >= len(allCourses) {
 				return c.String(http.StatusNotFound, "Course not found")
 			}
 
-			courseName := (*courses)[courseIndex].Name
+			courseName := allCourses[courseIndex].Name
 			isOwner, err := dbService.IsUserCourseOwner(*userID, courseName)
 			if err != nil {
 				log.Printf("❌ Error checking course ownership: %v", err)
@@ -181,16 +181,10 @@ func main() {
 		}
 	}
 
-	courseService := NewCourseService()
 	sessionService := NewSessionService()
 
-	courses, err := courseService.LoadCourses()
-	if err != nil {
-		log.Printf("Warning: failed to load courses: %v", err)
-		courses = []Course{}
-	}
-
-	handlers := NewHandlers(&courses, courseService)
+	// Database is now required - no JSON fallback
+	handlers := NewHandlers()
 
 	e := echo.New()
 	e.Renderer = NewTemplates()
@@ -238,9 +232,9 @@ func main() {
 	e.GET("/map", handlers.Map, AddOwnershipContext(sessionService))
 
 	// Protected edit routes with ownership verification
-	e.GET("/edit-course/:id", handlers.EditCourseForm, RequireOwnership(sessionService, courseService, &courses))
-	e.POST("/edit-course/:id", handlers.UpdateCourse, RequireOwnership(sessionService, courseService, &courses))
-	e.DELETE("/delete-course/:id", handlers.DeleteCourse, RequireOwnership(sessionService, courseService, &courses))
+	e.GET("/edit-course/:id", handlers.EditCourseForm, RequireOwnership(sessionService))
+	e.POST("/edit-course/:id", handlers.UpdateCourse, RequireOwnership(sessionService))
+	e.DELETE("/delete-course/:id", handlers.DeleteCourse, RequireOwnership(sessionService))
 
 	// Review management routes
 	e.DELETE("/delete-review/:id", handlers.DeleteReview, RequireAuth(sessionService))

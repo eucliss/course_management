@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"log"
+
+	"gorm.io/gorm"
 )
 
 // CourseListItem for lightweight course listing
@@ -25,19 +28,24 @@ func (ds *DatabaseService) GetCourseByIDOptimized(courseID uint, preloadRelation
 		return nil, fmt.Errorf("database not connected")
 	}
 
+	log.Printf("🔒 [SECURITY] GetCourseByIDOptimized called for course_id=%d, preload=%t", courseID, preloadRelations)
+
 	var courseDB CourseDB
 	query := ds.db
 
+	// SECURITY WARNING: Only preload relations when absolutely necessary
 	if preloadRelations {
+		log.Printf("🚨 [SECURITY] Preloading user relations for course %d", courseID)
 		query = query.Preload("Creator").Preload("Updater")
 	}
 
 	result := query.First(&courseDB, courseID)
 	if result.Error != nil {
-		if result.Error.Error() == "record not found" {
+		if result.Error == gorm.ErrRecordNotFound {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("failed to find course: %v", result.Error)
+		log.Printf("🚨 [SECURITY] Database error in GetCourseByIDOptimized: %v", result.Error)
+		return nil, fmt.Errorf("failed to find course")
 	}
 
 	return &courseDB, nil
@@ -49,22 +57,28 @@ func (ds *DatabaseService) GetCoursesWithPagination(offset, limit int, preloadRe
 		return nil, 0, fmt.Errorf("database not connected")
 	}
 
+	log.Printf("🔒 [SECURITY] GetCoursesWithPagination called: offset=%d, limit=%d, preload=%t", offset, limit, preloadRelations)
+
 	var courses []CourseDB
 	var totalCount int64
 
 	// Get total count for pagination info
 	if err := ds.db.Model(&CourseDB{}).Count(&totalCount).Error; err != nil {
-		return nil, 0, fmt.Errorf("failed to count courses: %v", err)
+		log.Printf("🚨 [SECURITY] Database error in GetCoursesWithPagination count: %v", err)
+		return nil, 0, fmt.Errorf("failed to count courses")
 	}
 
 	query := ds.db.Offset(offset).Limit(limit).Order("created_at DESC")
 
+	// SECURITY WARNING: Only preload relations when absolutely necessary
 	if preloadRelations {
+		log.Printf("🚨 [SECURITY] Preloading user relations for paginated courses")
 		query = query.Preload("Creator").Preload("Updater")
 	}
 
 	if err := query.Find(&courses).Error; err != nil {
-		return nil, 0, fmt.Errorf("failed to fetch courses: %v", err)
+		log.Printf("🚨 [SECURITY] Database error in GetCoursesWithPagination: %v", err)
+		return nil, 0, fmt.Errorf("failed to fetch courses")
 	}
 
 	return courses, totalCount, nil
