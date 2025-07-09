@@ -14,15 +14,11 @@ import (
 )
 
 type Handlers struct {
-	courses       *[]Course
-	courseService *CourseService
+	// Database-only handlers - no JSON dependencies
 }
 
-func NewHandlers(courses *[]Course, courseService *CourseService) *Handlers {
-	return &Handlers{
-		courses:       courses,
-		courseService: courseService,
-	}
+func NewHandlers() *Handlers {
+	return &Handlers{}
 }
 
 // Helper function to get minimum of two integers
@@ -43,32 +39,23 @@ func (h *Handlers) Home(c echo.Context) error {
 		userID = &uid
 	}
 
-	// Get courses with coordinates from database if available, otherwise use JSON files
-	var allCourses []Course
-	if DB != nil {
-		log.Printf("🔍 Home handler: Database available, attempting to load courses from database")
-		dbService := NewDatabaseService()
-		dbCourses, err := dbService.GetAllCoursesFromDatabase()
-		if err == nil && len(dbCourses) > 0 {
-			allCourses = dbCourses
-			log.Printf("✅ Home handler: Using %d courses from database with coordinates", len(allCourses))
+	// Get courses from database only
+	dbService := NewDatabaseService()
+	allCourses, err := dbService.GetAllCoursesFromDatabase()
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to load courses from database")
+	}
 
-			// Debug: Check first few courses for coordinates
-			for i := 0; i < min(3, len(allCourses)); i++ {
-				course := allCourses[i]
-				if course.Latitude != nil && course.Longitude != nil {
-					log.Printf("🔍 Home handler: Course %d '%s' has coordinates: lat=%f, lng=%f", i, course.Name, *course.Latitude, *course.Longitude)
-				} else {
-					log.Printf("⚠️ Home handler: Course %d '%s' missing coordinates", i, course.Name)
-				}
-			}
+	log.Printf("✅ Home handler: Using %d courses from database", len(allCourses))
+
+	// Debug: Check first few courses for coordinates
+	for i := 0; i < min(3, len(allCourses)); i++ {
+		course := allCourses[i]
+		if course.Latitude != nil && course.Longitude != nil {
+			log.Printf("🔍 Home handler: Course %d '%s' has coordinates: lat=%f, lng=%f", i, course.Name, *course.Latitude, *course.Longitude)
 		} else {
-			log.Printf("Warning: failed to load from database: %v, using JSON fallback", err)
-			allCourses = *h.courses
+			log.Printf("⚠️ Home handler: Course %d '%s' missing coordinates", i, course.Name)
 		}
-	} else {
-		log.Printf("🔍 Home handler: Database not available, using JSON courses")
-		allCourses = *h.courses
 	}
 
 	// Default to showing user's courses if logged in, all courses if not
@@ -76,14 +63,14 @@ func (h *Handlers) Home(c echo.Context) error {
 	editPermissions := make(map[int]bool)
 	allCoursesEditPermissions := make(map[int]bool) // Edit permissions for all courses
 
-	if userID != nil && DB != nil {
+	if userID != nil {
 		// Get courses the user has reviewed using the new review system
 		reviewService := NewReviewService()
 		userReviews, err := reviewService.GetUserReviews(*userID)
 		if err != nil {
 			log.Printf("Warning: failed to get user reviews: %v", err)
-			// Fallback to all courses if user reviews can't be loaded
-			coursesToShow = allCourses
+			// Return error if user reviews can't be loaded
+			return c.String(http.StatusInternalServerError, "Failed to load user reviews")
 		} else {
 			log.Printf("✅ Found %d reviews for user %d in Home handler", len(userReviews), *userID)
 			// Debug: Print review details
@@ -92,7 +79,6 @@ func (h *Handlers) Home(c echo.Context) error {
 			}
 
 			// Get all courses owned by this user for edit permissions
-			dbService := NewDatabaseService()
 			userOwnedCourses, err := dbService.GetCoursesByUser(*userID)
 			userOwnedCourseNames := make(map[string]bool)
 			if err == nil {
@@ -213,7 +199,7 @@ func (h *Handlers) Home(c echo.Context) error {
 	}
 
 	// Populate review status for all courses
-	if userID != nil && DB != nil {
+	if userID != nil {
 		reviewService := NewReviewService()
 		userReviews, err := reviewService.GetUserReviews(*userID)
 		if err == nil {
@@ -223,15 +209,23 @@ func (h *Handlers) Home(c echo.Context) error {
 				reviewedCourseIDs[review.CourseID] = true
 			}
 
-			// Mark courses as reviewed by checking each course's database ID
-			dbService := NewDatabaseService()
-			for i, course := range allCourses {
-				// Find database course ID by name and address
-				dbCourse, err := dbService.GetCourseByNameAndAddress(course.Name, course.Address)
-				if err == nil && dbCourse != nil {
-					// Check if this specific course ID has been reviewed
-					if reviewedCourseIDs[dbCourse.ID] {
-						data.AllCoursesReviewStatus[i] = true
+			// Get all database courses with their IDs to avoid N+1 queries
+			dbCourses, err := dbService.GetAllCourses()
+			if err == nil {
+				// Create a map from course name+address to database ID
+				courseToIDMap := make(map[string]uint)
+				for _, dbCourse := range dbCourses {
+					key := dbCourse.Name + "|" + dbCourse.Address
+					courseToIDMap[key] = dbCourse.ID
+				}
+
+				// Mark courses as reviewed using the pre-loaded course ID map
+				for i, course := range allCourses {
+					key := course.Name + "|" + course.Address
+					if courseID, exists := courseToIDMap[key]; exists {
+						if reviewedCourseIDs[courseID] {
+							data.AllCoursesReviewStatus[i] = true
+						}
 					}
 				}
 			}
@@ -242,8 +236,14 @@ func (h *Handlers) Home(c echo.Context) error {
 }
 
 func (h *Handlers) Introduction(c echo.Context) error {
+	dbService := NewDatabaseService()
+	courses, err := dbService.GetAllCoursesFromDatabase()
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to load courses from database")
+	}
+
 	return c.Render(http.StatusOK, "introduction", PageData{
-		Courses: *h.courses,
+		Courses: courses,
 	})
 }
 
@@ -269,62 +269,58 @@ func (h *Handlers) Profile(c echo.Context) error {
 	log.Printf("🔍 Profile request for user: %s, DB User ID: %v, DB available: %t",
 		user.Email, dbUserID, DB != nil)
 
-	if DB != nil {
-		dbService := NewDatabaseService()
-		var dbUser *User
-		var err error
+	dbService := NewDatabaseService()
+	var dbUser *User
+	var err error
 
-		if dbUserID != nil {
-			// Try to get user by database ID first
-			dbUser, err = dbService.GetUserByID(*dbUserID)
-			if err != nil {
-				log.Printf("❌ Error fetching user %d from database: %v", *dbUserID, err)
-			}
+	if dbUserID != nil {
+		// Try to get user by database ID first
+		dbUser, err = dbService.GetUserByID(*dbUserID)
+		if err != nil {
+			log.Printf("❌ Error fetching user %d from database: %v", *dbUserID, err)
 		}
+	}
 
-		// Fallback: if no dbUserID in session or user not found, try to find by Google ID
-		if dbUser == nil && user != nil {
-			log.Printf("🔄 Fallback: Looking up user by Google ID: %s", user.ID)
-			dbUser, err = dbService.GetUserByGoogleID(user.ID)
-			if err != nil {
-				log.Printf("❌ Error fetching user by Google ID %s: %v", user.ID, err)
-			}
+	// Fallback: if no dbUserID in session or user not found, try to find by Google ID
+	if dbUser == nil && user != nil {
+		log.Printf("🔄 Fallback: Looking up user by Google ID: %s", user.ID)
+		dbUser, err = dbService.GetUserByGoogleID(user.ID)
+		if err != nil {
+			log.Printf("❌ Error fetching user by Google ID %s: %v", user.ID, err)
 		}
+	}
 
-		if dbUser != nil {
-			handicap = dbUser.Handicap
-			displayName = dbUser.DisplayName
-			if handicap != nil {
-				log.Printf("✅ Found user in database - ID: %d, Handicap: %.1f", dbUser.ID, *handicap)
-			} else {
-				log.Printf("✅ Found user in database - ID: %d, Handicap: nil", dbUser.ID)
-			}
-			if displayName != nil {
-				log.Printf("✅ Display name: %s", *displayName)
-			} else {
-				log.Printf("✅ No display name set")
-			}
-
-			// Update session with database user ID if it was missing
-			if dbUserID == nil {
-				log.Printf("🔄 Updating session with missing DB User ID: %d", dbUser.ID)
-				if err := sessionService.SetDatabaseUser(c, user, dbUser.ID); err != nil {
-					log.Printf("⚠️ Failed to update session with DB User ID: %v", err)
-				}
-				dbUserID = &dbUser.ID
-			}
+	if dbUser != nil {
+		handicap = dbUser.Handicap
+		displayName = dbUser.DisplayName
+		if handicap != nil {
+			log.Printf("✅ Found user in database - ID: %d, Handicap: %.1f", dbUser.ID, *handicap)
 		} else {
-			log.Printf("⚠️ User not found in database")
+			log.Printf("✅ Found user in database - ID: %d, Handicap: nil", dbUser.ID)
+		}
+		if displayName != nil {
+			log.Printf("✅ Display name: %s", *displayName)
+		} else {
+			log.Printf("✅ No display name set")
+		}
+
+		// Update session with database user ID if it was missing
+		if dbUserID == nil {
+			log.Printf("🔄 Updating session with missing DB User ID: %d", dbUser.ID)
+			if err := sessionService.SetDatabaseUser(c, user, dbUser.ID); err != nil {
+				log.Printf("⚠️ Failed to update session with DB User ID: %v", err)
+			}
+			dbUserID = &dbUser.ID
 		}
 	} else {
-		log.Printf("⚠️ Database not available")
+		log.Printf("⚠️ User not found in database")
 	}
 
 	// Get courses the user has reviewed using the new review system
 	var userCourses []Course
 	editPermissions := make(map[int]bool)
 
-	if dbUserID != nil && DB != nil {
+	if dbUserID != nil {
 		// Use the review service to get user's reviews
 		reviewService := NewReviewService()
 		userReviews, err := reviewService.GetUserReviews(*dbUserID)
@@ -333,28 +329,34 @@ func (h *Handlers) Profile(c echo.Context) error {
 		} else {
 			log.Printf("✅ Found %d reviews for user %d", len(userReviews), *dbUserID)
 
+			// Get all courses from database for lookups
+			allCourses, err := dbService.GetAllCoursesFromDatabase()
+			if err != nil {
+				log.Printf("Warning: failed to get all courses: %v", err)
+				allCourses = []Course{}
+			}
+
 			// Convert each review to a Course struct that the template expects
 			for _, reviewWithCourse := range userReviews {
-				// Find the corresponding course in the JSON array to get the correct index
+				// Find the corresponding course in the database array to get the correct index
 				var courseArrayIndex int = -1
-				for idx, jsonCourse := range *h.courses {
-					if jsonCourse.Name == reviewWithCourse.CourseName {
+				var originalCourse Course
+				for idx, dbCourse := range allCourses {
+					if dbCourse.Name == reviewWithCourse.CourseName {
 						courseArrayIndex = idx
+						originalCourse = dbCourse
 						break
 					}
 				}
 
-				// If we can't find the course in the JSON array, skip it
+				// If we can't find the course in the database array, skip it
 				if courseArrayIndex == -1 {
-					log.Printf("Warning: Course '%s' from review not found in JSON array", reviewWithCourse.CourseName)
+					log.Printf("Warning: Course '%s' from review not found in database array", reviewWithCourse.CourseName)
 					continue
 				}
 
-				// Get the original course description from the JSON array
-				originalCourse := (*h.courses)[courseArrayIndex]
-
 				course := Course{
-					ID:            courseArrayIndex, // Use the JSON array index for compatibility
+					ID:            courseArrayIndex, // Use the database array index for compatibility
 					Name:          reviewWithCourse.CourseName,
 					Description:   originalCourse.Description, // Use the actual course description
 					OverallRating: safeStringValue(reviewWithCourse.OverallRating),
@@ -381,18 +383,12 @@ func (h *Handlers) Profile(c echo.Context) error {
 				userCourses = append(userCourses, course)
 
 				// Users can always edit their own reviews, but we need to check if they own the course
-				// For now, we'll check if they created the course (for backward compatibility)
-				if DB != nil {
-					dbService := NewDatabaseService()
-					isOwner, err := dbService.IsUserCourseOwner(*dbUserID, course.Name)
-					if err != nil {
-						log.Printf("Warning: failed to check course ownership: %v", err)
-						editPermissions[len(userCourses)-1] = false
-					} else {
-						editPermissions[len(userCourses)-1] = isOwner
-					}
-				} else {
+				isOwner, err := dbService.IsUserCourseOwner(*dbUserID, course.Name)
+				if err != nil {
+					log.Printf("Warning: failed to check course ownership: %v", err)
 					editPermissions[len(userCourses)-1] = false
+				} else {
+					editPermissions[len(userCourses)-1] = isOwner
 				}
 			}
 		}
@@ -424,12 +420,23 @@ func (h *Handlers) Profile(c echo.Context) error {
 func (h *Handlers) GetCourse(c echo.Context) error {
 	id := c.Param("id")
 	idInt, err := strconv.Atoi(id)
-	if err != nil || idInt >= len(*h.courses) {
+	if err != nil {
+		return c.String(http.StatusBadRequest, "Invalid course ID")
+	}
+
+	// Get all courses from database
+	dbService := NewDatabaseService()
+	allCourses, err := dbService.GetAllCoursesFromDatabase()
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to load courses from database")
+	}
+
+	if idInt >= len(allCourses) {
 		return c.String(http.StatusNotFound, "Course not found")
 	}
 
-	// Get the base course data from the JSON array
-	baseCourse := (*h.courses)[idInt]
+	// Get the base course data from the database array
+	baseCourse := allCourses[idInt]
 
 	// Get user context from middleware if available
 	sessionService := NewSessionService()
@@ -448,10 +455,9 @@ func (h *Handlers) GetCourse(c echo.Context) error {
 	var canEdit bool
 	var hasUserReview bool
 
-	// If user is logged in and database is available, get their specific review
-	if userID != nil && DB != nil {
+	// If user is logged in, get their specific review
+	if userID != nil {
 		// Check if they own this course (for edit permissions)
-		dbService := NewDatabaseService()
 		isOwner, err := dbService.IsUserCourseOwner(*userID, baseCourse.Name)
 		if err != nil {
 			log.Printf("Warning: failed to check course ownership: %v", err)
@@ -601,7 +607,18 @@ func (h *Handlers) EditCourseForm(c echo.Context) error {
 	// Ownership already verified by middleware
 	log.Printf("✅ User %d authorized to edit course at index %d", userID, courseIndex)
 
-	course := (*h.courses)[courseIndex]
+	// Get all courses from database
+	dbService := NewDatabaseService()
+	allCourses, err := dbService.GetAllCoursesFromDatabase()
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to load courses from database")
+	}
+
+	if courseIndex >= len(allCourses) {
+		return c.String(http.StatusNotFound, "Course not found")
+	}
+
+	course := allCourses[courseIndex]
 
 	data := struct {
 		Course       Course
@@ -610,7 +627,7 @@ func (h *Handlers) EditCourseForm(c echo.Context) error {
 		IsReviewMode bool
 	}{
 		Course:       course,
-		Courses:      *h.courses,
+		Courses:      allCourses,
 		IsEdit:       true,
 		IsReviewMode: false,
 	}
@@ -631,22 +648,30 @@ func (h *Handlers) UpdateCourse(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "User ID not found in context")
 	}
 
-	// Ownership already verified by middleware, get course from database if available
-	var courseDB *CourseDB
-	if DB != nil {
-		dbService := NewDatabaseService()
-		// OPTIMIZED: Get course from database by name instead of index
-		courseName := (*h.courses)[courseIndex].Name
-		dbCourse, err := dbService.GetCourseWithOwnershipByName(courseName)
-		if err != nil {
-			log.Printf("Error getting course from database: %v", err)
-			return c.String(http.StatusInternalServerError, "Error accessing course data")
-		}
-		courseDB = dbCourse
-		if courseDB != nil {
-			log.Printf("✅ User %d authorized to update course at index %d (DB ID: %d)", userID, courseIndex, courseDB.ID)
-		}
+	// Get all courses from database to find the course to update
+	dbService := NewDatabaseService()
+	allCourses, err := dbService.GetAllCoursesFromDatabase()
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to load courses from database")
 	}
+
+	if courseIndex >= len(allCourses) {
+		return c.String(http.StatusNotFound, "Course not found")
+	}
+
+	// Get course from database by name for ownership verification
+	courseName := allCourses[courseIndex].Name
+	dbCourse, err := dbService.GetCourseWithOwnershipByName(courseName)
+	if err != nil {
+		log.Printf("Error getting course from database: %v", err)
+		return c.String(http.StatusInternalServerError, "Error accessing course data")
+	}
+
+	if dbCourse == nil {
+		return c.String(http.StatusNotFound, "Course not found in database")
+	}
+
+	log.Printf("✅ User %d authorized to update course at index %d (DB ID: %d)", userID, courseIndex, dbCourse.ID)
 
 	if err := c.Request().ParseForm(); err != nil {
 		return c.String(http.StatusBadRequest, "Failed to parse form data: "+err.Error())
@@ -657,21 +682,10 @@ func (h *Handlers) UpdateCourse(c echo.Context) error {
 		return c.String(http.StatusBadRequest, err.Error())
 	}
 
-	// Update in memory array
-	(*h.courses)[courseIndex] = course
-
-	// Update in database with ownership tracking if available
-	if DB != nil && courseDB != nil {
-		dbService := NewDatabaseService()
-		if err := dbService.UpdateCourseWithOwnership(courseDB, course, userID); err != nil {
-			log.Printf("Failed to update course in database: %v", err)
-			return c.String(http.StatusInternalServerError, "Failed to update course in database: "+err.Error())
-		}
-	}
-
-	// Also update via course service for backward compatibility
-	if err := h.courseService.UpdateCourse(course); err != nil {
-		log.Printf("Warning: failed to update via course service: %v", err)
+	// Update in database with ownership tracking
+	if err := dbService.UpdateCourseWithOwnership(dbCourse, course, userID); err != nil {
+		log.Printf("Failed to update course in database: %v", err)
+		return c.String(http.StatusInternalServerError, "Failed to update course in database: "+err.Error())
 	}
 
 	return h.renderSuccessMessage(c, "Course Updated Successfully!", "has been updated and saved", course.Name)
@@ -690,40 +704,36 @@ func (h *Handlers) DeleteCourse(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "User ID not found in context")
 	}
 
-	// Get course name for confirmation message
-	if courseIndex >= len(*h.courses) {
+	// Get all courses from database to find the course to delete
+	dbService := NewDatabaseService()
+	allCourses, err := dbService.GetAllCoursesFromDatabase()
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to load courses from database")
+	}
+
+	if courseIndex >= len(allCourses) {
 		return c.String(http.StatusNotFound, "Course not found")
 	}
-	courseName := (*h.courses)[courseIndex].Name
 
-	// Delete from database if available
-	if DB != nil {
-		dbService := NewDatabaseService()
-		// OPTIMIZED: Get course from database by name instead of index
-		dbCourse, err := dbService.GetCourseWithOwnershipByName(courseName)
-		if err != nil {
-			log.Printf("Error getting course from database: %v", err)
-			return c.String(http.StatusInternalServerError, "Error accessing course data")
-		}
+	courseName := allCourses[courseIndex].Name
 
-		if dbCourse != nil {
-			if err := dbService.DeleteCourse(dbCourse.ID); err != nil {
-				log.Printf("Failed to delete course from database: %v", err)
-				return c.String(http.StatusInternalServerError, "Failed to delete course from database: "+err.Error())
-			}
-			log.Printf("✅ User %d deleted course '%s' (DB ID: %d)", userID, courseName, dbCourse.ID)
-		}
+	// Get course from database by name for deletion
+	dbCourse, err := dbService.GetCourseWithOwnershipByName(courseName)
+	if err != nil {
+		log.Printf("Error getting course from database: %v", err)
+		return c.String(http.StatusInternalServerError, "Error accessing course data")
 	}
 
-	// Remove from memory array
-	*h.courses = append((*h.courses)[:courseIndex], (*h.courses)[courseIndex+1:]...)
-
-	// Update course IDs to maintain consistency
-	for i := range *h.courses {
-		(*h.courses)[i].ID = i
+	if dbCourse == nil {
+		return c.String(http.StatusNotFound, "Course not found in database")
 	}
 
-	// Note: Course deleted from database, in-memory array updated
+	if err := dbService.DeleteCourse(dbCourse.ID); err != nil {
+		log.Printf("Failed to delete course from database: %v", err)
+		return c.String(http.StatusInternalServerError, "Failed to delete course from database: "+err.Error())
+	}
+
+	log.Printf("✅ User %d deleted course '%s' (DB ID: %d)", userID, courseName, dbCourse.ID)
 
 	return h.renderSuccessMessage(c, "Course Deleted Successfully!", "has been deleted", courseName)
 }
@@ -739,26 +749,32 @@ func (h *Handlers) DeleteReview(c echo.Context) error {
 		return c.String(http.StatusUnauthorized, "You must be logged in to delete a review")
 	}
 
-	// Get course index from URL parameter (this is the JSON array index)
+	// Get course index from URL parameter (this is the database array index)
 	courseIndexParam := c.Param("id")
 	courseIndex, err := strconv.Atoi(courseIndexParam)
-	if err != nil || courseIndex >= len(*h.courses) {
+	if err != nil {
 		log.Printf("[DELETE_REVIEW] ERROR: Invalid course index: %s", courseIndexParam)
 		return c.String(http.StatusBadRequest, "Invalid course ID")
 	}
 
-	// Get the course from the JSON array
-	course := (*h.courses)[courseIndex]
+	// Get all courses from database
+	dbService := NewDatabaseService()
+	allCourses, err := dbService.GetAllCoursesFromDatabase()
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to load courses from database")
+	}
+
+	if courseIndex >= len(allCourses) {
+		log.Printf("[DELETE_REVIEW] ERROR: Course index %d out of range", courseIndex)
+		return c.String(http.StatusBadRequest, "Invalid course ID")
+	}
+
+	// Get the course from the database array
+	course := allCourses[courseIndex]
 	courseName := course.Name
 	courseAddress := course.Address
 
-	// Validate that the database is available
-	if DB == nil {
-		return c.String(http.StatusServiceUnavailable, "Database not available")
-	}
-
 	// Find the database course by name and address
-	dbService := NewDatabaseService()
 	dbCourse, err := dbService.GetCourseByNameAndAddress(courseName, courseAddress)
 	if err != nil {
 		log.Printf("[DELETE_REVIEW] ERROR: Course not found in database: %v", err)
@@ -902,23 +918,29 @@ func (h *Handlers) AddScore(c echo.Context) error {
 		return c.String(http.StatusBadRequest, "No course ID provided")
 	}
 
-	// Convert course ID - this is the JSON array index, need to convert to DB course ID
+	// Convert course ID - this is the database array index
 	courseIndex, err := strconv.Atoi(courseIDStr)
-	if err != nil || courseIndex >= len(*h.courses) {
+	if err != nil {
 		return c.String(http.StatusBadRequest, "Invalid course ID")
 	}
 
-	// Get the course from the JSON array
-	course := (*h.courses)[courseIndex]
+	// Get all courses from database
+	dbService := NewDatabaseService()
+	allCourses, err := dbService.GetAllCoursesFromDatabase()
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to load courses from database")
+	}
+
+	if courseIndex >= len(allCourses) {
+		return c.String(http.StatusBadRequest, "Invalid course ID")
+	}
+
+	// Get the course from the database array
+	course := allCourses[courseIndex]
 	courseName := course.Name
 	courseAddress := course.Address
 
 	// Find the database course by name and address
-	if DB == nil {
-		return c.String(http.StatusServiceUnavailable, "Database not available")
-	}
-
-	dbService := NewDatabaseService()
 	dbCourse, err := dbService.GetCourseByNameAndAddress(courseName, courseAddress)
 	if err != nil {
 		log.Printf("[ADD_SCORE] ERROR: Course not found in database: %v", err)
@@ -980,42 +1002,32 @@ func (h *Handlers) Map(c echo.Context) error {
 		userID = &uid
 	}
 
-	// Get courses with coordinates from database if available, otherwise use JSON files
-	var allCourses []Course
-	if DB != nil {
-		log.Printf("🔍 Map handler: Database available, attempting to load courses from database")
-		dbService := NewDatabaseService()
-		dbCourses, err := dbService.GetAllCoursesFromDatabase()
-		log.Printf("🔍 Map handler: dbCourses[0]: %v", dbCourses[0])
-		if err == nil && len(dbCourses) > 0 {
-			allCourses = dbCourses
-		} else {
-			log.Printf("Warning: failed to load from database: %v, using JSON fallback", err)
-			allCourses = *h.courses
-		}
-	} else {
-		log.Printf("🔍 Map handler: Database not available, using JSON courses")
-		allCourses = *h.courses
+	// Get courses from database only
+	dbService := NewDatabaseService()
+	allCourses, err := dbService.GetAllCoursesFromDatabase()
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to load courses from database")
 	}
+	
+	log.Printf("🔍 Map handler: Using %d courses from database", len(allCourses))
 
 	// Default to showing user's courses if logged in, all courses if not
 	var coursesToShow []Course
 	editPermissions := make(map[int]bool)
 	allCoursesEditPermissions := make(map[int]bool) // Edit permissions for all courses
 
-	if userID != nil && DB != nil {
+	if userID != nil {
 		// Get courses the user has reviewed using the new review system
 		reviewService := NewReviewService()
 		userReviews, err := reviewService.GetUserReviews(*userID)
 		if err != nil {
 			log.Printf("Warning: failed to get user reviews: %v", err)
-			// Fallback to all courses if user reviews can't be loaded
-			coursesToShow = allCourses
+			// Return error if user reviews can't be loaded
+			return c.String(http.StatusInternalServerError, "Failed to load user reviews")
 		} else {
 			log.Printf("✅ Found %d reviews for user %d in Map handler", len(userReviews), *userID)
 
 			// Get all courses owned by this user for edit permissions
-			dbService := NewDatabaseService()
 			userOwnedCourses, err := dbService.GetCoursesByUser(*userID)
 			userOwnedCourseNames := make(map[string]bool)
 			if err == nil {
@@ -1137,7 +1149,7 @@ func (h *Handlers) Map(c echo.Context) error {
 	}
 
 	// Populate review status for all courses
-	if userID != nil && DB != nil {
+	if userID != nil {
 		reviewService := NewReviewService()
 		userReviews, err := reviewService.GetUserReviews(*userID)
 		if err == nil {
@@ -1147,15 +1159,23 @@ func (h *Handlers) Map(c echo.Context) error {
 				reviewedCourseIDs[review.CourseID] = true
 			}
 
-			// Mark courses as reviewed by checking each course's database ID
-			dbService := NewDatabaseService()
-			for i, course := range allCourses {
-				// Find database course ID by name and address
-				dbCourse, err := dbService.GetCourseByNameAndAddress(course.Name, course.Address)
-				if err == nil && dbCourse != nil {
-					// Check if this specific course ID has been reviewed
-					if reviewedCourseIDs[dbCourse.ID] {
-						data.AllCoursesReviewStatus[i] = true
+			// Get all database courses with their IDs to avoid N+1 queries
+			dbCourses, err := dbService.GetAllCourses()
+			if err == nil {
+				// Create a map from course name+address to database ID
+				courseToIDMap := make(map[string]uint)
+				for _, dbCourse := range dbCourses {
+					key := dbCourse.Name + "|" + dbCourse.Address
+					courseToIDMap[key] = dbCourse.ID
+				}
+
+				// Mark courses as reviewed using the pre-loaded course ID map
+				for i, course := range allCourses {
+					key := course.Name + "|" + course.Address
+					if courseID, exists := courseToIDMap[key]; exists {
+						if reviewedCourseIDs[courseID] {
+							data.AllCoursesReviewStatus[i] = true
+						}
 					}
 				}
 			}
@@ -1253,17 +1273,18 @@ func (h *Handlers) UpdateDisplayName(c echo.Context) error {
 // Helper methods
 
 func (h *Handlers) CanEditCourse(courseIndex int, userID *uint) bool {
-	if userID == nil || DB == nil {
+	if userID == nil {
 		return false
 	}
 
-	// OPTIMIZED: Check course ownership by name instead of loading all courses
-	if courseIndex < 0 || courseIndex >= len(*h.courses) {
-		return false
-	}
-
-	courseName := (*h.courses)[courseIndex].Name
+	// Get all courses from database
 	dbService := NewDatabaseService()
+	allCourses, err := dbService.GetAllCoursesFromDatabase()
+	if err != nil || courseIndex < 0 || courseIndex >= len(allCourses) {
+		return false
+	}
+
+	courseName := allCourses[courseIndex].Name
 	isOwner, err := dbService.IsUserCourseOwner(*userID, courseName)
 	if err != nil {
 		log.Printf("Error checking course edit permission: %v", err)
@@ -1317,7 +1338,8 @@ func (h *Handlers) parseFormToCourse(c echo.Context, existingID int) (Course, er
 		Scores: []Score{},
 	}
 
-	holes, scores, err := h.courseService.ParseFormData(c.Request().Form)
+	courseService := NewCourseService()
+	holes, scores, err := courseService.ParseFormData(c.Request().Form)
 	if err != nil {
 		return Course{}, err
 	}
@@ -1338,14 +1360,7 @@ func (h *Handlers) renderSuccessMessage(c echo.Context, title, message, courseNa
 	`, title, courseName, message))
 }
 
-func (h *Handlers) reloadCourses() error {
-	courses, err := h.courseService.LoadCourses()
-	if err != nil {
-		return err
-	}
-	*h.courses = courses
-	return nil
-}
+// reloadCourses method removed - no longer needed with database-only approach
 
 func (h *Handlers) DatabaseStatus(c echo.Context) error {
 	status := map[string]interface{}{
@@ -1375,41 +1390,18 @@ func (h *Handlers) MigrateCourses(c echo.Context) error {
 		})
 	}
 
+	// JSON migration no longer supported - database is the single source of truth
 	dbService := NewDatabaseService()
-
-	// Load courses from JSON files
-	courses, err := h.courseService.LoadCoursesFromJSON()
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": fmt.Sprintf("Failed to load courses from JSON: %v", err),
-		})
-	}
-
-	log.Printf("🔄 Starting migration of %d courses to database...", len(courses))
-
-	// Migrate courses to database
-	if err := dbService.MigrateJSONFilesToDatabase(courses); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": fmt.Sprintf("Migration failed: %v", err),
-		})
-	}
-
-	// Get updated stats
 	stats, err := dbService.GetDatabaseStats()
 	if err != nil {
-		log.Printf("Warning: failed to get stats after migration: %v", err)
-		stats = map[string]int{"courses": len(courses)}
-	}
-
-	// Reload courses in memory from database
-	if err := h.reloadCourses(); err != nil {
-		log.Printf("Warning: failed to reload courses after migration: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": fmt.Sprintf("Failed to get database stats: %v", err),
+		})
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"message":          "Migration completed successfully",
-		"migrated_courses": len(courses),
-		"database_stats":   stats,
+		"message":        "Migration endpoint deprecated - system now uses database exclusively",
+		"database_stats": stats,
 	})
 }
 
@@ -1440,12 +1432,23 @@ func (h *Handlers) ReviewSpecificCourseForm(c echo.Context) error {
 	// Get course ID from URL parameter
 	courseIDParam := c.Param("id")
 	courseIndex, err := strconv.Atoi(courseIDParam)
-	if err != nil || courseIndex >= len(*h.courses) {
+	if err != nil {
 		return c.String(http.StatusBadRequest, "Invalid course ID")
 	}
 
-	// Get the course from the JSON array
-	course := (*h.courses)[courseIndex]
+	// Get all courses from database
+	dbService := NewDatabaseService()
+	allCourses, err := dbService.GetAllCoursesFromDatabase()
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to load courses from database")
+	}
+
+	if courseIndex >= len(allCourses) {
+		return c.String(http.StatusBadRequest, "Invalid course ID")
+	}
+
+	// Get the course from the database array
+	course := allCourses[courseIndex]
 
 	// Get authenticated user to verify they haven't already reviewed this course
 	sessionService := NewSessionService()
@@ -1594,12 +1597,21 @@ func (h *Handlers) GetAllCoursesAPI(c echo.Context) error {
 	editPermissions := c.Get("EditPermissions").([]bool)
 	reviewStatus := c.Get("ReviewStatus").([]bool)
 	
+	// Get all courses from database
+	dbService := NewDatabaseService()
+	allCourses, err := dbService.GetAllCoursesFromDatabase()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to load courses from database",
+		})
+	}
+
 	// Filter courses based on search and filter criteria
 	var filteredCourses []Course
 	var filteredEditPermissions []bool
 	var filteredReviewStatus []bool
 	
-	for i, course := range *h.courses {
+	for i, course := range allCourses {
 		// Apply filter criteria
 		matchesFilter := true
 		if filter == "my" && i < len(reviewStatus) {
@@ -1697,49 +1709,50 @@ func (h *Handlers) GetReviewCoursesAPI(c echo.Context) error {
 	
 	log.Printf("🚀 GetReviewCoursesAPI: page=%d, limit=%d, search='%s'", page, limit, search)
 	
-	// Create a struct that includes both database info and JSON array index
+	// Create a struct that includes both database info and database array index
 	type CourseWithIndex struct {
 		CourseDB
-		JSONIndex int `json:"jsonIndex"`
+		DatabaseIndex int `json:"databaseIndex"`
 	}
 	
 	var allAvailableCourses []CourseWithIndex
 	
-	if DB != nil {
-		// Get ALL courses from database - user should be able to review any course
-		dbService := NewDatabaseService()
-		allDBCourses, err := dbService.GetAllCourses()
-		if err != nil {
-			log.Printf("Warning: failed to get all courses: %v", err)
-			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to load courses from database"})
-		}
-		
-		log.Printf("📊 GetReviewCoursesAPI: Retrieved %d courses from database", len(allDBCourses))
-		
-		// Map database courses to JSON array indices
-		for _, dbCourse := range allDBCourses {
-			// Find the corresponding index in the JSON array
-			jsonIndex := -1
-			for i, jsonCourse := range *h.courses {
-				if jsonCourse.Name == dbCourse.Name {
-					jsonIndex = i
-					break
-				}
-			}
-			
-			if jsonIndex != -1 {
-				allAvailableCourses = append(allAvailableCourses, CourseWithIndex{
-					CourseDB:  dbCourse,
-					JSONIndex: jsonIndex,
-				})
-			}
-		}
-		
-		log.Printf("📊 GetReviewCoursesAPI: Mapped %d courses to JSON indices", len(allAvailableCourses))
-	} else {
-		log.Printf("⚠️ Database is nil, cannot load courses for review")
-		return c.JSON(http.StatusServiceUnavailable, map[string]string{"error": "Database not available"})
+	// Get ALL courses from database - user should be able to review any course
+	dbService := NewDatabaseService()
+	allDBCourses, err := dbService.GetAllCourses()
+	if err != nil {
+		log.Printf("Warning: failed to get all courses: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to load courses from database"})
 	}
+	
+	// Get all courses from database with coordinates for mapping
+	allCoursesWithCoords, err := dbService.GetAllCoursesFromDatabase()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to load courses from database"})
+	}
+	
+	log.Printf("📊 GetReviewCoursesAPI: Retrieved %d courses from database", len(allDBCourses))
+	
+	// Map database courses to database array indices
+	for _, dbCourse := range allDBCourses {
+		// Find the corresponding index in the database array
+		databaseIndex := -1
+		for i, course := range allCoursesWithCoords {
+			if course.Name == dbCourse.Name && course.Address == dbCourse.Address {
+				databaseIndex = i
+				break
+			}
+		}
+		
+		if databaseIndex != -1 {
+			allAvailableCourses = append(allAvailableCourses, CourseWithIndex{
+				CourseDB:      dbCourse,
+				DatabaseIndex: databaseIndex,
+			})
+		}
+	}
+		
+	log.Printf("📊 GetReviewCoursesAPI: Mapped %d courses to database indices", len(allAvailableCourses))
 	
 	// Apply search filter
 	var filteredCourses []CourseWithIndex
