@@ -241,8 +241,13 @@ em {
 }
 
 .btn:focus {
-  outline: 2px solid var(--color-primary-500);
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-primary-500);
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-primary-500);
 }
 
 /* Button Variants */
