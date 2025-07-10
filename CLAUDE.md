@@ -10,9 +10,11 @@ This is a Go-based golf course management system that allows users to track cour
 
 - **Backend**: Go with Echo framework for REST API and server-side rendering
 - **Frontend**: HTMX for dynamic interactions, vanilla JavaScript for map functionality
-- **Data Storage**: JSON files for course data (with planned PostgreSQL migration)
+- **Data Storage**: PostgreSQL with GORM ORM (migrated from JSON files)
 - **Authentication**: Google OAuth2 integration
 - **Templates**: HTML templates with Go templating engine
+- **Cache**: Redis/in-memory caching for performance optimization
+- **Hot Reload**: Air configuration for development
 
 ### Core Models
 
@@ -20,58 +22,100 @@ This is a Go-based golf course management system that allows users to track cour
 - **User**: Handles authentication and user sessions
 - **Ranking**: Structured ratings system for various course aspects
 - **Score**: Individual user scores with handicap tracking
+- **Reviews**: Multi-user course reviews and ratings
 
 ## Development Commands
 
-- **Run the application**: `go run .` (Air is used for hot reloading)
+- **Hot reload development**: Air is running automatically (see `.air.toml`)
 - **Install dependencies**: `go mod download`
+- **Run tests**: `go test ./...` (see detailed options below)
 - **Database migration**: Run scripts in `scripts/` directory
-- **Test environment**: Set up with `.env` file (copy from `.env.example`)
+- **Build application**: `go build .`
+
+### Test Commands
+
+Use these commands from the comprehensive test suite:
+
+```bash
+# Basic test commands
+go test ./...                    # Run all tests
+go test -v ./...                 # Verbose output
+go test -cover ./...             # Coverage report
+go test -race ./...              # Race detection
+go test -short ./...             # Skip slow integration tests
+
+# Specific test categories
+go test -v ./services            # Service layer tests
+go test -v -run TestHandlers     # Handler tests
+go test -v ./services -run TestRepository  # Repository tests
+
+# Test with coverage
+go test -coverprofile=coverage.out ./...
+go tool cover -html=coverage.out -o coverage.html
+
+# Performance and debugging
+go test -bench=. ./...           # Run benchmarks
+go test -timeout 30s ./...       # Custom timeout
+go test -count=1 ./...           # Disable cache
+```
 
 ## Important Development Rules
 
 ### Technology Stack Constraints
 - **Frontend**: Use HTMX and vanilla JavaScript only
 - **Backend**: Go with Echo framework
-- **Database**: Currently JSON files, migrating to PostgreSQL
+- **Database**: PostgreSQL with GORM ORM
 - **NO React, Vue, Svelte, TypeScript, or Angular**
 
 ### Development Practices
-- Air is used for hot reloading - do not manually restart the application
+- **Air is used for hot reloading** - do not manually restart the application
 - **CRITICAL**: After making any code changes, ALWAYS run `go build .` followed by `go test ./...` to ensure the application builds and all tests pass
-- **Test Flexibility**: Use test flags as needed: `go test -v ./...` (verbose), `go test -cover ./...` (coverage), `go test -run TestName ./...` (specific tests), `go test -timeout 30s ./...` (custom timeout), `go test -count=1 ./...` (disable cache)
+- **Test Flexibility**: Use test flags as needed (see test commands above)
 - If tests fail, fix the code to make them pass OR update the tests to reflect the updated logic in the codebase
 - Write code but avoid running/starting the app unless specifically requested
 - Place all documentation in the `docs/` folder
-- Use existing patterns found in handlers.go and models.go. If they are insuffiecient, create new patterns that align with the existing codebase and deprecate or update the old patters.
+- Use existing patterns found in handlers.go and models.go. If they are insufficient, create new patterns that align with the existing codebase and deprecate or update the old patterns.
 
 ### Key Files and Directories
 
 - `main.go`: Application entry point and server setup
 - `models.go`: Data structures for courses, users, rankings
 - `handlers.go`: HTTP request handlers
-- `config.go`: Configuration management
+- `config/`: Configuration management with environment-specific settings
+- `services/`: Service layer with business logic and repositories
 - `auth_service.go`: Google OAuth authentication
 - `course_service.go`: Course data management
+- `database.go`: Database initialization and connection management
+- `cache_service.go`: Redis/in-memory caching implementation
 - `views/`: HTML templates
 - `static/`: Static assets (CSS, JS, images)
-- `courses/`: JSON course data files
 - `scripts/`: Database migration and utility scripts
 - `docs/`: Documentation files
+- `testing/`: Test utilities and helpers
 
 ### Database Architecture
 
-Currently transitioning from JSON files to PostgreSQL with the following planned schema:
+Uses PostgreSQL with GORM ORM:
 - `users`: User profiles with handicap tracking
 - `courses`: Course data with JSONB for complex course information
 - `course_reviews`: Multi-user course reviews and ratings
 - `user_scores`: Individual user scores per course
 - `activities`: Activity feed for social features
 
+### Service Layer Architecture
+
+The application uses a service-oriented architecture:
+- **Services**: Business logic layer (`services/` directory)
+- **Repositories**: Data access layer with interfaces
+- **Handlers**: HTTP layer that delegates to services
+- **Models**: Shared data structures
+
 ## Common Patterns
 
 - Use Echo's context for request handling
 - Implement proper error handling with HTTP status codes
-- Follow existing JSON structure for course data
+- Follow existing service layer patterns for business logic
 - Use HTMX attributes for dynamic frontend interactions
 - Maintain session state through Echo's session middleware
+- Cache frequently accessed data using the cache service
+- Use middleware for authentication and authorization checks
