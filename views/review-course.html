@@ -171,14 +171,6 @@
                         </td>
                     </tr>
                 </table>
-                
-                <div class="scoring-section">
-                    <h3>Scores (Optional)</h3>
-                    <div id="scores-container">
-                        <!-- Scores will be added dynamically -->
-                    </div>
-                    <button type="button" class="add-score-btn" onclick="addScore()">+ Add Score</button>
-                </div>
             </div>
             
             <div class="course-info">
@@ -188,6 +180,15 @@
                 </div>
                 
                 <br style="clear: both; margin-bottom: 20px;"/>
+                
+                <div class="scoring-section">
+                    <h2>Golf Scores (Optional)</h2>
+                    <p class="section-description">Track your scores for this course. Enter your out (front 9) and in (back 9) scores, and the total will be calculated automatically.</p>
+                    <div id="scores-container">
+                        <!-- Scores will be added dynamically -->
+                    </div>
+                    <button type="button" class="add-score-btn" onclick="addScore()">+ Add Score</button>
+                </div>
                 
                 <div class="hole-by-hole-section">
                     <h2>Hole by Hole</h2>
@@ -455,19 +456,39 @@
         margin-bottom: 15px;
     }
 
-    .hole-inputs textarea {
+    .hole-description-field {
         grid-column: 1 / -1;
+    }
+    
+    .hole-description-field textarea {
         min-height: 80px;
         line-height: 1.5;
         box-sizing: border-box;
+        width: 100%;
+        resize: vertical;
     }
 
     .score-inputs {
         display: grid;
-        grid-template-columns: 1fr 1fr auto;
+        grid-template-columns: 1fr 1fr;
         gap: 15px;
-        align-items: end;
+        align-items: start;
+        margin-bottom: 20px;
+        padding: 20px;
+        background-color: rgba(255, 255, 255, 0.7);
+        border-radius: 8px;
+        border: 1px solid rgba(32, 70, 6, 0.2);
+    }
+    
+    .score-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 10px;
         margin-bottom: 15px;
+    }
+    
+    .score-row:last-child {
+        margin-bottom: 0;
     }
 
     .score-field, .hole-field {
@@ -478,8 +499,49 @@
 
     .score-field label, .hole-field label {
         font-size: 14px;
-        font-weight: 500;
+        font-weight: 600;
         color: #204606;
+        margin-bottom: 5px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        min-height: 20px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .score-field label small {
+        font-size: 10px;
+        font-weight: 400;
+        color: #666;
+        text-transform: none;
+        letter-spacing: normal;
+        font-style: italic;
+    }
+    
+    .score-field input {
+        background-color: white;
+        border: 2px solid #204606;
+        border-radius: 6px;
+        padding: 10px 12px;
+        font-size: 16px;
+        font-weight: 500;
+        text-align: center;
+        transition: all 0.2s ease;
+    }
+    
+    .score-field input:focus {
+        outline: none;
+        border-color: #2d6509;
+        box-shadow: 0 0 0 3px rgba(32, 70, 6, 0.1);
+        transform: translateY(-1px);
+    }
+    
+    .score-field input[readonly] {
+        background-color: #f8f9fa;
+        color: #495057;
+        border-color: #dee2e6;
+        cursor: not-allowed;
+        font-weight: 600;
     }
 
     /* Buttons */
@@ -494,14 +556,19 @@
     .add-hole-btn, .add-score-btn {
         background-color: #204606;
         color: white;
-        padding: 10px 20px;
-        border-radius: 6px;
-        font-size: 14px;
-        margin-top: 10px;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        margin-top: 15px;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     .add-hole-btn:hover, .add-score-btn:hover {
         background-color: #153505;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     }
 
     .save-course-btn {
@@ -520,12 +587,18 @@
     .remove-btn {
         background-color: #dc3545;
         color: white;
-        padding: 8px 12px;
-        font-size: 12px;
+        padding: 10px 16px;
+        font-size: 14px;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+        align-self: end;
+        margin-top: 25px;
     }
 
     .remove-btn:hover {
         background-color: #c82333;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     /* Utility Classes */
@@ -550,7 +623,16 @@
     .scoring-section {
         margin-top: 30px;
         padding-top: 20px;
-        border-top: 2px solid #204606;
+        border-top: 2px solid rgba(32, 70, 6, 0.3);
+    }
+    
+    .section-description {
+        color: #204606;
+        font-size: 14px;
+        margin-bottom: 20px;
+        line-height: 1.5;
+        font-style: italic;
+        opacity: 0.8;
     }
 
     .save-section {
@@ -642,10 +724,33 @@
 
         .hole-inputs, .score-inputs {
             grid-template-columns: 1fr;
+            padding: 15px;
         }
         
-        .hole-inputs textarea {
+        .score-row {
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        
+        .hole-description-field {
             grid-column: 1;
+        }
+        
+        .remove-btn {
+            margin-top: 10px;
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+        }
+        
+        .score-field {
+            margin-bottom: 10px;
+        }
+        
+        .score-field input {
+            font-size: 16px;
+            padding: 12px;
+            width: 100%;
         }
     }
 </style>
@@ -672,39 +777,35 @@
         initializeForm();
     }
 
-    function initializeForm() {
-        console.log('🎯 Initializing review form for course:', '{{ .Course.Name }}');
-        
-        // Load existing scores if in edit mode
-        {{ if .UserScores }}
-        {{ range .UserScores }}
-        addScore({{ .Score }}, {{ if .Handicap }}{{ .Handicap }}{{ else }}0{{ end }});
-        {{ end }}
-        {{ end }}
-
-        // Load existing holes if in edit mode
-        {{ if .UserHoles }}
-        {{ range .UserHoles }}
-        addHole({{ .Number }}, {{ if .Par }}{{ .Par }}{{ else }}0{{ end }}, {{ if .Yardage }}{{ .Yardage }}{{ else }}0{{ end }}, '{{ if .Description }}{{ .Description }}{{ end }}');
-        {{ end }}
-        {{ end }}
-    }
-
-    // Make functions globally accessible for onclick handlers
-    window.addScore = function(score = '', handicap = '') {
+    // Make functions globally accessible for onclick handlers first
+    window.addScore = function(score = '', handicap = '', outScore = '', inScore = '') {
         const scoreEntry = document.createElement('div');
         scoreEntry.className = 'score-entry';
         scoreEntry.innerHTML = `
             <div class="score-inputs">
-                <div class="score-field">
-                    <label>Total Score</label>
-                    <input type="number" name="scores[${scoreCounter}].score" value="${score}" min="18" max="200" placeholder="72">
+                <div class="score-row">
+                    <div class="score-field">
+                        <label>Out</label>
+                        <input type="number" name="scores[${scoreCounter}].out-score" value="${outScore}" min="18" max="90" placeholder="36" class="score-input" data-input-type="out">
+                    </div>
+                    <div class="score-field">
+                        <label>In</label>
+                        <input type="number" name="scores[${scoreCounter}].in-score" value="${inScore}" min="18" max="90" placeholder="36" class="score-input" data-input-type="in">
+                    </div>
+                    <div class="score-field">
+                        <label>Total <small>(auto)</small></label>
+                        <input type="number" name="scores[${scoreCounter}].score" value="${score}" min="36" max="180" placeholder="72" readonly class="score-input" data-input-type="total">
+                    </div>
                 </div>
-                <div class="score-field">
-                    <label>Handicap</label>
-                    <input type="number" name="scores[${scoreCounter}].handicap" value="${handicap}" min="0" max="54" step="0.1" placeholder="0.0">
+                <div class="score-row">
+                    <div class="score-field">
+                        <label>Handicap</label>
+                        <input type="number" name="scores[${scoreCounter}].handicap" value="${handicap}" min="0" max="54" step="0.1" placeholder="0.0">
+                    </div>
+                    <div class="score-field">
+                        <button type="button" class="remove-btn" onclick="removeScore(this)">Remove Score</button>
+                    </div>
                 </div>
-                <button type="button" class="remove-btn" onclick="removeScore(this)">Remove</button>
             </div>
         `;
         
@@ -734,10 +835,10 @@
                     <label>Yardage</label>
                     <input type="number" name="holes[${holeCounter}].yardage" value="${yardage}" min="50" max="600" placeholder="400">
                 </div>
-            </div>
-            <div class="hole-description">
-                <label>Description</label>
-                <textarea name="holes[${holeCounter}].description" placeholder="Describe the hole layout, challenges, and strategy...">${description}</textarea>
+                <div class="hole-field hole-description-field">
+                    <label>Description</label>
+                    <textarea name="holes[${holeCounter}].description" placeholder="Describe the hole layout, challenges, and strategy...">${description}</textarea>
+                </div>
             </div>
             <button type="button" class="remove-btn" onclick="removeHole(this)">Remove</button>
         `;
@@ -748,6 +849,51 @@
 
     window.removeHole = function(button) {
         button.closest('.hole-entry').remove();
+    }
+
+    // Auto-calculate total score when out and in scores are entered
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('score-input') && (e.target.dataset.inputType === 'out' || e.target.dataset.inputType === 'in')) {
+            const scoreEntry = e.target.closest('.score-entry');
+            const outInput = scoreEntry.querySelector('input[data-input-type="out"]');
+            const inInput = scoreEntry.querySelector('input[data-input-type="in"]');
+            const totalInput = scoreEntry.querySelector('input[data-input-type="total"]');
+            
+            const outScore = parseInt(outInput.value) || 0;
+            const inScore = parseInt(inInput.value) || 0;
+            
+            if (outScore > 0 && inScore > 0) {
+                totalInput.value = outScore + inScore;
+            } else if (outScore > 0 || inScore > 0) {
+                // Show partial calculation if only one score is entered
+                totalInput.value = outScore + inScore;
+            } else {
+                totalInput.value = '';
+            }
+        }
+    });
+
+    function initializeForm() {
+        console.log('🎯 Initializing review form for course:', '{{ .Course.Name }}');
+        
+        // Load existing scores if in edit mode
+        {{ if .UserScores }}
+        {{ range .UserScores }}
+        window.addScore(
+            {{ .Score }}, 
+            {{ if .Handicap }}{{ .Handicap }}{{ else }}0{{ end }}, 
+            {{ if .OutScore }}{{ .OutScore }}{{ else }}""{{ end }}, 
+            {{ if .InScore }}{{ .InScore }}{{ else }}""{{ end }}
+        );
+        {{ end }}
+        {{ end }}
+
+        // Load existing holes if in edit mode
+        {{ if .UserHoles }}
+        {{ range .UserHoles }}
+        window.addHole({{ .Number }}, {{ if .Par }}{{ .Par }}{{ else }}0{{ end }}, {{ if .Yardage }}{{ .Yardage }}{{ else }}0{{ end }}, '{{ if .Description }}{{ .Description }}{{ end }}');
+        {{ end }}
+        {{ end }}
     }
 
 })(); // End IIFE

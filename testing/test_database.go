@@ -77,6 +77,7 @@ func (tdb *TestDB) migrate(t *testing.T) {
 		RangeRating        *string `gorm:"type:varchar(1)"`
 		Amenities          *string `gorm:"type:varchar(1)"`
 		Glizzies           *string `gorm:"type:varchar(1)"`
+		Walkability        *string `gorm:"type:varchar(1);check:walkability IN ('S','A','B','C','D','F')"`
 		ReviewText         *string `gorm:"type:text"`
 		CreatedAt          int64   `gorm:"autoCreateTime"`
 		UpdatedAt          int64   `gorm:"autoUpdateTime"`
