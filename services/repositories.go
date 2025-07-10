@@ -52,6 +52,7 @@ type CourseReviewDB struct {
 	RangeRating        *string `gorm:"type:varchar(1)" json:"range_rating"`
 	Amenities          *string `gorm:"type:varchar(1)" json:"amenities"`
 	Glizzies           *string `gorm:"type:varchar(1)" json:"glizzies"`
+	Walkability        *string `gorm:"type:varchar(1)" json:"walkability"`
 	ReviewText         *string `gorm:"type:text" json:"review_text"`
 	CreatedAt          int64   `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt          int64   `gorm:"autoUpdateTime" json:"updated_at"`
@@ -506,6 +507,7 @@ func (r *reviewRepository) Create(ctx context.Context, review CourseReview) erro
 		RangeRating:        review.RangeRating,
 		Amenities:          review.Amenities,
 		Glizzies:           review.Glizzies,
+		Walkability:        review.Walkability,
 		ReviewText:         review.ReviewText,
 	}
 
@@ -577,6 +579,7 @@ func (r *reviewRepository) Update(ctx context.Context, review CourseReview) erro
 		"range_rating":        review.RangeRating,
 		"amenities":           review.Amenities,
 		"glizzies":            review.Glizzies,
+		"walkability":         review.Walkability,
 		"review_text":         review.ReviewText,
 	}
 
@@ -706,6 +709,7 @@ func (r *reviewRepository) dbToReview(reviewDB CourseReviewDB) *CourseReview {
 		RangeRating:        reviewDB.RangeRating,
 		Amenities:          reviewDB.Amenities,
 		Glizzies:           reviewDB.Glizzies,
+		Walkability:        reviewDB.Walkability,
 		ReviewText:         reviewDB.ReviewText,
 		CreatedAt:          reviewDB.CreatedAt,
 		UpdatedAt:          reviewDB.UpdatedAt,

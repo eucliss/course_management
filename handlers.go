@@ -1498,6 +1498,7 @@ func (h *Handlers) ReviewSpecificCourseForm(c echo.Context) error {
 		RangeRating        string
 		Amenities          string
 		Glizzies           string
+		Walkability        string
 		ReviewText         string
 	}
 
@@ -1515,6 +1516,7 @@ func (h *Handlers) ReviewSpecificCourseForm(c echo.Context) error {
 			RangeRating:        safeStringValue(userReview.RangeRating),
 			Amenities:          safeStringValue(userReview.Amenities),
 			Glizzies:           safeStringValue(userReview.Glizzies),
+			Walkability:        safeStringValue(userReview.Walkability),
 			ReviewText:         safeStringValue(userReview.ReviewText),
 		}
 	}

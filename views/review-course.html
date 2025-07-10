@@ -156,6 +156,20 @@
                             </select>
                         </td>
                     </tr>
+                    <tr>
+                        <td>Walkability</td>
+                        <td class="editable-cell">
+                            <select id="walkability" name="walkability" class="rating-select">
+                                <option value="">Select</option>
+                                <option value="S" {{ if and .UserReview (eq .UserReview.Walkability "S") }}selected{{ end }}>S</option>
+                                <option value="A" {{ if and .UserReview (eq .UserReview.Walkability "A") }}selected{{ end }}>A</option>
+                                <option value="B" {{ if and .UserReview (eq .UserReview.Walkability "B") }}selected{{ end }}>B</option>
+                                <option value="C" {{ if and .UserReview (eq .UserReview.Walkability "C") }}selected{{ end }}>C</option>
+                                <option value="D" {{ if and .UserReview (eq .UserReview.Walkability "D") }}selected{{ end }}>D</option>
+                                <option value="F" {{ if and .UserReview (eq .UserReview.Walkability "F") }}selected{{ end }}>F</option>
+                            </select>
+                        </td>
+                    </tr>
                 </table>
                 
                 <div class="scoring-section">
@@ -637,9 +651,10 @@
 </style>
 
 <script>
+(function() {
     console.log('🚀 Review course JavaScript loading...');
     
-    // Global variables
+    // Scoped variables - no longer global
     let scoreCounter = 0;
     let holeCounter = 0;
     const courseId = {{ .Course.ID }};
@@ -651,7 +666,11 @@
         initializeForm();
     });
     
-
+    // Also initialize if DOM is already loaded (for HTMX)
+    if (document.readyState === 'interactive' || document.readyState === 'complete') {
+        console.log('📋 DOM already loaded, initializing form...');
+        initializeForm();
+    }
 
     function initializeForm() {
         console.log('🎯 Initializing review form for course:', '{{ .Course.Name }}');
@@ -671,7 +690,8 @@
         {{ end }}
     }
 
-    function addScore(score = '', handicap = '') {
+    // Make functions globally accessible for onclick handlers
+    window.addScore = function(score = '', handicap = '') {
         const scoreEntry = document.createElement('div');
         scoreEntry.className = 'score-entry';
         scoreEntry.innerHTML = `
@@ -692,11 +712,11 @@
         scoreCounter++;
     }
 
-    function removeScore(button) {
+    window.removeScore = function(button) {
         button.closest('.score-entry').remove();
     }
 
-    function addHole(number = '', par = '', yardage = '', description = '') {
+    window.addHole = function(number = '', par = '', yardage = '', description = '') {
         const holeEntry = document.createElement('div');
         holeEntry.className = 'hole-entry';
         holeEntry.innerHTML = `
@@ -726,10 +746,10 @@
         holeCounter++;
     }
 
-    function removeHole(button) {
+    window.removeHole = function(button) {
         button.closest('.hole-entry').remove();
     }
 
-
+})(); // End IIFE
 </script>
 {{ end }}

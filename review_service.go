@@ -67,6 +67,9 @@ func (rs *ReviewService) CreateOrUpdateReview(userID uint, courseID uint, formDa
 	if formData.Glizzies != "" {
 		review.Glizzies = &formData.Glizzies
 	}
+	if formData.Walkability != "" {
+		review.Walkability = &formData.Walkability
+	}
 	if formData.ReviewText != "" {
 		review.ReviewText = &formData.ReviewText
 	}
@@ -573,6 +576,7 @@ func ParseReviewFormData(getFormValue func(string) string) ReviewFormData {
 		RangeRating:        getFormValue("range"),
 		Amenities:          getFormValue("amenities"),
 		Glizzies:           getFormValue("glizzies"),
+		Walkability:        getFormValue("walkability"),
 		ReviewText:         getFormValue("course-review"),
 	}
 }

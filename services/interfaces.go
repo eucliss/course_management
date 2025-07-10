@@ -208,6 +208,7 @@ type CourseReview struct {
 	RangeRating        *string `json:"range_rating"`
 	Amenities          *string `json:"amenities"`
 	Glizzies           *string `json:"glizzies"`
+	Walkability        *string `json:"walkability"`
 
 	// Review text
 	ReviewText *string `json:"review_text"`

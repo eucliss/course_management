@@ -11,6 +11,7 @@ type Ranking struct {
 	Range              string `json:"range"`
 	Amenities          string `json:"amenities"`
 	Glizzies           string `json:"glizzies"`
+	Walkability        string `json:"walkability"`
 }
 
 type Hole struct {

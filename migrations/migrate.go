@@ -61,6 +61,7 @@ type CourseRanking struct {
 	RangeRating        string `gorm:"size:1;check:range_rating IN ('S','A','B','C','D','F')" json:"range_rating"`
 	Amenities          string `gorm:"size:1;check:amenities IN ('S','A','B','C','D','F')" json:"amenities"`
 	Glizzies           string `gorm:"size:1;check:glizzies IN ('S','A','B','C','D','F')" json:"glizzies"`
+	Walkability        string `gorm:"size:1;check:walkability IN ('S','A','B','C','D','F')" json:"walkability"`
 	CreatedAt          int64  `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt          int64  `gorm:"autoUpdateTime" json:"updated_at"`
 }
