@@ -2,6 +2,9 @@
 
 A golf course management system that tracks course ratings, reviews, and scores.
 
+
+go test . -v -count=1
+
 ## Local Development
 
 1. Clone the repository

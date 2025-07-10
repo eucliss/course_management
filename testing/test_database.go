@@ -183,6 +183,11 @@ func (tdb *TestDB) CleanupTables(t *testing.T) {
 			t.Logf("Warning: failed to cleanup table %s: %v", table, err)
 		}
 	}
+	
+	// Reset auto-increment sequences for consistent test IDs
+	if err := tdb.DB.Exec("DELETE FROM sqlite_sequence").Error; err != nil {
+		t.Logf("Warning: failed to reset auto-increment sequences: %v", err)
+	}
 }
 
 // SeedTestData adds common test data for use across tests
