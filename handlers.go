@@ -169,9 +169,7 @@ func (h *Handlers) Home(c echo.Context) error {
 		return "all"
 	}())
 
-	for i, course := range coursesToShow {
-		log.Printf("   Course %d: %s", i+1, course.Name)
-	}
+	// Course list prepared for display
 
 	data := struct {
 		Courses                   []Course
