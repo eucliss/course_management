@@ -252,7 +252,7 @@ func NewAPIFactory(dbService DatabaseServiceInterface, config *APIConfig) *APIFa
 // CreateAPIRouter creates a fully configured API router
 func (f *APIFactory) CreateAPIRouter() *APIRouter {
 	// Create handlers
-	authHandler := NewAuthHandler(f.config.JWTService, f.dbService, "", "") // TODO: Add Google config
+	authHandler := NewAuthHandler(f.config.JWTService, f.dbService, "", "", "", "") // TODO: Add Google config
 	userHandler := NewUserHandler(f.dbService.(ExtendedDatabaseServiceInterface))
 	courseHandler := NewCourseHandler(f.dbService.(CoursesDatabaseServiceInterface))
 	reviewHandler := NewReviewHandler(f.dbService.(ReviewDatabaseServiceInterface))

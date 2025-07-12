@@ -20,6 +20,7 @@ type CourseReview struct {
 	RangeRating        *string `gorm:"type:varchar(1);check:range_rating IN ('S','A','B','C','D','F')" json:"range_rating"`
 	Amenities          *string `gorm:"type:varchar(1);check:amenities IN ('S','A','B','C','D','F')" json:"amenities"`
 	Glizzies           *string `gorm:"type:varchar(1);check:glizzies IN ('S','A','B','C','D','F')" json:"glizzies"`
+	Walkability        *string `gorm:"type:varchar(1);check:walkability IN ('S','A','B','C','D','F')" json:"walkability"`
 
 	// Review text
 	ReviewText *string `gorm:"type:text" json:"review_text"`
@@ -132,6 +133,7 @@ type ReviewFormData struct {
 	RangeRating        string `json:"range"`
 	Amenities          string `json:"amenities"`
 	Glizzies           string `json:"glizzies"`
+	Walkability        string `json:"walkability"`
 	ReviewText         string `json:"review_text"`
 }
 

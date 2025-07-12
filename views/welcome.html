@@ -10,13 +10,7 @@
         <link href="/static/css/map-shared.css" rel="stylesheet" />
         <script src="/static/js/map-utils.js"></script>
         <style>
-            body {
-                margin: 0;
-                padding: 0;
-                font-family: Arial, sans-serif;
-                background-color: #FFFCE7;
-                color: #204606;
-            }
+            /* Body styles are now in design-system.css */
             .container {
                 display: flex;
                 height: 100vh;
@@ -121,9 +115,14 @@
                 margin: 0 0 15px 0;
                 font-size: 1.5em;
             }
+            .nav-item {
+                padding: 0 4px; /* Add horizontal padding to prevent outline cutoff */
+            }
+            
             .nav-item button {
                 margin-bottom: var(--space-3);
                 width: 100%;
+                display: block;
             }
             /* Map styles are now in /static/css/map-shared.css */
 
@@ -251,15 +250,25 @@
             .course-item.hidden {
                 display: none;
             }
+            
+            /* Ensure course items have space for focus outlines */
+            .courses-list-scrollable {
+                padding: 0 4px;
+            }
+            
+            .course-item {
+                margin: 2px 0;
+            }
 
             /* Course Toggle Styles */
             .course-toggle {
                 display: flex;
-                gap: var(--space-1);
-                margin-top: var(--space-2);
+                gap: 6px;
+                margin: var(--space-2) 4px 0 4px; /* Add horizontal margin for outline space */
                 background-color: var(--color-neutral-200);
                 border-radius: var(--radius-md);
-                padding: var(--space-1);
+                padding: 6px;
+                position: relative;
             }
 
             .toggle-btn {
@@ -290,6 +299,19 @@
 
             .toggle-btn.active:hover {
                 background-color: var(--color-primary-700);
+            }
+            
+            /* Fix for outline being cut off - use box-shadow instead */
+            .toggle-btn:focus {
+                outline: none;
+                box-shadow: 0 0 0 2px var(--color-primary-500);
+                position: relative;
+                z-index: 1;
+            }
+            
+            .toggle-btn:focus-visible {
+                outline: none;
+                box-shadow: 0 0 0 2px var(--color-primary-500);
             }
 
             /* Responsive Design */

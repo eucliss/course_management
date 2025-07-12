@@ -14,9 +14,10 @@ import (
 
 // AuthHandler handles authentication-related API endpoints
 type AuthHandler struct {
-	jwtService *JWTService
-	dbService  DatabaseServiceInterface
-	config     *oauth2.Config
+	jwtService       *JWTService
+	dbService        DatabaseServiceInterface
+	config           *oauth2.Config
+	allowedClientIDs []string // Support multiple client IDs
 }
 
 // DatabaseServiceInterface defines the interface for database operations
@@ -65,18 +66,26 @@ type AuthStatusResponse struct {
 }
 
 // NewAuthHandler creates a new authentication handler
-func NewAuthHandler(jwtService *JWTService, dbService DatabaseServiceInterface, googleClientID, googleClientSecret string) *AuthHandler {
+func NewAuthHandler(jwtService *JWTService, dbService DatabaseServiceInterface, googleClientID, googleClientSecret, iosClientID, redirectURL string) *AuthHandler {
 	config := &oauth2.Config{
 		ClientID:     googleClientID,
 		ClientSecret: googleClientSecret,
+		RedirectURL:  redirectURL,
 		Scopes:       []string{"openid", "profile", "email"},
 		Endpoint:     google.Endpoint,
 	}
 
+	// Support both web and iOS client IDs
+	allowedClientIDs := []string{googleClientID}
+	if iosClientID != "" && iosClientID != googleClientID {
+		allowedClientIDs = append(allowedClientIDs, iosClientID)
+	}
+
 	return &AuthHandler{
-		jwtService: jwtService,
-		dbService:  dbService,
-		config:     config,
+		jwtService:       jwtService,
+		dbService:        dbService,
+		config:           config,
+		allowedClientIDs: allowedClientIDs,
 	}
 }
 
@@ -180,6 +189,67 @@ func (h *AuthHandler) GetAuthStatus(c echo.Context) error {
 	})
 }
 
+// GoogleCallback handles OAuth2 callback from Google
+func (h *AuthHandler) GoogleCallback(c echo.Context) error {
+	// Get authorization code from query params
+	code := c.QueryParam("code")
+	state := c.QueryParam("state")
+	
+	if code == "" {
+		return BadRequestError(c, "Authorization code is required")
+	}
+	
+	// Exchange authorization code for tokens
+	token, err := h.config.Exchange(c.Request().Context(), code)
+	if err != nil {
+		return UnauthorizedError(c, "Failed to exchange authorization code")
+	}
+	
+	// Extract ID token from the OAuth2 token
+	idToken, ok := token.Extra("id_token").(string)
+	if !ok || idToken == "" {
+		return UnauthorizedError(c, "No ID token received from Google")
+	}
+	
+	// Verify the ID token and get user info
+	userInfo, err := h.verifyGoogleIDToken(idToken)
+	if err != nil {
+		return UnauthorizedError(c, "Invalid ID token")
+	}
+	
+	// Create or get user from database
+	user, err := h.getOrCreateUser(userInfo)
+	if err != nil {
+		return InternalServerError(c, "Failed to process user authentication")
+	}
+	
+	// Generate JWT token pair
+	tokens, err := h.jwtService.GenerateTokenPair(
+		user.ID,
+		user.GoogleID,
+		user.Email,
+		user.Name,
+	)
+	if err != nil {
+		return InternalServerError(c, "Failed to generate authentication tokens")
+	}
+	
+	// Handle different states/redirect scenarios
+	if state == "ios_app" {
+		// For iOS app, return a redirect with tokens as URL parameters
+		// In production, you'd want to use a custom URL scheme
+		redirectURL := fmt.Sprintf("golfapp://auth/success?access_token=%s&refresh_token=%s", 
+			tokens.AccessToken, tokens.RefreshToken)
+		return c.Redirect(302, redirectURL)
+	}
+	
+	// Default: return JSON response
+	return SuccessResponse(c, map[string]interface{}{
+		"tokens": tokens,
+		"user":   user,
+	})
+}
+
 // Logout invalidates the current token (placeholder for token blacklisting)
 func (h *AuthHandler) Logout(c echo.Context) error {
 	// In a production system, you would add the token to a blacklist
@@ -234,9 +304,16 @@ func (h *AuthHandler) verifyGoogleIDToken(idToken string) (*GoogleUserInfo, erro
 		return nil, fmt.Errorf("failed to parse token info: %w", err)
 	}
 
-	// Verify the token is for our application
-	if tokenInfo.Aud != h.config.ClientID {
-		return nil, fmt.Errorf("token audience mismatch")
+	// Verify the token is for one of our allowed client IDs
+	validClientID := false
+	for _, allowedID := range h.allowedClientIDs {
+		if tokenInfo.Aud == allowedID {
+			validClientID = true
+			break
+		}
+	}
+	if !validClientID {
+		return nil, fmt.Errorf("token audience mismatch: received %s, allowed %v", tokenInfo.Aud, h.allowedClientIDs)
 	}
 
 	return &GoogleUserInfo{
@@ -281,6 +358,7 @@ func validateEmail(email string) bool {
 func (h *AuthHandler) RegisterRoutes(g *echo.Group, jwtService *JWTService) {
 	// Public routes (no authentication required)
 	g.POST("/auth/google/verify", h.VerifyGoogleToken)
+	g.GET("/auth/google/callback", h.GoogleCallback)
 	g.POST("/auth/refresh", h.RefreshToken)
 	
 	// Routes that use optional authentication (can work with or without token)

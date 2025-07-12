@@ -169,9 +169,7 @@ func (h *Handlers) Home(c echo.Context) error {
 		return "all"
 	}())
 
-	for i, course := range coursesToShow {
-		log.Printf("   Course %d: %s", i+1, course.Name)
-	}
+	// Course list prepared for display
 
 	data := struct {
 		Courses                   []Course
@@ -1498,6 +1496,7 @@ func (h *Handlers) ReviewSpecificCourseForm(c echo.Context) error {
 		RangeRating        string
 		Amenities          string
 		Glizzies           string
+		Walkability        string
 		ReviewText         string
 	}
 
@@ -1515,6 +1514,7 @@ func (h *Handlers) ReviewSpecificCourseForm(c echo.Context) error {
 			RangeRating:        safeStringValue(userReview.RangeRating),
 			Amenities:          safeStringValue(userReview.Amenities),
 			Glizzies:           safeStringValue(userReview.Glizzies),
+			Walkability:        safeStringValue(userReview.Walkability),
 			ReviewText:         safeStringValue(userReview.ReviewText),
 		}
 	}

@@ -1,5 +1,4 @@
 {{ block "course" . }}
-<link href="/static/css/design-system.css" rel="stylesheet" />
 <div class="course-detail">
     <div class="header-section">
         <div class="title-and-line">
@@ -132,6 +131,10 @@
                 <tr>
                     <td>Turn Dog</td>
                     <td class="rating-{{ .Ranks.Glizzies }}">{{ .Ranks.Glizzies }}</td>
+                </tr>
+                <tr>
+                    <td>Walkability</td>
+                    <td class="rating-{{ .Ranks.Walkability }}">{{ .Ranks.Walkability }}</td>
                 </tr>
             </table>
             <br/>
