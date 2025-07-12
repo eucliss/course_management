@@ -7,6 +7,7 @@ course_management
 
 .env
 .env.prod
+.env.production
 development.env
 
 # Configuration secrets - never commit these!

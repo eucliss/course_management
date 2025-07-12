@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"course_management/api"
 	"course_management/config"
 
 	"github.com/gorilla/sessions"
@@ -276,14 +277,41 @@ func main() {
 		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
 	}))
 
-	// Session middleware with configuration-based settings
+	// Session middleware with configuration-based settings and versioning
 	store := sessions.NewCookieStore([]byte(cfg.Security.SessionSecret))
 	store.Options.Path = "/"
 	store.Options.HttpOnly = true
 	store.Options.Secure = cfg.Security.SecureCookies
 	store.Options.SameSite = http.SameSiteStrictMode
 	store.MaxAge(int(cfg.Security.SessionTimeout.Seconds()))
+	
+	// Add session name with version to force refresh when needed
+	sessionName := "golf_session_v2" // Increment this when you need to invalidate all sessions
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			// Use versioned session name
+			c.Set("session_name", sessionName)
+			return next(c)
+		}
+	})
 	e.Use(session.Middleware(store))
+
+	// Initialize JWT service for API authentication
+	jwtService := api.NewJWTService(
+		cfg.Security.SessionSecret+"_access",   // Use different secrets for JWT
+		cfg.Security.SessionSecret+"_refresh",
+	)
+
+	// Setup API authentication routes for mobile/external access
+	dbService := NewDatabaseService()
+	apiDBService := &APIDBServiceAdapter{dbService: dbService}
+	
+	// Create auth handler directly - only what we need for iPhone authentication
+	authHandler := api.NewAuthHandler(jwtService, apiDBService, cfg.Google.ClientID, cfg.Google.ClientSecret, cfg.Google.IOSClientID, cfg.Google.RedirectURL)
+	
+	// Create API group and register auth routes
+	apiGroup := e.Group("/api/v1")
+	authHandler.RegisterRoutes(apiGroup, jwtService)
 
 	// Auth handlers
 	authHandlers := NewAuthHandlers()
@@ -300,6 +328,7 @@ func main() {
 
 	// Auth routes
 	e.POST("/auth/google/verify", authHandlers.VerifyGoogleToken)
+	e.GET("/auth/google/callback", authHandler.GoogleCallback) // Add OAuth callback route
 	e.POST("/auth/logout", authHandlers.Logout)
 	e.GET("/login", authHandlers.GetAuthStatus)
 
@@ -336,6 +365,81 @@ func main() {
 
 	// Start server with graceful shutdown
 	startServer(e, cfg)
+}
+
+// APIDBServiceAdapter adapts DatabaseService to API interface
+type APIDBServiceAdapter struct {
+	dbService *DatabaseService
+}
+
+func (a *APIDBServiceAdapter) CreateUser(googleID, email, name, picture string) (*api.UserResponse, error) {
+	user := &GoogleUser{
+		ID:      googleID,
+		Email:   email,
+		Name:    name,
+		Picture: picture,
+	}
+	
+	dbUser, err := a.dbService.CreateUser(user)
+	if err != nil {
+		return nil, err
+	}
+	
+	return &api.UserResponse{
+		ID:          dbUser.ID,
+		GoogleID:    dbUser.GoogleID,
+		Email:       dbUser.Email,
+		Name:        dbUser.Name,
+		DisplayName: dbUser.DisplayName,
+		Picture:     dbUser.Picture,
+		Handicap:    dbUser.Handicap,
+		CreatedAt:   dbUser.CreatedAt,
+		UpdatedAt:   dbUser.UpdatedAt,
+	}, nil
+}
+
+func (a *APIDBServiceAdapter) GetUserByGoogleID(googleID string) (*api.UserResponse, error) {
+	dbUser, err := a.dbService.GetUserByGoogleID(googleID)
+	if err != nil {
+		return nil, err
+	}
+	if dbUser == nil {
+		return nil, nil
+	}
+	
+	return &api.UserResponse{
+		ID:          dbUser.ID,
+		GoogleID:    dbUser.GoogleID,
+		Email:       dbUser.Email,
+		Name:        dbUser.Name,
+		DisplayName: dbUser.DisplayName,
+		Picture:     dbUser.Picture,
+		Handicap:    dbUser.Handicap,
+		CreatedAt:   dbUser.CreatedAt,
+		UpdatedAt:   dbUser.UpdatedAt,
+	}, nil
+}
+
+func (a *APIDBServiceAdapter) GetUserByEmail(email string) (*api.UserResponse, error) {
+	dbUser, err := a.dbService.GetUserByEmail(email)
+	if err != nil {
+		return nil, err
+	}
+	if dbUser == nil {
+		return nil, nil
+	}
+	
+	return &api.UserResponse{
+		ID:          dbUser.ID,
+		GoogleID:    dbUser.GoogleID,
+		Email:       dbUser.Email,
+		Name:        dbUser.Name,
+		DisplayName: dbUser.DisplayName,
+		Picture:     dbUser.Picture,
+		Handicap:    dbUser.Handicap,
+		CreatedAt:   dbUser.CreatedAt,
+		UpdatedAt:   dbUser.UpdatedAt,
+	}, nil
 }
 
 func startServer(e *echo.Echo, cfg *config.Config) {

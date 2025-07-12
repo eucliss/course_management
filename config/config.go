@@ -48,9 +48,10 @@ type DatabaseConfig struct {
 
 // GoogleConfig contains Google OAuth configuration
 type GoogleConfig struct {
-	ClientID     string `mapstructure:"client_id"`
-	ClientSecret string `mapstructure:"client_secret"`
-	RedirectURL  string `mapstructure:"redirect_url"`
+	ClientID      string `mapstructure:"client_id"`
+	ClientSecret  string `mapstructure:"client_secret"`
+	RedirectURL   string `mapstructure:"redirect_url"`
+	IOSClientID   string `mapstructure:"ios_client_id"`
 }
 
 // SecurityConfig contains security-related configuration
@@ -126,6 +127,7 @@ func LoadConfig() (*Config, error) {
 			ClientID:     getEnvOrDefault("GOOGLE_CLIENT_ID", ""),
 			ClientSecret: getEnvOrDefault("GOOGLE_CLIENT_SECRET", ""),
 			RedirectURL:  getEnvOrDefault("GOOGLE_REDIRECT_URL", "http://localhost:8080/auth/callback"),
+			IOSClientID:  getEnvOrDefault("GOOGLE_IOS_CLIENT_ID", ""),
 		},
 		Security: SecurityConfig{
 			SessionSecret:    getEnvOrDefault("SESSION_SECRET", ""),

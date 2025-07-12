@@ -15,7 +15,8 @@ func NewSessionService() *SessionService {
 }
 
 func (s *SessionService) SetUser(c echo.Context, user *GoogleUser) error {
-	sess, err := session.Get("session", c)
+	sessionName := c.Get("session_name").(string)
+	sess, err := session.Get(sessionName, c)
 	if err != nil {
 		log.Printf("Failed to get session: %v", err)
 		return fmt.Errorf("failed to get session: %v", err)
@@ -25,6 +26,7 @@ func (s *SessionService) SetUser(c echo.Context, user *GoogleUser) error {
 	sess.Values["user_name"] = user.Name
 	sess.Values["user_picture"] = user.Picture
 	sess.Values["authenticated"] = true
+	sess.Values["session_version"] = "v2" // Version sessions for compatibility
 	if err := sess.Save(c.Request(), c.Response()); err != nil {
 		log.Printf("Failed to save session: %v", err)
 		return fmt.Errorf("failed to save session: %v", err)
@@ -34,7 +36,8 @@ func (s *SessionService) SetUser(c echo.Context, user *GoogleUser) error {
 }
 
 func (s *SessionService) SetDatabaseUser(c echo.Context, user *GoogleUser, dbUserID uint) error {
-	sess, err := session.Get("session", c)
+	sessionName := c.Get("session_name").(string)
+	sess, err := session.Get(sessionName, c)
 	if err != nil {
 		log.Printf("Failed to get session: %v", err)
 		return fmt.Errorf("failed to get session: %v", err)
@@ -45,6 +48,7 @@ func (s *SessionService) SetDatabaseUser(c echo.Context, user *GoogleUser, dbUse
 	sess.Values["user_picture"] = user.Picture
 	sess.Values["db_user_id"] = dbUserID
 	sess.Values["authenticated"] = true
+	sess.Values["session_version"] = "v2" // Version sessions for compatibility
 	if err := sess.Save(c.Request(), c.Response()); err != nil {
 		log.Printf("Failed to save session: %v", err)
 		return fmt.Errorf("failed to save session: %v", err)
@@ -54,11 +58,18 @@ func (s *SessionService) SetDatabaseUser(c echo.Context, user *GoogleUser, dbUse
 }
 
 func (s *SessionService) GetUser(c echo.Context) *GoogleUser {
-	sess, err := session.Get("session", c)
+	sessionName := c.Get("session_name").(string)
+	sess, err := session.Get(sessionName, c)
 	if err != nil {
 		return nil
 	}
 	if auth, ok := sess.Values["authenticated"].(bool); !ok || !auth {
+		return nil
+	}
+	
+	// Validate session version - invalidate old sessions
+	if version, ok := sess.Values["session_version"].(string); !ok || version != "v2" {
+		log.Printf("🔄 Invalidating old session version: %v", version)
 		return nil
 	}
 
@@ -82,13 +93,20 @@ func (s *SessionService) GetUser(c echo.Context) *GoogleUser {
 }
 
 func (s *SessionService) GetDatabaseUserID(c echo.Context) *uint {
-	sess, err := session.Get("session", c)
+	sessionName := c.Get("session_name").(string)
+	sess, err := session.Get(sessionName, c)
 	if err != nil {
 		log.Printf("🔍 GetDatabaseUserID: Failed to get session: %v", err)
 		return nil
 	}
 	if auth, ok := sess.Values["authenticated"].(bool); !ok || !auth {
 		log.Printf("🔍 GetDatabaseUserID: User not authenticated")
+		return nil
+	}
+	
+	// Validate session version - invalidate old sessions
+	if version, ok := sess.Values["session_version"].(string); !ok || version != "v2" {
+		log.Printf("🔄 GetDatabaseUserID: Invalidating old session version: %v", version)
 		return nil
 	}
 
@@ -118,7 +136,8 @@ func getSessionKeys(values map[interface{}]interface{}) []string {
 }
 
 func (s *SessionService) Logout(c echo.Context) error {
-	sess, err := session.Get("session", c)
+	sessionName := c.Get("session_name").(string)
+	sess, err := session.Get(sessionName, c)
 	if err != nil {
 		return err
 	}
@@ -133,11 +152,17 @@ func (s *SessionService) Logout(c echo.Context) error {
 }
 
 func (s *SessionService) IsAuthenticated(c echo.Context) bool {
-	sess, err := session.Get("session", c)
+	sessionName := c.Get("session_name").(string)
+	sess, err := session.Get(sessionName, c)
 	if err != nil {
 		return false
 	}
 	if auth, ok := sess.Values["authenticated"].(bool); ok && auth {
+		// Validate session version - invalidate old sessions
+		if version, ok := sess.Values["session_version"].(string); !ok || version != "v2" {
+			log.Printf("🔄 IsAuthenticated: Invalidating old session version: %v", version)
+			return false
+		}
 		return true
 	}
 	return false
